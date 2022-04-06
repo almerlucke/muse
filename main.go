@@ -377,9 +377,7 @@ func (p *BasePatch) Run(config *Configuration) bool {
 	}
 
 	for _, output := range p.outputModules {
-		if output.InputAtIndex(0).IsConnected() {
-			output.Run(config)
-		}
+		output.Run(config)
 	}
 
 	return true
