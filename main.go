@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 type Sample float64
@@ -98,7 +99,7 @@ type Module interface {
 	AddOutputConnection(outputIndex int, conn *Connection)
 	HasRun() bool
 	PrepareRun()
-	Run(config *Configuration)
+	Run(config *Configuration) bool
 }
 
 type BaseModule struct {
@@ -108,7 +109,7 @@ type BaseModule struct {
 	identifier string
 }
 
-func NewBaseModule(numInputs int, numOutputs int) *BaseModule {
+func NewBaseModule(numInputs int, numOutputs int, identifier string) *BaseModule {
 	inputs := make([]*Socket, numInputs)
 
 	for i := 0; i < numInputs; i++ {
@@ -128,8 +129,9 @@ func NewBaseModule(numInputs int, numOutputs int) *BaseModule {
 	}
 
 	return &BaseModule{
-		inputs:  inputs,
-		outputs: outputs,
+		inputs:     inputs,
+		outputs:    outputs,
+		identifier: identifier,
 	}
 }
 
@@ -191,9 +193,9 @@ func (m *BaseModule) PrepareRun() {
 	m.hasRun = false
 }
 
-func (m *BaseModule) Run(config *Configuration) {
+func (m *BaseModule) Run(config *Configuration) bool {
 	if m.hasRun {
-		return
+		return false
 	}
 
 	m.hasRun = true
@@ -209,111 +211,90 @@ func (m *BaseModule) Run(config *Configuration) {
 			}
 		}
 	}
-}
 
-func Connect(from Module, outIndex int, to Module, inIndex int) {
-	pf, ok := from.(*Patch)
-	if ok {
-		from = pf.OutputModuleAtIndex(outIndex)
-		outIndex = 0
-	}
-
-	pt, ok := to.(*Patch)
-	if ok {
-		to = pt.InputModuleAtIndex(inIndex)
-		inIndex = 0
-	}
-
-	from.AddOutputConnection(outIndex, &Connection{Module: to, Index: inIndex})
-	to.AddInputConnection(inIndex, &Connection{Module: from, Index: outIndex})
-}
-
-func DebugConnections(module Module) {
-	log.Printf("Module %s", module.Identifier())
-	for i := 0; i < module.NumInputs(); i++ {
-		input := module.InputAtIndex(i)
-		log.Printf("Input %d", i+1)
-		log.Printf("Buffer %v", input.Buffer)
-
-		for _, conn := range input.Connections {
-			log.Printf("Connection to output %d of module %s", conn.Index+1, conn.Module.Identifier())
-		}
-
-		for _, conn := range input.Connections {
-			DebugConnections(conn.Module)
-		}
-	}
+	return true
 }
 
 type ThruModule struct {
 	*BaseModule
 }
 
-func NewThruModule() *ThruModule {
+func NewThruModule(identifier string) *ThruModule {
 	return &ThruModule{
-		BaseModule: NewBaseModule(1, 1),
+		BaseModule: NewBaseModule(1, 1, identifier),
 	}
 }
 
-func (t *ThruModule) Run(config *Configuration) {
-	t.BaseModule.Run(config)
+func (t *ThruModule) Run(config *Configuration) bool {
+	if !t.BaseModule.Run(config) {
+		return false
+	}
 
 	for i := 0; i < config.BufferSize; i++ {
-		t.outputs[0].Buffer[i] = t.inputs[0].Buffer[i] + 1
+		t.outputs[0].Buffer[i] = t.inputs[0].Buffer[i]
 	}
+
+	return true
 }
 
-type Patch struct {
+type Patch interface {
+	Module
+	AddModule(m Module)
+	Contains(m Module) bool
+	Lookup(address string) Module
+	InputModuleAtIndex(index int) Module
+	OutputModuleAtIndex(index int) Module
+}
+
+type BasePatch struct {
 	*BaseModule
 	subModules    []Module
 	inputModules  []*ThruModule
 	outputModules []*ThruModule
+	addressMap    map[string]Module
 }
 
-func NewPatch(numInputs int, numOutputs int, identifier string) *Patch {
+func NewPatch(numInputs int, numOutputs int, identifier string) *BasePatch {
 	subModules := []Module{}
 
 	inputModules := make([]*ThruModule, numInputs)
 	for i := 0; i < numInputs; i++ {
-		inputModules[i] = NewThruModule()
-		inputModules[i].SetIdentifier(fmt.Sprintf("Patch_%v_input_%v", identifier, i+1))
+		inputModules[i] = NewThruModule(fmt.Sprintf("patch_%s_input_%d", identifier, i+1))
 		subModules = append(subModules, inputModules[i])
 	}
 
 	outputModules := make([]*ThruModule, numOutputs)
 	for i := 0; i < numOutputs; i++ {
-		outputModules[i] = NewThruModule()
-		outputModules[i].SetIdentifier(fmt.Sprintf("Patch_%v_output_%v", identifier, i+1))
+		outputModules[i] = NewThruModule(fmt.Sprintf("patch_%s_output_%d", identifier, i+1))
 		subModules = append(subModules, outputModules[i])
 	}
 
-	p := &Patch{
-		BaseModule:    NewBaseModule(0, 0),
+	p := &BasePatch{
+		BaseModule:    NewBaseModule(0, 0, identifier),
 		subModules:    subModules,
 		inputModules:  inputModules,
 		outputModules: outputModules,
+		addressMap:    map[string]Module{},
 	}
-
-	p.SetIdentifier(identifier)
 
 	return p
 }
 
-func (p *Patch) NumInputs() int {
+func (p *BasePatch) NumInputs() int {
 	return len(p.inputModules)
 }
 
-func (p *Patch) NumOutputs() int {
+func (p *BasePatch) NumOutputs() int {
 	return len(p.outputModules)
 }
 
-func (p *Patch) SetBuffersFromPool(pool *BufferPool) {
+func (p *BasePatch) SetBuffersFromPool(pool *BufferPool) {
 	for _, module := range p.subModules {
 		module.SetBuffersFromPool(pool)
 	}
 }
 
-func (p *Patch) TotalInputBuffersNeeded() int {
+func (p *BasePatch) TotalInputBuffersNeeded() int {
 	totalInputBuffersNeeded := 0
 
 	for _, module := range p.subModules {
@@ -323,7 +304,7 @@ func (p *Patch) TotalInputBuffersNeeded() int {
 	return totalInputBuffersNeeded
 }
 
-func (p *Patch) TotalOutputBuffersNeeded() int {
+func (p *BasePatch) TotalOutputBuffersNeeded() int {
 	totalOutputBuffersNeeded := 0
 
 	for _, module := range p.subModules {
@@ -333,11 +314,56 @@ func (p *Patch) TotalOutputBuffersNeeded() int {
 	return totalOutputBuffersNeeded
 }
 
-func (p *Patch) AddModule(m Module) {
+func (p *BasePatch) AddModule(m Module) {
 	p.subModules = append(p.subModules, m)
+
+	id := m.Identifier()
+	if id != "" {
+		p.addressMap[id] = m
+	}
 }
 
-func (p *Patch) PrepareRun() {
+func (p *BasePatch) Contains(m Module) bool {
+	for _, sub := range p.subModules {
+		if sub == m {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (p *BasePatch) Lookup(address string) Module {
+	components := strings.SplitN(address, ".", 2)
+	modId := ""
+	restAddress := ""
+
+	if len(components) > 0 {
+		modId = components[0]
+	}
+
+	if len(components) == 2 {
+		restAddress = components[1]
+	}
+
+	m := p.addressMap[modId]
+	if m == nil {
+		return nil
+	}
+
+	if restAddress != "" {
+		sub, ok := m.(Patch)
+		if ok {
+			return sub.Lookup(restAddress)
+		} else {
+			return nil
+		}
+	}
+
+	return m
+}
+
+func (p *BasePatch) PrepareRun() {
 	p.BaseModule.PrepareRun()
 
 	for _, module := range p.subModules {
@@ -345,80 +371,157 @@ func (p *Patch) PrepareRun() {
 	}
 }
 
-func (p *Patch) AddInputConnection(inputIndex int, conn *Connection) {
-	log.Printf("patch AddInputConnection %s", p.Identifier())
+func (p *BasePatch) Run(config *Configuration) bool {
+	if !p.BaseModule.Run(config) {
+		return false
+	}
+
+	for _, output := range p.outputModules {
+		if output.InputAtIndex(0).IsConnected() {
+			output.Run(config)
+		}
+	}
+
+	return true
+}
+
+func (p *BasePatch) AddInputConnection(inputIndex int, conn *Connection) {
 	p.inputModules[inputIndex].AddInputConnection(0, conn)
 }
 
-func (p *Patch) AddOutputConnection(outputIndex int, conn *Connection) {
-	log.Printf("patch AddOutputConnection %s", p.Identifier())
+func (p *BasePatch) AddOutputConnection(outputIndex int, conn *Connection) {
 	p.outputModules[outputIndex].AddOutputConnection(0, conn)
 }
 
-func (p *Patch) InputModuleAtIndex(index int) Module {
+func (p *BasePatch) InputModuleAtIndex(index int) Module {
 	return p.inputModules[index]
 }
 
-func (p *Patch) OutputModuleAtIndex(index int) Module {
+func (p *BasePatch) OutputModuleAtIndex(index int) Module {
 	return p.outputModules[index]
 }
 
-func (p *Patch) InputAtIndex(index int) *Socket {
+func (p *BasePatch) InputAtIndex(index int) *Socket {
 	return p.inputModules[index].InputAtIndex(0)
 }
 
-func (p *Patch) OutputAtIndex(index int) *Socket {
+func (p *BasePatch) OutputAtIndex(index int) *Socket {
 	return p.outputModules[index].OutputAtIndex(0)
 }
 
-func main() {
-	config := Configuration{
-		SampleRate: 44100,
-		BufferSize: 12,
+type Environment struct {
+	*BasePatch
+	pool   *BufferPool
+	Config *Configuration
+}
+
+func NewEnvironment(numOutputs int, sampleRate float64, bufferSize int) *Environment {
+	return &Environment{
+		BasePatch: NewPatch(0, numOutputs, "environment"),
+		Config:    &Configuration{SampleRate: sampleRate, BufferSize: bufferSize},
+	}
+}
+
+func (e *Environment) PrepareBuffers() {
+	e.pool = NewBufferPool(e.TotalInputBuffersNeeded(), e.TotalOutputBuffersNeeded(), e.Config.BufferSize)
+	e.SetBuffersFromPool(e.pool)
+}
+
+func (e *Environment) Produce() {
+	e.pool.ClearInputBuffers()
+	e.PrepareRun()
+	e.Run(e.Config)
+}
+
+func Connect(from Module, outIndex int, to Module, inIndex int) {
+	p, ok := from.(Patch)
+	if ok {
+		if p.Contains(to) {
+			from = p.InputModuleAtIndex(outIndex)
+			outIndex = 0
+		} else {
+			from = p.OutputModuleAtIndex(outIndex)
+			outIndex = 0
+		}
 	}
 
-	op := NewPatch(0, 0, "op_patch")
+	p, ok = to.(Patch)
+	if ok {
+		if p.Contains(from) {
+			to = p.OutputModuleAtIndex(inIndex)
+			inIndex = 0
+		} else {
+			to = p.InputModuleAtIndex(inIndex)
+			inIndex = 0
+		}
+	}
+
+	from.AddOutputConnection(outIndex, &Connection{Module: to, Index: inIndex})
+	to.AddInputConnection(inIndex, &Connection{Module: from, Index: outIndex})
+}
+
+type TestModule struct {
+	*BaseModule
+	Value Sample
+}
+
+func NewTestModule(value Sample, identifier string) *TestModule {
+	return &TestModule{
+		BaseModule: NewBaseModule(1, 1, identifier),
+		Value:      value,
+	}
+}
+
+func (t *TestModule) Run(config *Configuration) bool {
+	if !t.BaseModule.Run(config) {
+		return false
+	}
+
+	if t.inputs[0].IsConnected() {
+		for i := 0; i < config.BufferSize; i++ {
+			t.outputs[0].Buffer[i] = t.inputs[0].Buffer[i] + t.Value
+		}
+	} else {
+		for i := 0; i < config.BufferSize; i++ {
+			t.outputs[0].Buffer[i] = t.Value
+		}
+	}
+
+	return true
+}
+
+func main() {
+	env := NewEnvironment(1, 44100, 12)
 
 	ip := NewPatch(1, 1, "ip_patch")
-	it1 := NewThruModule()
-	it1.SetIdentifier("it1")
+	it1 := NewTestModule(0.25, "it1")
 
 	ip.AddModule(it1)
-	Connect(ip.InputModuleAtIndex(0), 0, it1, 0)
-	Connect(it1, 0, ip.OutputModuleAtIndex(0), 0)
+	Connect(ip, 0, it1, 0)
+	Connect(it1, 0, ip, 0)
 
-	t1 := NewThruModule()
-	t1.SetIdentifier("t1")
-	t2 := NewThruModule()
-	t2.SetIdentifier("t2")
+	t1 := NewTestModule(1.25, "t1")
+	t11 := NewTestModule(0.123, "t11")
+	t2 := NewTestModule(3.4, "t2")
 
-	op.AddModule(t1)
-	op.AddModule(t2)
-	op.AddModule(ip)
+	env.AddModule(t1)
+	env.AddModule(t11)
+	env.AddModule(ip)
+	env.AddModule(t2)
+
+	log.Printf("lookup %v", env.Lookup("ip_patch.it1"))
 
 	Connect(t1, 0, ip, 0)
+	Connect(t11, 0, ip, 0)
 	Connect(ip, 0, t2, 0)
+	Connect(t2, 0, env, 0)
 
-	pool := NewBufferPool(op.TotalInputBuffersNeeded(), op.TotalOutputBuffersNeeded(), config.BufferSize)
-	op.SetBuffersFromPool(pool)
+	env.PrepareBuffers()
 
-	op.PrepareRun()
-	t2.Run(&config)
-
-	DebugConnections(t2)
-	DebugConnections(ip.OutputModuleAtIndex(0))
-
-	// for _, sample := range ip.OutputModuleAtIndex(0).OutputAtIndex(0).Buffer {
-	// 	log.Printf("%v", sample)
-	// }
-
-	// pool.ClearInputBuffers()
-	// ip.PrepareRun()
-	// ip.OutputModuleAtIndex(0).Run(&config)
-
-	// for _, sample := range ip.OutputModuleAtIndex(0).OutputAtIndex(0).Buffer {
-	// 	log.Printf("%v", sample)
-	// }
-
-	// pool.Debug()
+	for i := 0; i < 12; i++ {
+		env.Produce()
+		for _, sample := range env.OutputAtIndex(0).Buffer {
+			log.Printf("%v", sample)
+		}
+	}
 }
