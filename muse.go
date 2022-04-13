@@ -1,14 +1,11 @@
-package main
+package muse
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
-type Sample float64
-
-type Buffer []Sample
+type Buffer []float64
 
 type Connection struct {
 	Module Module
@@ -77,12 +74,6 @@ func (p *BufferPool) ClearInputBuffers() {
 	for i := 0; i < len(p.inputBuffers)*p.bufferSize; i++ {
 		p.mainBuffer[i] = 0
 	}
-}
-
-func (p *BufferPool) Debug() {
-	log.Printf("input buffers %v", len(p.inputBuffers))
-	log.Printf("output buffers %v", len(p.outputBuffers))
-	log.Printf("main buffer %v", p.mainBuffer)
 }
 
 type Module interface {
@@ -425,10 +416,50 @@ func (e *Environment) PrepareBuffers() {
 	e.SetBuffersFromPool(e.pool)
 }
 
-func (e *Environment) Produce() {
+func (e *Environment) RunOnce() {
 	e.pool.ClearInputBuffers()
 	e.PrepareRun()
 	e.Run(e.Config)
+}
+
+func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64) error {
+	e.PrepareBuffers()
+
+	numChannels := e.NumOutputs()
+
+	swr, err := OpenSoundWriter(filePath, int32(numChannels), int32(e.Config.SampleRate), true)
+	if err != nil {
+		return err
+	}
+
+	interleaveBuffer := make([]float64, e.NumOutputs()*e.Config.BufferSize)
+
+	framesToProduce := int64(e.Config.SampleRate * numSeconds)
+
+	for framesToProduce > 0 {
+		e.RunOnce()
+
+		interleaveIndex := 0
+
+		numFrames := e.Config.BufferSize
+
+		if framesToProduce <= int64(e.Config.BufferSize) {
+			numFrames = int(framesToProduce)
+		}
+
+		for i := 0; i < numFrames; i++ {
+			for c := 0; c < numChannels; c++ {
+				interleaveBuffer[interleaveIndex] = e.OutputAtIndex(c).Buffer[i]
+				interleaveIndex++
+			}
+		}
+
+		swr.WriteSamples(interleaveBuffer[:numFrames*numChannels])
+
+		framesToProduce -= int64(numFrames)
+	}
+
+	return swr.Close()
 }
 
 func Connect(from Module, outIndex int, to Module, inIndex int) {
@@ -456,70 +487,4 @@ func Connect(from Module, outIndex int, to Module, inIndex int) {
 
 	from.AddOutputConnection(outIndex, &Connection{Module: to, Index: inIndex})
 	to.AddInputConnection(inIndex, &Connection{Module: from, Index: outIndex})
-}
-
-type TestModule struct {
-	*BaseModule
-	Value Sample
-}
-
-func NewTestModule(value Sample, identifier string) *TestModule {
-	return &TestModule{
-		BaseModule: NewBaseModule(1, 1, identifier),
-		Value:      value,
-	}
-}
-
-func (t *TestModule) Run(config *Configuration) bool {
-	if !t.BaseModule.Run(config) {
-		return false
-	}
-
-	if t.inputs[0].IsConnected() {
-		for i := 0; i < config.BufferSize; i++ {
-			t.outputs[0].Buffer[i] = t.inputs[0].Buffer[i] + t.Value
-		}
-	} else {
-		for i := 0; i < config.BufferSize; i++ {
-			t.outputs[0].Buffer[i] = t.Value
-		}
-	}
-
-	return true
-}
-
-func main() {
-	env := NewEnvironment(1, 44100, 12)
-
-	ip := NewPatch(1, 1, "ip_patch")
-	it1 := NewTestModule(0.25, "it1")
-
-	ip.AddModule(it1)
-	Connect(ip, 0, it1, 0)
-	Connect(it1, 0, ip, 0)
-
-	t1 := NewTestModule(1.25, "t1")
-	t11 := NewTestModule(0.123, "t11")
-	t2 := NewTestModule(3.4, "t2")
-
-	env.AddModule(t1)
-	env.AddModule(t11)
-	env.AddModule(ip)
-	env.AddModule(t2)
-
-	log.Printf("lookup %v", env.Lookup("ip_patch.it1"))
-
-	Connect(t1, 0, ip, 0)
-	Connect(t11, 0, ip, 0)
-	Connect(ip, 0, t2, 0)
-	Connect(t2, 0, env, 0)
-
-	env.PrepareBuffers()
-
-	for i := 0; i < 12; i++ {
-		env.Produce()
-		for _, sample := range env.OutputAtIndex(0).Buffer {
-			log.Printf("%v", sample)
-		}
-	}
 }
