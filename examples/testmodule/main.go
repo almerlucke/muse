@@ -68,7 +68,7 @@ func main() {
 	env.PrepareBuffers()
 
 	for i := 0; i < 12; i++ {
-		env.RunOnce()
+		env.ClearRun()
 		for _, sample := range env.OutputAtIndex(0).Buffer {
 			log.Printf("%v", sample)
 		}

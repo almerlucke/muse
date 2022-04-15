@@ -416,7 +416,7 @@ func (e *Environment) PrepareBuffers() {
 	e.SetBuffersFromPool(e.pool)
 }
 
-func (e *Environment) RunOnce() {
+func (e *Environment) ClearRun() {
 	e.pool.ClearInputBuffers()
 	e.PrepareRun()
 	e.Run(e.Config)
@@ -437,7 +437,7 @@ func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64) erro
 	framesToProduce := int64(e.Config.SampleRate * numSeconds)
 
 	for framesToProduce > 0 {
-		e.RunOnce()
+		e.ClearRun()
 
 		interleaveIndex := 0
 
