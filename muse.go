@@ -88,16 +88,16 @@ type Module interface {
 	OutputAtIndex(index int) *Socket
 	AddInputConnection(inputIndex int, conn *Connection)
 	AddOutputConnection(outputIndex int, conn *Connection)
-	HasRun() bool
-	PrepareRun()
-	Run(config *Configuration) bool
+	DidSynthesize() bool
+	PrepareSynthesis()
+	Synthesize(config *Configuration) bool
 }
 
 type BaseModule struct {
-	inputs     []*Socket
-	outputs    []*Socket
-	hasRun     bool
-	identifier string
+	inputs        []*Socket
+	outputs       []*Socket
+	didSynthesize bool
+	identifier    string
 }
 
 func NewBaseModule(numInputs int, numOutputs int, identifier string) *BaseModule {
@@ -176,26 +176,26 @@ func (m *BaseModule) AddOutputConnection(outputIndex int, conn *Connection) {
 	m.outputs[outputIndex].Connections = append(m.outputs[outputIndex].Connections, conn)
 }
 
-func (m *BaseModule) HasRun() bool {
-	return m.hasRun
+func (m *BaseModule) DidSynthesize() bool {
+	return m.didSynthesize
 }
 
-func (m *BaseModule) PrepareRun() {
-	m.hasRun = false
+func (m *BaseModule) PrepareSynthesis() {
+	m.didSynthesize = false
 }
 
-func (m *BaseModule) Run(config *Configuration) bool {
-	if m.hasRun {
+func (m *BaseModule) Synthesize(config *Configuration) bool {
+	if m.didSynthesize {
 		return false
 	}
 
-	m.hasRun = true
+	m.didSynthesize = true
 
 	for _, input := range m.inputs {
 		inputBuffer := input.Buffer
 
 		for _, conn := range input.Connections {
-			conn.Module.Run(config)
+			conn.Module.Synthesize(config)
 
 			for bufIndex, sample := range conn.Module.OutputAtIndex(conn.Index).Buffer {
 				inputBuffer[bufIndex] += sample
@@ -216,8 +216,8 @@ func NewThruModule(identifier string) *ThruModule {
 	}
 }
 
-func (t *ThruModule) Run(config *Configuration) bool {
-	if !t.BaseModule.Run(config) {
+func (t *ThruModule) Synthesize(config *Configuration) bool {
+	if !t.BaseModule.Synthesize(config) {
 		return false
 	}
 
@@ -354,21 +354,21 @@ func (p *BasePatch) Lookup(address string) Module {
 	return m
 }
 
-func (p *BasePatch) PrepareRun() {
-	p.BaseModule.PrepareRun()
+func (p *BasePatch) PrepareSynthesis() {
+	p.BaseModule.PrepareSynthesis()
 
 	for _, module := range p.subModules {
-		module.PrepareRun()
+		module.PrepareSynthesis()
 	}
 }
 
-func (p *BasePatch) Run(config *Configuration) bool {
-	if !p.BaseModule.Run(config) {
+func (p *BasePatch) Synthesize(config *Configuration) bool {
+	if !p.BaseModule.Synthesize(config) {
 		return false
 	}
 
 	for _, output := range p.outputModules {
-		output.Run(config)
+		output.Synthesize(config)
 	}
 
 	return true
@@ -416,10 +416,10 @@ func (e *Environment) PrepareBuffers() {
 	e.SetBuffersFromPool(e.pool)
 }
 
-func (e *Environment) ClearRun() {
+func (e *Environment) Produce() {
 	e.pool.ClearInputBuffers()
-	e.PrepareRun()
-	e.Run(e.Config)
+	e.PrepareSynthesis()
+	e.Synthesize(e.Config)
 }
 
 func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64) error {
@@ -437,7 +437,7 @@ func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64) erro
 	framesToProduce := int64(e.Config.SampleRate * numSeconds)
 
 	for framesToProduce > 0 {
-		e.ClearRun()
+		e.Produce()
 
 		interleaveIndex := 0
 

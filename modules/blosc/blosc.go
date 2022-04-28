@@ -1,4 +1,4 @@
-package modules
+package blosc
 
 import (
 	"math"
@@ -36,8 +36,8 @@ func polyBlep(t float64, dt float64) float64 {
 	return 0.0
 }
 
-func (b *BloscModule) Run(config *muse.Configuration) bool {
-	if !b.BaseModule.Run(config) {
+func (b *BloscModule) Synthesize(config *muse.Configuration) bool {
+	if !b.BaseModule.Synthesize(config) {
 		return false
 	}
 

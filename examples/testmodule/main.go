@@ -18,8 +18,8 @@ func NewTestModule(value float64, identifier string) *TestModule {
 	}
 }
 
-func (t *TestModule) Run(config *muse.Configuration) bool {
-	if !t.BaseModule.Run(config) {
+func (t *TestModule) Synthesize(config *muse.Configuration) bool {
+	if !t.BaseModule.Synthesize(config) {
 		return false
 	}
 
@@ -68,7 +68,7 @@ func main() {
 	env.PrepareBuffers()
 
 	for i := 0; i < 12; i++ {
-		env.ClearRun()
+		env.Produce()
 		for _, sample := range env.OutputAtIndex(0).Buffer {
 			log.Printf("%v", sample)
 		}
