@@ -28,7 +28,7 @@ type Step[P Parameter] struct {
 }
 
 type Sequence[P Parameter] interface {
-	NextStep(*muse.Configuration) *Step[P]
+	NextStep(int64, *muse.Configuration) *Step[P]
 }
 
 type SourceFactory[P Parameter] interface {
@@ -95,6 +95,7 @@ type Granulator[P Parameter] struct {
 	activatedGrains *list.List
 	sequence        Sequence[P]
 	nextStep        *Step[P]
+	timestamp       int64
 }
 
 func (gl *Granulator[P]) Initialize(identifier string, sf SourceFactory[P], grainPoolSize int, sequence Sequence[P], config *muse.Configuration) {
@@ -111,7 +112,7 @@ func (gl *Granulator[P]) Initialize(identifier string, sf SourceFactory[P], grai
 		gl.freeGrains.PushBack(g)
 	}
 
-	gl.nextStep = sequence.NextStep(config)
+	gl.nextStep = sequence.NextStep(0, config)
 }
 
 func (gl *Granulator[P]) synthesizeList(l *list.List, out [][]float64) {
@@ -145,13 +146,19 @@ func (gl *Granulator[P]) Synthesize(config *muse.Configuration) bool {
 		return false
 	}
 
-	out1 := gl.OutputAtIndex(0).Buffer
-	out2 := gl.OutputAtIndex(1).Buffer
-	out := [][]float64{out1, out2}
+	var out [][]float64
 
-	for i := 0; i < config.BufferSize; i++ {
-		out1[i] = 0.0
-		out2[i] = 0.0
+	if gl.NumOutputs() == 1 {
+		out = [][]float64{gl.OutputAtIndex(0).Buffer}
+		for i := 0; i < config.BufferSize; i++ {
+			out[0][i] = 0.0
+		}
+	} else {
+		out = [][]float64{gl.OutputAtIndex(0).Buffer, gl.OutputAtIndex(1).Buffer}
+		for i := 0; i < config.BufferSize; i++ {
+			out[0][i] = 0.0
+			out[1][i] = 0.0
+		}
 	}
 
 	outIndex := 0
@@ -170,7 +177,7 @@ func (gl *Granulator[P]) Synthesize(config *muse.Configuration) bool {
 			done = true
 		}
 
-		partialOut := [][]float64{nil, nil}
+		partialOut := make([][]float64, gl.NumOutputs())
 
 		for bufIndex, buf := range out {
 			partialOut[bufIndex] = buf[outIndex : outIndex+sampsToGenerate]
@@ -190,11 +197,12 @@ func (gl *Granulator[P]) Synthesize(config *muse.Configuration) bool {
 				g.Activate(gl.nextStep.Parameter, config)
 			}
 
-			gl.nextStep = gl.sequence.NextStep(config)
+			gl.nextStep = gl.sequence.NextStep(gl.timestamp, config)
 		}
 	}
 
 	gl.moveActivated()
+	gl.timestamp += int64(config.BufferSize)
 
 	return true
 }
