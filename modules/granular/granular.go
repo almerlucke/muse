@@ -241,7 +241,9 @@ func (gl *Granulator[P]) Synthesize(config *muse.Configuration) bool {
 		}
 	}
 
+	// Move activated grains to active pool
 	gl.moveActivated()
+
 	gl.timestamp += int64(config.BufferSize)
 
 	return true

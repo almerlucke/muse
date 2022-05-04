@@ -91,6 +91,7 @@ type Module interface {
 	DidSynthesize() bool
 	PrepareSynthesis()
 	Synthesize(config *Configuration) bool
+	ReceiveMessage(msg any)
 }
 
 type BaseModule struct {
@@ -206,6 +207,10 @@ func (m *BaseModule) Synthesize(config *Configuration) bool {
 	return true
 }
 
+func (m *BaseModule) ReceiveMessage(msg any) {
+	// Do nothing
+}
+
 type ThruModule struct {
 	*BaseModule
 }
@@ -228,8 +233,18 @@ func (t *ThruModule) Synthesize(config *Configuration) bool {
 	return true
 }
 
+type Message struct {
+	Address string
+	Content any
+}
+
+type Messenger interface {
+	Post(timestamp int64, config *Configuration) []*Message
+}
+
 type Patch interface {
 	Module
+	AddMessenger(msgr Messenger)
 	AddModule(m Module)
 	Contains(m Module) bool
 	Lookup(address string) Module
@@ -242,7 +257,9 @@ type BasePatch struct {
 	subModules    []Module
 	inputModules  []*ThruModule
 	outputModules []*ThruModule
-	addressMap    map[string]Module
+	messengers    []Messenger
+	identifierMap map[string]Module
+	timestamp     int64
 }
 
 func NewPatch(numInputs int, numOutputs int, identifier string) *BasePatch {
@@ -263,9 +280,10 @@ func NewPatch(numInputs int, numOutputs int, identifier string) *BasePatch {
 	p := &BasePatch{
 		BaseModule:    NewBaseModule(0, 0, identifier),
 		subModules:    subModules,
+		messengers:    []Messenger{},
 		inputModules:  inputModules,
 		outputModules: outputModules,
-		addressMap:    map[string]Module{},
+		identifierMap: map[string]Module{},
 	}
 
 	return p
@@ -305,12 +323,16 @@ func (p *BasePatch) TotalOutputBuffersNeeded() int {
 	return totalOutputBuffersNeeded
 }
 
+func (p *BasePatch) AddMessenger(msgr Messenger) {
+	p.messengers = append(p.messengers, msgr)
+}
+
 func (p *BasePatch) AddModule(m Module) {
 	p.subModules = append(p.subModules, m)
 
 	id := m.Identifier()
 	if id != "" {
-		p.addressMap[id] = m
+		p.identifierMap[id] = m
 	}
 }
 
@@ -326,18 +348,18 @@ func (p *BasePatch) Contains(m Module) bool {
 
 func (p *BasePatch) Lookup(address string) Module {
 	components := strings.SplitN(address, ".", 2)
-	modId := ""
+	identifier := ""
 	restAddress := ""
 
 	if len(components) > 0 {
-		modId = components[0]
+		identifier = components[0]
 	}
 
 	if len(components) == 2 {
 		restAddress = components[1]
 	}
 
-	m := p.addressMap[modId]
+	m := p.identifierMap[identifier]
 	if m == nil {
 		return nil
 	}
@@ -367,9 +389,21 @@ func (p *BasePatch) Synthesize(config *Configuration) bool {
 		return false
 	}
 
+	for _, msgr := range p.messengers {
+		msgs := msgr.Post(p.timestamp, config)
+		for _, msg := range msgs {
+			module := p.Lookup(msg.Address)
+			if module != nil {
+				module.ReceiveMessage(msg.Content)
+			}
+		}
+	}
+
 	for _, output := range p.outputModules {
 		output.Synthesize(config)
 	}
+
+	p.timestamp += int64(config.BufferSize)
 
 	return true
 }
