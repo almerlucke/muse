@@ -273,7 +273,7 @@ func main() {
 	}
 
 	gr := &granular.Granulator[*SFParam]{}
-	gr.Initialize("granulator", &SFSourceFactory{Samples: sfb}, 400, &SFSequencer{}, env.Config)
+	gr.Initialize(&SFSourceFactory{Samples: sfb}, 400, &SFSequencer{}, env.Config, "granulator")
 
 	env.AddModule(gr)
 

@@ -15,9 +15,9 @@ type BloscModule struct {
 	amplitude  float64
 }
 
-func NewBloscModule(frequency float64, phase float64, amplitude float64, identifier string) *BloscModule {
+func NewBloscModule(frequency float64, phase float64, amplitude float64, config *muse.Configuration, identifier string) *BloscModule {
 	return &BloscModule{
-		BaseModule: muse.NewBaseModule(3, 4, identifier),
+		BaseModule: muse.NewBaseModule(3, 4, config, identifier),
 		phase:      phase,
 		frequency:  frequency,
 		amplitude:  amplitude,
@@ -45,8 +45,8 @@ func (b *BloscModule) ReceiveMessage(msg any) {
 	}
 }
 
-func (b *BloscModule) Synthesize(config *muse.Configuration) bool {
-	if !b.BaseModule.Synthesize(config) {
+func (b *BloscModule) Synthesize() bool {
+	if !b.BaseModule.Synthesize() {
 		return false
 	}
 
@@ -63,7 +63,7 @@ func (b *BloscModule) Synthesize(config *muse.Configuration) bool {
 	sqrOut := b.OutputAtIndex(2).Buffer
 	triOut := b.OutputAtIndex(3).Buffer
 
-	for i := 0; i < config.BufferSize; i++ {
+	for i := 0; i < b.Config.BufferSize; i++ {
 		if freqInput.IsConnected() {
 			frequency = float64(freqInput.Buffer[i])
 		}
@@ -74,7 +74,7 @@ func (b *BloscModule) Synthesize(config *muse.Configuration) bool {
 			amplitude = float64(ampInput.Buffer[i])
 		}
 
-		dt := frequency / config.SampleRate
+		dt := frequency / b.Config.SampleRate
 		t := b.phase + phaseOffset
 
 		var sinSamp, sawSamp, sqrSamp, triSamp float64

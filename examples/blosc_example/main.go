@@ -37,8 +37,8 @@ func main() {
 		address: "blosc2",
 	}
 
-	osc1 := blosc.NewBloscModule(100.0, 0.0, 0.1, "blosc1")
-	osc2 := blosc.NewBloscModule(400.0, 0.0, 1.0, "blosc2")
+	osc1 := blosc.NewBloscModule(100.0, 0.0, 0.1, env.Config, "blosc1")
+	osc2 := blosc.NewBloscModule(400.0, 0.0, 1.0, env.Config, "blosc2")
 
 	env.AddMessenger(msgr)
 	env.AddModule(osc1)

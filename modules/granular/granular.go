@@ -138,8 +138,8 @@ type Granulator[P Parameter] struct {
 	timestamp       int64
 }
 
-func (gl *Granulator[P]) Initialize(identifier string, sf SourceFactory[P], grainPoolSize int, sequence Sequence[P], config *muse.Configuration) {
-	gl.BaseModule = muse.NewBaseModule(0, 2, identifier)
+func (gl *Granulator[P]) Initialize(sf SourceFactory[P], grainPoolSize int, sequence Sequence[P], config *muse.Configuration, identifier string) {
+	gl.BaseModule = muse.NewBaseModule(0, 2, config, identifier)
 
 	gl.freeGrains.Initialize()
 	gl.activeGrains.Initialize()
@@ -183,8 +183,8 @@ func (gl *Granulator[P]) moveActivated() {
 	}
 }
 
-func (gl *Granulator[P]) Synthesize(config *muse.Configuration) bool {
-	if !gl.BaseModule.Synthesize(config) {
+func (gl *Granulator[P]) Synthesize() bool {
+	if !gl.BaseModule.Synthesize() {
 		return false
 	}
 
@@ -192,12 +192,12 @@ func (gl *Granulator[P]) Synthesize(config *muse.Configuration) bool {
 
 	if gl.NumOutputs() == 1 {
 		out = [][]float64{gl.OutputAtIndex(0).Buffer}
-		for i := 0; i < config.BufferSize; i++ {
+		for i := 0; i < gl.Config.BufferSize; i++ {
 			out[0][i] = 0.0
 		}
 	} else {
 		out = [][]float64{gl.OutputAtIndex(0).Buffer, gl.OutputAtIndex(1).Buffer}
-		for i := 0; i < config.BufferSize; i++ {
+		for i := 0; i < gl.Config.BufferSize; i++ {
 			out[0][i] = 0.0
 			out[1][i] = 0.0
 		}
@@ -212,7 +212,7 @@ func (gl *Granulator[P]) Synthesize(config *muse.Configuration) bool {
 	done := false
 	for !done {
 		sampsToGenerate := gl.nextStep.InterOnset
-		sampsLeft := config.BufferSize - outIndex
+		sampsLeft := gl.Config.BufferSize - outIndex
 
 		if sampsToGenerate > sampsLeft {
 			sampsToGenerate = sampsLeft
@@ -234,17 +234,17 @@ func (gl *Granulator[P]) Synthesize(config *muse.Configuration) bool {
 			e := gl.freeGrains.Pop()
 			if e != nil {
 				gl.activatedGrains.Push(e)
-				e.grain.activate(gl.nextStep.Parameter, config)
+				e.grain.activate(gl.nextStep.Parameter, gl.Config)
 			}
 
-			gl.nextStep = gl.sequence.NextStep(gl.timestamp, config)
+			gl.nextStep = gl.sequence.NextStep(gl.timestamp, gl.Config)
 		}
 	}
 
 	// Move activated grains to active pool
 	gl.moveActivated()
 
-	gl.timestamp += int64(config.BufferSize)
+	gl.timestamp += int64(gl.Config.BufferSize)
 
 	return true
 }

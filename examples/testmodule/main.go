@@ -11,15 +11,15 @@ type TestModule struct {
 	Value float64
 }
 
-func NewTestModule(value float64, identifier string) *TestModule {
+func NewTestModule(value float64, config *muse.Configuration, identifier string) *TestModule {
 	return &TestModule{
-		BaseModule: muse.NewBaseModule(1, 1, identifier),
+		BaseModule: muse.NewBaseModule(1, 1, config, identifier),
 		Value:      value,
 	}
 }
 
-func (t *TestModule) Synthesize(config *muse.Configuration) bool {
-	if !t.BaseModule.Synthesize(config) {
+func (t *TestModule) Synthesize() bool {
+	if !t.BaseModule.Synthesize() {
 		return false
 	}
 
@@ -27,11 +27,11 @@ func (t *TestModule) Synthesize(config *muse.Configuration) bool {
 	output := t.OutputAtIndex(0)
 
 	if t.InputAtIndex(0).IsConnected() {
-		for i := 0; i < config.BufferSize; i++ {
+		for i := 0; i < t.Config.BufferSize; i++ {
 			output.Buffer[i] = input.Buffer[i] + t.Value
 		}
 	} else {
-		for i := 0; i < config.BufferSize; i++ {
+		for i := 0; i < t.Config.BufferSize; i++ {
 			output.Buffer[i] = t.Value
 		}
 	}
@@ -42,16 +42,16 @@ func (t *TestModule) Synthesize(config *muse.Configuration) bool {
 func main() {
 	env := muse.NewEnvironment(1, 44100, 12)
 
-	ip := muse.NewPatch(1, 1, "ip_patch")
-	it1 := NewTestModule(0.25, "it1")
+	ip := muse.NewPatch(1, 1, env.Config, "ip_patch")
+	it1 := NewTestModule(0.25, env.Config, "it1")
 
 	ip.AddModule(it1)
 	muse.Connect(ip, 0, it1, 0)
 	muse.Connect(it1, 0, ip, 0)
 
-	t1 := NewTestModule(1.25, "t1")
-	t11 := NewTestModule(0.123, "t11")
-	t2 := NewTestModule(3.4, "t2")
+	t1 := NewTestModule(1.25, env.Config, "t1")
+	t11 := NewTestModule(0.123, env.Config, "t11")
+	t2 := NewTestModule(3.4, env.Config, "t2")
 
 	env.AddModule(t1)
 	env.AddModule(t11)
@@ -65,10 +65,8 @@ func main() {
 	muse.Connect(ip, 0, t2, 0)
 	muse.Connect(t2, 0, env, 0)
 
-	env.PrepareBuffers()
-
 	for i := 0; i < 12; i++ {
-		env.Produce()
+		env.Synthesize()
 		for _, sample := range env.OutputAtIndex(0).Buffer {
 			log.Printf("%v", sample)
 		}

@@ -7,6 +7,12 @@ import (
 
 type Buffer []float64
 
+func (b Buffer) Clear() {
+	for i := 0; i < len(b); i++ {
+		b[i] = 0
+	}
+}
+
 type Connection struct {
 	Module Module
 	Index  int
@@ -15,6 +21,17 @@ type Connection struct {
 type Socket struct {
 	Buffer      Buffer
 	Connections []*Connection
+}
+
+func NewSocket(bufferSize int) *Socket {
+	return &Socket{
+		Buffer:      make(Buffer, bufferSize),
+		Connections: []*Connection{},
+	}
+}
+
+func (s *Socket) AddConnection(c *Connection) {
+	s.Connections = append(s.Connections, c)
 }
 
 func (s *Socket) IsConnected() bool {
@@ -26,103 +43,47 @@ type Configuration struct {
 	BufferSize int
 }
 
-type BufferPool struct {
-	mainBuffer        Buffer
-	inputBuffers      []Buffer
-	outputBuffers     []Buffer
-	inputBufferIndex  int
-	outputBufferIndex int
-	bufferSize        int
-}
-
-func NewBufferPool(numInputBuffers int, numOutputBuffers int, bufferSize int) *BufferPool {
-	pool := BufferPool{
-		mainBuffer:    make(Buffer, (numInputBuffers+numOutputBuffers)*bufferSize),
-		bufferSize:    bufferSize,
-		inputBuffers:  make([]Buffer, numInputBuffers),
-		outputBuffers: make([]Buffer, numOutputBuffers),
-	}
-
-	offset := 0
-
-	for i := 0; i < numInputBuffers; i++ {
-		pool.inputBuffers[i] = pool.mainBuffer[offset : offset+bufferSize]
-		offset += bufferSize
-	}
-
-	for i := 0; i < numOutputBuffers; i++ {
-		pool.outputBuffers[i] = pool.mainBuffer[offset : offset+bufferSize]
-		offset += bufferSize
-	}
-
-	return &pool
-}
-
-func (p *BufferPool) GetInputBuffer() Buffer {
-	buffer := p.inputBuffers[p.inputBufferIndex]
-	p.inputBufferIndex++
-	return buffer
-}
-
-func (p *BufferPool) GetOutputBuffer() Buffer {
-	buffer := p.outputBuffers[p.outputBufferIndex]
-	p.outputBufferIndex++
-	return buffer
-}
-
-func (p *BufferPool) ClearInputBuffers() {
-	for i := 0; i < len(p.inputBuffers)*p.bufferSize; i++ {
-		p.mainBuffer[i] = 0
-	}
-}
-
 type Module interface {
 	SetIdentifier(identifier string)
 	Identifier() string
 	NumInputs() int
 	NumOutputs() int
-	SetBuffersFromPool(pool *BufferPool)
-	TotalInputBuffersNeeded() int
-	TotalOutputBuffersNeeded() int
+	Configuration() *Configuration
 	InputAtIndex(index int) *Socket
 	OutputAtIndex(index int) *Socket
 	AddInputConnection(inputIndex int, conn *Connection)
 	AddOutputConnection(outputIndex int, conn *Connection)
 	DidSynthesize() bool
 	PrepareSynthesis()
-	Synthesize(config *Configuration) bool
+	Synthesize() bool
 	ReceiveMessage(msg any)
 }
 
 type BaseModule struct {
-	inputs        []*Socket
-	outputs       []*Socket
+	Inputs        []*Socket
+	Outputs       []*Socket
+	Config        *Configuration
 	didSynthesize bool
 	identifier    string
 }
 
-func NewBaseModule(numInputs int, numOutputs int, identifier string) *BaseModule {
+func NewBaseModule(numInputs int, numOutputs int, config *Configuration, identifier string) *BaseModule {
 	inputs := make([]*Socket, numInputs)
 
 	for i := 0; i < numInputs; i++ {
-		inputs[i] = &Socket{
-			Buffer:      nil,
-			Connections: []*Connection{},
-		}
+		inputs[i] = NewSocket(config.BufferSize)
 	}
 
 	outputs := make([]*Socket, numOutputs)
 
 	for i := 0; i < numOutputs; i++ {
-		outputs[i] = &Socket{
-			Buffer:      nil,
-			Connections: []*Connection{},
-		}
+		outputs[i] = NewSocket(config.BufferSize)
 	}
 
 	return &BaseModule{
-		inputs:     inputs,
-		outputs:    outputs,
+		Inputs:     inputs,
+		Outputs:    outputs,
+		Config:     config,
 		identifier: identifier,
 	}
 }
@@ -136,45 +97,31 @@ func (m *BaseModule) SetIdentifier(identifier string) {
 }
 
 func (m *BaseModule) NumInputs() int {
-	return len(m.inputs)
+	return len(m.Inputs)
 }
 
 func (m *BaseModule) NumOutputs() int {
-	return len(m.outputs)
-}
-
-func (m *BaseModule) SetBuffersFromPool(pool *BufferPool) {
-	for _, input := range m.inputs {
-		input.Buffer = pool.GetInputBuffer()
-	}
-
-	for _, output := range m.outputs {
-		output.Buffer = pool.GetOutputBuffer()
-	}
-}
-
-func (m *BaseModule) TotalInputBuffersNeeded() int {
-	return m.NumInputs()
-}
-
-func (m *BaseModule) TotalOutputBuffersNeeded() int {
-	return m.NumOutputs()
+	return len(m.Outputs)
 }
 
 func (m *BaseModule) InputAtIndex(index int) *Socket {
-	return m.inputs[index]
+	return m.Inputs[index]
 }
 
 func (m *BaseModule) OutputAtIndex(index int) *Socket {
-	return m.outputs[index]
+	return m.Outputs[index]
+}
+
+func (m *BaseModule) Configuration() *Configuration {
+	return m.Config
 }
 
 func (m *BaseModule) AddInputConnection(inputIndex int, conn *Connection) {
-	m.inputs[inputIndex].Connections = append(m.inputs[inputIndex].Connections, conn)
+	m.Inputs[inputIndex].AddConnection(conn)
 }
 
 func (m *BaseModule) AddOutputConnection(outputIndex int, conn *Connection) {
-	m.outputs[outputIndex].Connections = append(m.outputs[outputIndex].Connections, conn)
+	m.Outputs[outputIndex].AddConnection(conn)
 }
 
 func (m *BaseModule) DidSynthesize() bool {
@@ -183,20 +130,26 @@ func (m *BaseModule) DidSynthesize() bool {
 
 func (m *BaseModule) PrepareSynthesis() {
 	m.didSynthesize = false
+
+	// Clear input buffers first as we accumulate multiple inputs in one buffer
+	for _, input := range m.Inputs {
+		input.Buffer.Clear()
+	}
 }
 
-func (m *BaseModule) Synthesize(config *Configuration) bool {
+func (m *BaseModule) Synthesize() bool {
 	if m.didSynthesize {
 		return false
 	}
 
 	m.didSynthesize = true
 
-	for _, input := range m.inputs {
+	for _, input := range m.Inputs {
+		// Accumulate connection outputs in single input
 		inputBuffer := input.Buffer
 
 		for _, conn := range input.Connections {
-			conn.Module.Synthesize(config)
+			conn.Module.Synthesize()
 
 			for bufIndex, sample := range conn.Module.OutputAtIndex(conn.Index).Buffer {
 				inputBuffer[bufIndex] += sample
@@ -208,26 +161,26 @@ func (m *BaseModule) Synthesize(config *Configuration) bool {
 }
 
 func (m *BaseModule) ReceiveMessage(msg any) {
-	// Do nothing
+	// STUB
 }
 
 type ThruModule struct {
 	*BaseModule
 }
 
-func NewThruModule(identifier string) *ThruModule {
+func NewThruModule(config *Configuration, identifier string) *ThruModule {
 	return &ThruModule{
-		BaseModule: NewBaseModule(1, 1, identifier),
+		BaseModule: NewBaseModule(1, 1, config, identifier),
 	}
 }
 
-func (t *ThruModule) Synthesize(config *Configuration) bool {
-	if !t.BaseModule.Synthesize(config) {
+func (t *ThruModule) Synthesize() bool {
+	if !t.BaseModule.Synthesize() {
 		return false
 	}
 
-	for i := 0; i < config.BufferSize; i++ {
-		t.outputs[0].Buffer[i] = t.inputs[0].Buffer[i]
+	for i := 0; i < t.Config.BufferSize; i++ {
+		t.Outputs[0].Buffer[i] = t.Inputs[0].Buffer[i]
 	}
 
 	return true
@@ -250,6 +203,7 @@ type Patch interface {
 	Lookup(address string) Module
 	InputModuleAtIndex(index int) Module
 	OutputModuleAtIndex(index int) Module
+	PostMessages()
 }
 
 type BasePatch struct {
@@ -262,23 +216,23 @@ type BasePatch struct {
 	timestamp     int64
 }
 
-func NewPatch(numInputs int, numOutputs int, identifier string) *BasePatch {
+func NewPatch(numInputs int, numOutputs int, config *Configuration, identifier string) *BasePatch {
 	subModules := []Module{}
 
 	inputModules := make([]*ThruModule, numInputs)
 	for i := 0; i < numInputs; i++ {
-		inputModules[i] = NewThruModule(fmt.Sprintf("patch_%s_input_%d", identifier, i+1))
+		inputModules[i] = NewThruModule(config, fmt.Sprintf("patch_%s_input_%d", identifier, i+1))
 		subModules = append(subModules, inputModules[i])
 	}
 
 	outputModules := make([]*ThruModule, numOutputs)
 	for i := 0; i < numOutputs; i++ {
-		outputModules[i] = NewThruModule(fmt.Sprintf("patch_%s_output_%d", identifier, i+1))
+		outputModules[i] = NewThruModule(config, fmt.Sprintf("patch_%s_output_%d", identifier, i+1))
 		subModules = append(subModules, outputModules[i])
 	}
 
 	p := &BasePatch{
-		BaseModule:    NewBaseModule(0, 0, identifier),
+		BaseModule:    NewBaseModule(0, 0, config, identifier),
 		subModules:    subModules,
 		messengers:    []Messenger{},
 		inputModules:  inputModules,
@@ -295,32 +249,6 @@ func (p *BasePatch) NumInputs() int {
 
 func (p *BasePatch) NumOutputs() int {
 	return len(p.outputModules)
-}
-
-func (p *BasePatch) SetBuffersFromPool(pool *BufferPool) {
-	for _, module := range p.subModules {
-		module.SetBuffersFromPool(pool)
-	}
-}
-
-func (p *BasePatch) TotalInputBuffersNeeded() int {
-	totalInputBuffersNeeded := 0
-
-	for _, module := range p.subModules {
-		totalInputBuffersNeeded += module.TotalInputBuffersNeeded()
-	}
-
-	return totalInputBuffersNeeded
-}
-
-func (p *BasePatch) TotalOutputBuffersNeeded() int {
-	totalOutputBuffersNeeded := 0
-
-	for _, module := range p.subModules {
-		totalOutputBuffersNeeded += module.TotalOutputBuffersNeeded()
-	}
-
-	return totalOutputBuffersNeeded
 }
 
 func (p *BasePatch) AddMessenger(msgr Messenger) {
@@ -384,13 +312,23 @@ func (p *BasePatch) PrepareSynthesis() {
 	}
 }
 
-func (p *BasePatch) Synthesize(config *Configuration) bool {
-	if !p.BaseModule.Synthesize(config) {
+func (p *BasePatch) Synthesize() bool {
+	if !p.BaseModule.Synthesize() {
 		return false
 	}
 
+	for _, output := range p.outputModules {
+		output.Synthesize()
+	}
+
+	p.timestamp += int64(p.Config.BufferSize)
+
+	return true
+}
+
+func (p *BasePatch) PostMessages() {
 	for _, msgr := range p.messengers {
-		msgs := msgr.Post(p.timestamp, config)
+		msgs := msgr.Post(p.timestamp, p.Config)
 		for _, msg := range msgs {
 			module := p.Lookup(msg.Address)
 			if module != nil {
@@ -399,13 +337,12 @@ func (p *BasePatch) Synthesize(config *Configuration) bool {
 		}
 	}
 
-	for _, output := range p.outputModules {
-		output.Synthesize(config)
+	for _, sub := range p.subModules {
+		subPatch, ok := sub.(Patch)
+		if ok {
+			subPatch.PostMessages()
+		}
 	}
-
-	p.timestamp += int64(config.BufferSize)
-
-	return true
 }
 
 func (p *BasePatch) AddInputConnection(inputIndex int, conn *Connection) {
@@ -434,31 +371,25 @@ func (p *BasePatch) OutputAtIndex(index int) *Socket {
 
 type Environment struct {
 	*BasePatch
-	pool   *BufferPool
 	Config *Configuration
 }
 
 func NewEnvironment(numOutputs int, sampleRate float64, bufferSize int) *Environment {
+	config := &Configuration{SampleRate: sampleRate, BufferSize: bufferSize}
+
 	return &Environment{
-		BasePatch: NewPatch(0, numOutputs, "environment"),
-		Config:    &Configuration{SampleRate: sampleRate, BufferSize: bufferSize},
+		BasePatch: NewPatch(0, numOutputs, config, "environment"),
+		Config:    config,
 	}
 }
 
-func (e *Environment) PrepareBuffers() {
-	e.pool = NewBufferPool(e.TotalInputBuffersNeeded(), e.TotalOutputBuffersNeeded(), e.Config.BufferSize)
-	e.SetBuffersFromPool(e.pool)
-}
-
-func (e *Environment) Produce() {
-	e.pool.ClearInputBuffers()
+func (e *Environment) Synthesize() bool {
+	e.PostMessages()
 	e.PrepareSynthesis()
-	e.Synthesize(e.Config)
+	return e.BasePatch.Synthesize()
 }
 
 func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64) error {
-	e.PrepareBuffers()
-
 	numChannels := e.NumOutputs()
 
 	swr, err := OpenSoundWriter(filePath, int32(numChannels), int32(e.Config.SampleRate), true)
@@ -471,7 +402,7 @@ func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64) erro
 	framesToProduce := int64(e.Config.SampleRate * numSeconds)
 
 	for framesToProduce > 0 {
-		e.Produce()
+		e.Synthesize()
 
 		interleaveIndex := 0
 
