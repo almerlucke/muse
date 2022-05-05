@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/modules/granular"
 )
 
@@ -105,7 +106,7 @@ func NewSFParam(d float64, a float64, p float64, s float64, o float64) *SFParam 
 }
 
 type SFSource struct {
-	buffer *muse.SoundFileBuffer
+	buffer *io.SoundFileBuffer
 	offset float64
 	phase  float64
 	delta  float64
@@ -179,7 +180,7 @@ func (s *GSource) Activate(p *GParam, c *muse.Configuration) {
 }
 
 type SFSourceFactory struct {
-	Samples *muse.SoundFileBuffer
+	Samples *io.SoundFileBuffer
 }
 
 func (sf *SFSourceFactory) NewSource() granular.Source[*SFParam] {
@@ -267,7 +268,7 @@ func main() {
 
 	env := muse.NewEnvironment(2, 44100, 1024)
 
-	sfb, err := muse.NewSoundFileBuffer("/Users/almerlucke/Downloads/female-laugh_C#_minor.wav")
+	sfb, err := io.NewSoundFileBuffer("/Users/almerlucke/Downloads/female-laugh_C#_minor.wav")
 	if err != nil {
 		log.Fatalf("fatal err: %v", err)
 	}

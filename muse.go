@@ -3,6 +3,8 @@ package muse
 import (
 	"fmt"
 	"strings"
+
+	"github.com/almerlucke/muse/io"
 )
 
 type Buffer []float64
@@ -392,7 +394,7 @@ func (e *Environment) Synthesize() bool {
 func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64) error {
 	numChannels := e.NumOutputs()
 
-	swr, err := OpenSoundWriter(filePath, int32(numChannels), int32(e.Config.SampleRate), true)
+	swr, err := io.OpenSoundWriter(filePath, int32(numChannels), int32(e.Config.SampleRate), true)
 	if err != nil {
 		return err
 	}
