@@ -24,9 +24,15 @@ func main() {
 
 	adsrEnv := &adsr.ADSR{}
 
-	adsrEnv.Set(steps, 0.75, 44100.0)
+	adsrEnv.Initialize(steps, 0.75, 44100.0)
+
+	for i := 0; i < 100; i++ {
+		log.Printf("out %v: %v", i+1, adsrEnv.Synthesize())
+	}
+
+	adsrEnv.Retrigger(1.0)
 
 	for i := 0; i < 200; i++ {
-		log.Printf("out %v: %v", i+1, adsrEnv.Synthesize())
+		log.Printf("retrigger %v: %v", i+1, adsrEnv.Synthesize())
 	}
 }

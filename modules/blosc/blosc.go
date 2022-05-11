@@ -36,13 +36,16 @@ func polyBlep(t float64, dt float64) float64 {
 	return 0.0
 }
 
-func (b *BloscModule) ReceiveMessage(msg any) {
-	params := msg.(map[string]interface{})
-
-	f, ok := params["frequency"]
+func (b *BloscModule) ReceiveMessage(msg any) []*muse.Message {
+	params, ok := msg.(map[string]any)
 	if ok {
-		b.frequency = f.(float64)
+		f, ok := params["frequency"]
+		if ok {
+			b.frequency = f.(float64)
+		}
 	}
+
+	return nil
 }
 
 func (b *BloscModule) Synthesize() bool {

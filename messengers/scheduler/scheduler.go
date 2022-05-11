@@ -1,4 +1,4 @@
-package messengers
+package scheduler
 
 import (
 	"encoding/json"
@@ -8,16 +8,17 @@ import (
 )
 
 type Event struct {
-	Message *muse.Message `json:"message"`
-	Time    float64       `json:"time"`
+	Messages []*muse.Message `json:"messages"`
+	Time     float64         `json:"time"`
 }
 
 type Scheduler struct {
+	*muse.BaseMessenger
 	events []*Event
 	index  int
 }
 
-func NewSchedulerWithJSONData(data []byte) (*Scheduler, error) {
+func NewSchedulerWithJSONData(data []byte, identifier string) (*Scheduler, error) {
 	var events []*Event
 
 	err := json.Unmarshal(data, &events)
@@ -25,12 +26,13 @@ func NewSchedulerWithJSONData(data []byte) (*Scheduler, error) {
 		return nil, err
 	}
 
-	return NewSchedulerWithEvents(events), nil
+	return NewSchedulerWithEvents(events, identifier), nil
 }
 
-func NewSchedulerWithEvents(events []*Event) *Scheduler {
+func NewSchedulerWithEvents(events []*Event, identifier string) *Scheduler {
 	return &Scheduler{
-		events: events,
+		BaseMessenger: muse.NewBaseMessenger(identifier),
+		events:        events,
 	}
 }
 
@@ -52,7 +54,7 @@ func (s *Scheduler) Messages(timestamp int64, config *muse.Configuration) []*mus
 			break
 		}
 
-		messages = append(messages, event.Message)
+		messages = append(messages, event.Messages...)
 		s.index++
 	}
 

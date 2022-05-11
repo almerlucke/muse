@@ -45,9 +45,57 @@ type Configuration struct {
 	BufferSize int
 }
 
-type Module interface {
+type Identifiable interface {
 	SetIdentifier(identifier string)
 	Identifier() string
+}
+
+type Receiver interface {
+	ReceiveMessage(msg any) []*Message
+}
+
+type Message struct {
+	Address string `json:"address"`
+	Content any    `json:"content"`
+}
+
+type Messenger interface {
+	Identifiable
+	Receiver
+	Messages(timestamp int64, config *Configuration) []*Message
+}
+
+type BaseMessenger struct {
+	identifier string
+}
+
+func NewBaseMessenger(identifier string) *BaseMessenger {
+	return &BaseMessenger{
+		identifier: identifier,
+	}
+}
+
+func (m *BaseMessenger) ReceiveMessage(msg any) []*Message {
+	// STUB
+	return nil
+}
+
+func (m *BaseMessenger) Messages(timestamp int64, config *Configuration) []*Message {
+	// STUB
+	return nil
+}
+
+func (m *BaseMessenger) Identifier() string {
+	return m.identifier
+}
+
+func (m *BaseMessenger) SetIdentifier(identifier string) {
+	m.identifier = identifier
+}
+
+type Module interface {
+	Receiver
+	Identifiable
 	NumInputs() int
 	NumOutputs() int
 	Configuration() *Configuration
@@ -58,7 +106,6 @@ type Module interface {
 	DidSynthesize() bool
 	PrepareSynthesis()
 	Synthesize() bool
-	ReceiveMessage(msg any)
 }
 
 type BaseModule struct {
@@ -162,8 +209,9 @@ func (m *BaseModule) Synthesize() bool {
 	return true
 }
 
-func (m *BaseModule) ReceiveMessage(msg any) {
+func (m *BaseModule) ReceiveMessage(msg any) []*Message {
 	// STUB
+	return nil
 }
 
 type ThruModule struct {
@@ -188,21 +236,12 @@ func (t *ThruModule) Synthesize() bool {
 	return true
 }
 
-type Message struct {
-	Address string `json:"address"`
-	Content any    `json:"content"`
-}
-
-type Messenger interface {
-	Messages(timestamp int64, config *Configuration) []*Message
-}
-
 type Patch interface {
 	Module
-	AddMessenger(msgr Messenger)
-	AddModule(m Module)
+	AddMessenger(msgr Messenger) Messenger
+	AddModule(m Module) Module
 	Contains(m Module) bool
-	Lookup(address string) Module
+	Lookup(address string) Receiver
 	InputModuleAtIndex(index int) Module
 	OutputModuleAtIndex(index int) Module
 	PostMessages()
@@ -214,7 +253,7 @@ type BasePatch struct {
 	inputModules  []*ThruModule
 	outputModules []*ThruModule
 	messengers    []Messenger
-	identifierMap map[string]Module
+	receivers     map[string]Receiver
 	timestamp     int64
 }
 
@@ -239,7 +278,7 @@ func NewPatch(numInputs int, numOutputs int, config *Configuration, identifier s
 		messengers:    []Messenger{},
 		inputModules:  inputModules,
 		outputModules: outputModules,
-		identifierMap: map[string]Module{},
+		receivers:     map[string]Receiver{},
 	}
 
 	return p
@@ -253,17 +292,26 @@ func (p *BasePatch) NumOutputs() int {
 	return len(p.outputModules)
 }
 
-func (p *BasePatch) AddMessenger(msgr Messenger) {
+func (p *BasePatch) AddMessenger(msgr Messenger) Messenger {
 	p.messengers = append(p.messengers, msgr)
+
+	id := msgr.Identifier()
+	if id != "" {
+		p.receivers[id] = msgr
+	}
+
+	return msgr
 }
 
-func (p *BasePatch) AddModule(m Module) {
+func (p *BasePatch) AddModule(m Module) Module {
 	p.subModules = append(p.subModules, m)
 
 	id := m.Identifier()
 	if id != "" {
-		p.identifierMap[id] = m
+		p.receivers[id] = m
 	}
+
+	return m
 }
 
 func (p *BasePatch) Contains(m Module) bool {
@@ -276,7 +324,7 @@ func (p *BasePatch) Contains(m Module) bool {
 	return false
 }
 
-func (p *BasePatch) Lookup(address string) Module {
+func (p *BasePatch) Lookup(address string) Receiver {
 	components := strings.SplitN(address, ".", 2)
 	identifier := ""
 	restAddress := ""
@@ -289,7 +337,7 @@ func (p *BasePatch) Lookup(address string) Module {
 		restAddress = components[1]
 	}
 
-	m := p.identifierMap[identifier]
+	m := p.receivers[identifier]
 	if m == nil {
 		return nil
 	}
@@ -328,15 +376,18 @@ func (p *BasePatch) Synthesize() bool {
 	return true
 }
 
+func (p *BasePatch) sendMessages(msgs []*Message) {
+	for _, msg := range msgs {
+		rcvr := p.Lookup(msg.Address)
+		if rcvr != nil {
+			p.sendMessages(rcvr.ReceiveMessage(msg.Content))
+		}
+	}
+}
+
 func (p *BasePatch) PostMessages() {
 	for _, msgr := range p.messengers {
-		msgs := msgr.Messages(p.timestamp, p.Config)
-		for _, msg := range msgs {
-			module := p.Lookup(msg.Address)
-			if module != nil {
-				module.ReceiveMessage(msg.Content)
-			}
-		}
+		p.sendMessages(msgr.Messages(p.timestamp, p.Config))
 	}
 
 	for _, sub := range p.subModules {

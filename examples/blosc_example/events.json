@@ -1,47 +1,72 @@
 [
   {
     "time": 0,
-    "message": {
-      "address": "blosc2",
+    "messages": [{
+      "address": "blosc1",
       "content": {
-        "frequency": 100
+        "frequency": 102
       }
-    }
-  },
-  {
-    "time": 1,
-    "message": {
+    }, {
       "address": "blosc2",
       "content": {
         "frequency": 200
       }
-    }
+    }]
+  },
+  {
+    "time": 1,
+    "messages": [{
+      "address": "blosc1",
+      "content": {
+        "frequency": 200
+      }
+    }, {
+      "address": "blosc2",
+      "content": {
+        "frequency": 300
+      }
+    }]
   },
   {
     "time": 2,
-    "message": {
-      "address": "blosc2",
+    "messages": [{
+      "address": "blosc1",
       "content": {
         "frequency": 400
       }
-    }
+    }, {
+      "address": "blosc2",
+      "content": {
+        "frequency": 605
+      }
+    }]
   },
   {
     "time": 3,
-    "message": {
-      "address": "blosc2",
+    "messages": [{
+      "address": "blosc1",
       "content": {
         "frequency": 800
       }
-    }
+    }, {
+      "address": "blosc2",
+      "content": {
+        "frequency": 1110
+      }
+    }]
   },
   {
     "time": 4,
-    "message": {
-      "address": "blosc2",
+    "messages": [{
+      "address": "blosc1",
       "content": {
         "frequency": 1600
       }
-    }
+    }, {
+      "address": "blosc2",
+      "content": {
+        "frequency": 1620
+      }
+    }]
   }
 ]
