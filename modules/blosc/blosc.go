@@ -37,11 +37,11 @@ func polyBlep(t float64, dt float64) float64 {
 }
 
 func (b *BloscModule) ReceiveMessage(msg any) {
-	params := msg.(map[string]float64)
+	params := msg.(map[string]interface{})
 
 	f, ok := params["frequency"]
 	if ok {
-		b.frequency = f
+		b.frequency = f.(float64)
 	}
 }
 

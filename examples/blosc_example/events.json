@@ -1,0 +1,47 @@
+[
+  {
+    "time": 0,
+    "message": {
+      "address": "blosc2",
+      "content": {
+        "frequency": 100
+      }
+    }
+  },
+  {
+    "time": 1,
+    "message": {
+      "address": "blosc2",
+      "content": {
+        "frequency": 200
+      }
+    }
+  },
+  {
+    "time": 2,
+    "message": {
+      "address": "blosc2",
+      "content": {
+        "frequency": 400
+      }
+    }
+  },
+  {
+    "time": 3,
+    "message": {
+      "address": "blosc2",
+      "content": {
+        "frequency": 800
+      }
+    }
+  },
+  {
+    "time": 4,
+    "message": {
+      "address": "blosc2",
+      "content": {
+        "frequency": 1600
+      }
+    }
+  }
+]

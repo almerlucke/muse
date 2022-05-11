@@ -189,12 +189,12 @@ func (t *ThruModule) Synthesize() bool {
 }
 
 type Message struct {
-	Address string
-	Content any
+	Address string `json:"address"`
+	Content any    `json:"content"`
 }
 
 type Messenger interface {
-	Post(timestamp int64, config *Configuration) []*Message
+	Messages(timestamp int64, config *Configuration) []*Message
 }
 
 type Patch interface {
@@ -330,7 +330,7 @@ func (p *BasePatch) Synthesize() bool {
 
 func (p *BasePatch) PostMessages() {
 	for _, msgr := range p.messengers {
-		msgs := msgr.Post(p.timestamp, p.Config)
+		msgs := msgr.Messages(p.timestamp, p.Config)
 		for _, msg := range msgs {
 			module := p.Lookup(msg.Address)
 			if module != nil {
