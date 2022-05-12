@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/messengers/sequencer"
-	"github.com/almerlucke/muse/messengers/timer"
+	"github.com/almerlucke/muse/messengers/stepper"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/blosc"
 	"github.com/almerlucke/muse/modules/common"
@@ -17,8 +17,15 @@ func main() {
 
 	env.AddMessenger(sequencer.NewSequencer(sequence1, "sequencer1"))
 	env.AddMessenger(sequencer.NewSequencer(sequence2, "sequencer2"))
-	env.AddMessenger(timer.NewTimer(0.25, []string{"sequencer1", "adsr1"}, env.Config, ""))
-	env.AddMessenger(timer.NewTimer(0.125, []string{"sequencer2", "adsr2"}, env.Config, ""))
+
+	env.AddMessenger(stepper.NewStepper(
+		stepper.NewSliceProvider([]float64{250, -125, 250, 250, -125, 125, -125, 250}),
+		[]string{"sequencer1", "adsr1"}, "",
+	))
+	env.AddMessenger(stepper.NewStepper(
+		stepper.NewSliceProvider([]float64{-125, 125, 125, 125, -125, 250, -125}),
+		[]string{"sequencer2", "adsr2"}, "",
+	))
 
 	steps := []adsr.ADSRStep{
 		{LevelRatio: 1.0, DurationRatio: 0.1, Shape: 0.1},

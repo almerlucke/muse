@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/messengers"
 )
 
 type ADSRStage int
@@ -131,8 +132,7 @@ func NewADSRModule(steps []ADSRStep, maxAmp float64, config *muse.Configuration,
 }
 
 func (a *ADSRModule) ReceiveMessage(msg any) []*muse.Message {
-	bang, ok := msg.(string)
-	if ok && bang == "bang" {
+	if messengers.IsBang(msg) {
 		a.adsr.Retrigger(a.adsr.maxAmp)
 	}
 

@@ -11,11 +11,11 @@ type Timer struct {
 	lastMultiple int64
 }
 
-func NewTimer(intervalSeconds float64, addresses []string, config *muse.Configuration, identifier string) *Timer {
+func NewTimer(intervalMilli float64, addresses []string, config *muse.Configuration, identifier string) *Timer {
 	return &Timer{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		addresses:     addresses,
-		interval:      int64(intervalSeconds * config.SampleRate),
+		interval:      int64(intervalMilli * 0.001 * config.SampleRate),
 	}
 }
 

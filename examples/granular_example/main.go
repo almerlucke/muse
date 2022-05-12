@@ -216,7 +216,7 @@ func (gs *SFSequencer) NextStep(timestamp int64, config *muse.Configuration) *gr
 
 	s.InterOnset = int(randBetween(0.00003, 0.0012) * config.SampleRate)
 	s.Parameter = NewSFParam(
-		randBetween(0.004, 0.38),
+		randBetween(4.0, 380.0),
 		randBetween(0.2, 1.0),
 		randBetween(0.0, 1.0),
 		randBetween(1.0-0.1*offset, 1.0+0.1*offset),
@@ -232,28 +232,28 @@ func (gs *GSequencer) NextStep(timestamp int64, config *muse.Configuration) *gra
 
 	if seconds < 8 {
 		s.Parameter = NewParam(
-			quantize(randBetween(0.04, 3.0), 0.1),
+			quantize(randBetween(40, 3000), 0.1),
 			randBetween(0.1, 0.8),
 			randBetween(0.0, 1.0),
 			quantize(randBetween(100.0, 550.0), 100))
 		s.InterOnset = int(quantize(randBetween(0.03, 0.12), 0.02) * config.SampleRate)
 	} else if seconds < 16 {
 		s.Parameter = NewParam(
-			quantize(randBetween(0.04, 0.05), 0.01),
+			quantize(randBetween(40, 50), 0.01),
 			randBetween(0.7, 0.9),
 			randBetween(0.0, 1.0),
 			quantize(randBetween(200.0, 250.0), 40))
 		s.InterOnset = int(quantize(randBetween(0.003, 0.012), 0.001) * config.SampleRate)
 	} else if seconds < 24 {
 		s.Parameter = NewParam(
-			quantize(randBetween(0.04, 1.0), 0.1),
+			quantize(randBetween(40, 1000), 0.1),
 			randBetween(0.1, 0.8),
 			randBetween(0.0, 1.0),
 			quantize(randBetween(200.0, 350.0), 100))
 		s.InterOnset = int(quantize(randBetween(0.01, 0.1), 0.02) * config.SampleRate)
 	} else if seconds < 32 {
 		s.Parameter = NewParam(
-			quantize(randBetween(0.02, 0.05), 0.01),
+			quantize(randBetween(20, 50), 0.01),
 			randBetween(0.1, 0.8),
 			randBetween(0.0, 1.0),
 			quantize(randBetween(100.0, 2550.0), 100))

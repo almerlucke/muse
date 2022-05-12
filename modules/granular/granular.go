@@ -7,7 +7,7 @@ import (
 )
 
 type Parameter interface {
-	// Duration in seconds
+	// Duration in milliseconds
 	Duration() float64
 	// Amplitude
 	Amplitude() float64
@@ -52,7 +52,7 @@ func (g *grain[P]) activate(p P, config *muse.Configuration) {
 
 	g.panLeft = math.Cos(pan * math.Pi / 2.0)
 	g.panRight = math.Sin(pan * math.Pi / 2.0)
-	g.sampsToGo = int64(p.Duration() * config.SampleRate)
+	g.sampsToGo = int64(p.Duration() * 0.001 * config.SampleRate)
 
 	g.source.Activate(p, config)
 

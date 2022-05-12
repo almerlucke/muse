@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/messengers"
 )
 
 type Sequence [][]*muse.Message
@@ -23,8 +24,7 @@ func NewSequencer(sequence [][]*muse.Message, identifier string) *Sequencer {
 }
 
 func (s *Sequencer) ReceiveMessage(msg any) []*muse.Message {
-	bang, ok := msg.(string)
-	if ok && bang == "bang" {
+	if messengers.IsBang(msg) {
 		msgs := s.sequence[s.index]
 
 		s.index++
