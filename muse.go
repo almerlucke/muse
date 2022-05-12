@@ -1,7 +1,9 @@
 package muse
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/almerlucke/muse/io"
@@ -57,6 +59,22 @@ type Receiver interface {
 type Message struct {
 	Address string `json:"address"`
 	Content any    `json:"content"`
+}
+
+func ReadMessages(file string) ([]*Message, error) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+
+	var messages []*Message
+
+	err = json.Unmarshal(data, &messages)
+	if err != nil {
+		return nil, err
+	}
+
+	return messages, nil
 }
 
 type Messenger interface {

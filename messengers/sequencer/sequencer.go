@@ -1,8 +1,13 @@
 package sequencer
 
 import (
+	"encoding/json"
+	"os"
+
 	"github.com/almerlucke/muse"
 )
+
+type Sequence [][]*muse.Message
 
 type Sequencer struct {
 	*muse.BaseMessenger
@@ -31,4 +36,20 @@ func (s *Sequencer) ReceiveMessage(msg any) []*muse.Message {
 	}
 
 	return nil
+}
+
+func ReadSequence(file string) (Sequence, error) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+
+	var sequence Sequence
+
+	err = json.Unmarshal(data, &sequence)
+	if err != nil {
+		return nil, err
+	}
+
+	return sequence, nil
 }

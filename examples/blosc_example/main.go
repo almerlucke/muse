@@ -12,32 +12,8 @@ import (
 func main() {
 	env := muse.NewEnvironment(2, 44100, 128)
 
-	// data, err := os.ReadFile("examples/blosc_example/events.json")
-	// if err != nil {
-	// 	log.Fatalf("error reading events: %v", err)
-	// }
-
-	// msgr, err := scheduler.NewSchedulerWithJSONData(data, "scheduler")
-	// if err != nil {
-	// 	log.Fatalf("error unmarshalling json events: %v", err)
-	// }
-
-	fs1 := []float64{100.0, 200.0, 50.0, 50.0}
-	fs2 := []float64{201.0, 302.0, 51.0, 103.0, 400.0}
-	sequence1 := [][]*muse.Message{}
-	sequence2 := [][]*muse.Message{}
-
-	for _, f := range fs1 {
-		sequence1 = append(sequence1, []*muse.Message{
-			{Address: "blosc1", Content: map[string]any{"frequency": f}},
-		})
-	}
-
-	for _, f := range fs2 {
-		sequence2 = append(sequence2, []*muse.Message{
-			{Address: "blosc2", Content: map[string]any{"frequency": f}},
-		})
-	}
+	sequence1, _ := sequencer.ReadSequence("examples/blosc_example/sequence1.json")
+	sequence2, _ := sequencer.ReadSequence("examples/blosc_example/sequence2.json")
 
 	env.AddMessenger(sequencer.NewSequencer(sequence1, "sequencer1"))
 	env.AddMessenger(sequencer.NewSequencer(sequence2, "sequencer2"))
