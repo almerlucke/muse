@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/almerlucke/muse/io"
+	"github.com/mkb218/gosndfile/sndfile"
 )
 
 type Buffer []float64
@@ -460,13 +461,10 @@ func (e *Environment) Synthesize() bool {
 	return e.BasePatch.Synthesize()
 }
 
-func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64) error {
+func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64, format sndfile.Format) error {
 	numChannels := e.NumOutputs()
 
-	swr, err := io.OpenSoundWriter(filePath, int32(numChannels), int32(e.Config.SampleRate), true)
-	if err != nil {
-		return err
-	}
+	swr := io.NewSoundWriter(numChannels, int(e.Config.SampleRate), 44100, true)
 
 	interleaveBuffer := make([]float64, e.NumOutputs()*e.Config.BufferSize)
 
@@ -490,12 +488,12 @@ func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64) erro
 			}
 		}
 
-		swr.WriteSamples(interleaveBuffer[:numFrames*numChannels])
+		swr.WriteFrames(interleaveBuffer[:numFrames*numChannels])
 
 		framesToProduce -= int64(numFrames)
 	}
 
-	return swr.Close()
+	return swr.Finish(filePath, format)
 }
 
 func Connect(from Module, outIndex int, to Module, inIndex int) {

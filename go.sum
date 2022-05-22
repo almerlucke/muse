@@ -1,2 +1,4 @@
 github.com/mkb218/gosndfile v0.0.0-20171006180803-e0c9ef895ee2 h1:VxuHU1GzpitRcSRQLMsYzmiR4AWli0ZIAwuay3nAdng=
 github.com/mkb218/gosndfile v0.0.0-20171006180803-e0c9ef895ee2/go.mod h1:Bt3M0pOPhXFJld5U1F484ASifG9E1Tych5ukWdGXnxw=
+github.com/zaf/resample v0.0.0-20220109201959-aca35f45e6fa h1:v/fzTnwLcf9fwytywqtjYAk7E4NU0/q1swEstio9X4E=
+github.com/zaf/resample v0.0.0-20220109201959-aca35f45e6fa/go.mod h1:iVeG5MgEEysaBXqj4m+3Wj9JGxyWb/sxBXNsMynLCd4=

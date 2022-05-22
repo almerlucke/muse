@@ -9,6 +9,7 @@ import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/modules/granular"
+	"github.com/mkb218/gosndfile/sndfile"
 )
 
 type GParam struct {
@@ -266,7 +267,7 @@ func (gs *GSequencer) NextStep(timestamp int64, config *muse.Configuration) *gra
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100, 1024)
+	env := muse.NewEnvironment(2, 3*44100, 1024)
 
 	sfb, err := io.NewSoundFileBuffer("/Users/almerlucke/Downloads/female-laugh_C#_minor.wav")
 	if err != nil {
@@ -281,5 +282,5 @@ func main() {
 	muse.Connect(gr, 0, env, 0)
 	muse.Connect(gr, 1, env, 1)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 32.0)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 32.0, sndfile.SF_FORMAT_AIFF)
 }

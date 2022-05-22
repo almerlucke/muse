@@ -1,163 +1,103 @@
 package io
 
 import (
+	"bytes"
 	"math"
-	"os"
+	"unsafe"
 
 	"github.com/mkb218/gosndfile/sndfile"
+	"github.com/zaf/resample"
 )
 
-/*
-   SoundWriter
-*/
-
-// SoundWriter writes samples to soundfile and normalizes them
 type SoundWriter struct {
-	// Temp output file
-	*sndfile.File
-
-	// Output format info
-	Channels   int32
-	Samplerate int32
-
-	// Set to true if we want a normalized output
-	// in that case first write to raw output file
-	// and in the end normalize to final output file
-	normalize bool
-
-	// The temporary output file path
-	tempOutputFilePath string
-
-	// The final output file path
-	finalOutputFilePath string
-
-	// The peak value used for normalization
-	peak float64
+	frames           []float64
+	numChannels      int
+	inputSampleRate  int
+	outputSampleRate int
+	normalizeOutput  bool
+	peak             float64
 }
 
-// OpenSoundWriter creates a new opened sound writer
-func OpenSoundWriter(outputFilePath string, channels int32, samplerate int32, normalize bool) (*SoundWriter, error) {
-	info := sndfile.Info{}
-	info.Channels = channels
-	info.Format = sndfile.SF_FORMAT_RAW | sndfile.SF_FORMAT_DOUBLE
-	info.Samplerate = samplerate
+func NewSoundWriter(numChannels int, inputSampleRate int, outputSampleRate int, normalizeOutput bool) *SoundWriter {
+	return &SoundWriter{
+		frames:           []float64{},
+		numChannels:      numChannels,
+		inputSampleRate:  inputSampleRate,
+		outputSampleRate: outputSampleRate,
+		normalizeOutput:  normalizeOutput,
+	}
+}
 
-	tempOutputFilePath := outputFilePath + ".raw"
-	finalOutputFilePath := outputFilePath + ".aiff"
+func (sw *SoundWriter) WriteFrames(frames []float64) {
+	for _, v := range frames {
+		va := math.Abs(v)
+		if va > sw.peak {
+			sw.peak = va
+		}
+	}
 
-	os.Remove(tempOutputFilePath)
-	os.Remove(finalOutputFilePath)
+	sw.frames = append(sw.frames, frames...)
+}
 
-	tempFile, err := sndfile.Open(tempOutputFilePath, sndfile.ReadWrite, &info)
+func (sw *SoundWriter) resample() ([]byte, error) {
+	originalBytes := unsafe.Slice((*byte)(unsafe.Pointer(&sw.frames[0])), len(sw.frames)*8)
+
+	var outBuffer bytes.Buffer
+
+	res, err := resample.New(&outBuffer, float64(sw.inputSampleRate), float64(sw.outputSampleRate), int(sw.numChannels), resample.F64, resample.VeryHighQ)
 	if err != nil {
 		return nil, err
 	}
 
-	w := SoundWriter{}
-	w.Channels = channels
-	w.Samplerate = samplerate
-	w.normalize = normalize
-	w.tempOutputFilePath = tempOutputFilePath
-	w.finalOutputFilePath = finalOutputFilePath
-	w.File = tempFile
-
-	return &w, nil
-}
-
-// WriteSamples write raw samples to temp output
-// keep track of peak value for normalization if needed
-func (w *SoundWriter) WriteSamples(in []float64) error {
-	_, err := w.WriteItems(in)
-
+	_, err = res.Write(originalBytes)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if w.normalize {
-		for _, sample := range in {
-			abs := math.Abs(sample)
-			if abs > w.peak {
-				w.peak = abs
-			}
+	return outBuffer.Bytes(), nil
+}
+
+func (sw *SoundWriter) Finish(filePath string, format sndfile.Format) error {
+	frames := sw.frames
+
+	if sw.normalizeOutput && sw.peak > 0 {
+		norm := 1.0 / sw.peak
+		for i, v := range frames {
+			frames[i] = v * norm
 		}
 	}
 
-	return nil
-}
-
-// Close the sound writer
-func (w *SoundWriter) Close() error {
-	err := w.normalizeAndExport()
-	if err != nil {
-		w.File.Close()
-		os.Remove(w.tempOutputFilePath)
-		return err
-	}
-
-	err = w.File.Close()
-	if err != nil {
-		os.Remove(w.tempOutputFilePath)
-		return err
-	}
-
-	err = os.Remove(w.tempOutputFilePath)
-
-	return err
-}
-
-func (w *SoundWriter) normalizeAndExport() error {
-	_, err := w.Seek(0, sndfile.Set)
-
-	if err != nil {
-		return err
-	}
-
-	outputInfo := sndfile.Info{}
-	outputInfo.Channels = w.Channels
-	outputInfo.Format = sndfile.SF_FORMAT_AIFF | sndfile.SF_FORMAT_DOUBLE
-	outputInfo.Samplerate = w.Samplerate
-
-	outputFile, err := sndfile.Open(w.finalOutputFilePath, sndfile.Write, &outputInfo)
-	if err != nil {
-		return err
-	}
-
-	normalizeValue := 1.0
-
-	if w.normalize {
-		normalizeValue = 1.0 / w.peak
-	}
-
-	sampleBlockSize := int64(2048)
-	samples := make([]float64, sampleBlockSize)
-
-	for {
-		samplesToNormalize, err := w.ReadItems(samples)
-
+	if sw.inputSampleRate != sw.outputSampleRate {
+		resampled, err := sw.resample()
 		if err != nil {
-			outputFile.Close()
-			os.Remove(w.finalOutputFilePath)
 			return err
 		}
 
-		// If we have no more samples to normalize then stop
-		if samplesToNormalize == 0 {
-			break
-		}
-
-		samplesSlice := samples[:samplesToNormalize]
-
-		// Normalize samples
-		for i := int64(0); i < samplesToNormalize; i++ {
-			samplesSlice[i] *= normalizeValue
-		}
-
-		// Write samples to output
-		outputFile.WriteItems(samplesSlice)
+		frames = unsafe.Slice((*float64)(unsafe.Pointer(&resampled[0])), len(resampled)/8)
 	}
 
-	// Close output
+	outputInfo := sndfile.Info{}
+	outputInfo.Channels = int32(sw.numChannels)
+	outputInfo.Format = format | sndfile.SF_FORMAT_DOUBLE
+	outputInfo.Samplerate = int32(sw.outputSampleRate)
+
+	outputFile, err := sndfile.Open(filePath, sndfile.Write, &outputInfo)
+	if err != nil {
+		return err
+	}
+
+	outputFile.WriteItems(frames)
+
 	return outputFile.Close()
+}
+
+// WriteFramesToFile writes sample frames to a sound file and close
+func WriteFramesToFile(frames []float64, numChannels int, inputSampleRate int, outputSampleRate int, normalizeOutput bool, format sndfile.Format, file string) error {
+	sw := NewSoundWriter(numChannels, inputSampleRate, outputSampleRate, normalizeOutput)
+
+	sw.WriteFrames(frames)
+
+	return sw.Finish(file, format)
 }
 
 /*
