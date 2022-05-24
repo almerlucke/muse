@@ -11,12 +11,22 @@ type Shaper interface {
 type ShapeFunction func(float64) float64
 
 type PhaseGenerator interface {
+	SetPhase(float64)
+	SetFrequency(float64, float64)
 	Tick() float64
 }
 
 type Phasor struct {
 	Phase float64
 	Delta float64
+}
+
+func (ph *Phasor) SetPhase(phase float64) {
+	ph.Phase = phase
+}
+
+func (ph *Phasor) SetFrequency(f float64, sr float64) {
+	ph.Delta = f / sr
 }
 
 func (ph *Phasor) Tick() float64 {
@@ -29,6 +39,14 @@ func (ph *Phasor) Tick() float64 {
 type VarTri struct {
 	Phasor
 	W float64 // 0 <= - < 1
+}
+
+func (vtri *VarTri) SetPhase(phase float64) {
+	vtri.Phase = phase
+}
+
+func (vtri *VarTri) SetFrequency(f float64, sr float64) {
+	vtri.Delta = f / sr
 }
 
 func (vtri *VarTri) Tick() float64 {

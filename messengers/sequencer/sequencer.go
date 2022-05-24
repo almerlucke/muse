@@ -16,7 +16,7 @@ type Sequencer struct {
 	index    int
 }
 
-func NewSequencer(sequence [][]*muse.Message, identifier string) *Sequencer {
+func NewSequencer(sequence Sequence, identifier string) *Sequencer {
 	return &Sequencer{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		sequence:      sequence,
