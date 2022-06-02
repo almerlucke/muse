@@ -1,9 +1,9 @@
 [
-  [{"address": "osc1", "content": {"frequency": 40.0}}],
-  [{"address": "osc1", "content": {"frequency": 40.0}}],
-  [{"address": "osc1", "content": {"frequency": 80.0}}],
-  [{"address": "osc1", "content": {"frequency": 160.0}}],
-  [{"address": "osc1", "content": {"frequency": 80.0}}],
-  [{"address": "osc1", "content": {"frequency": 240.0}}],
-  [{"address": "osc1", "content": {"frequency": 160.0}}]
+  [{"address": "osc1", "content": {"frequency": 30.0}}],
+  [{"address": "osc1", "content": {"frequency": 30.0}}],
+  [{"address": "osc1", "content": {"frequency": 60.0}}],
+  [{"address": "osc1", "content": {"frequency": 120.0}}],
+  [{"address": "osc1", "content": {"frequency": 60.0}}],
+  [{"address": "osc1", "content": {"frequency": 120.0}}],
+  [{"address": "osc1", "content": {"frequency": 150.0}}]
 ]
