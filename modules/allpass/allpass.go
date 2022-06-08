@@ -2,7 +2,7 @@ package allpass
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/allpassc"
+	allpassc "github.com/almerlucke/muse/components/allpass"
 )
 
 type Allpass struct {

@@ -2,7 +2,7 @@ package butterworth
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/filters/butterworthc"
+	butterworthc "github.com/almerlucke/muse/components/filters/butterworth"
 )
 
 type Butterworth struct {

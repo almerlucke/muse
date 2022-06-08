@@ -2,7 +2,7 @@ package delay
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/delayc"
+	delayc "github.com/almerlucke/muse/components/delay"
 )
 
 type Delay struct {

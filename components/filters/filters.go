@@ -9,9 +9,9 @@ const (
 	ArrayParam
 )
 
-type Param interface {
-	Name() string
-	Type() ParamType
+type ParamValue struct {
+	Float float64
+	Int   int
 }
 
 /*

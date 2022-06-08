@@ -1,4 +1,4 @@
-package rbjc
+package rbj
 
 import "math"
 

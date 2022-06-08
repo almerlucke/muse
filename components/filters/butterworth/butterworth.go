@@ -1,4 +1,4 @@
-package butterworthc
+package butterworth
 
 import "math"
 

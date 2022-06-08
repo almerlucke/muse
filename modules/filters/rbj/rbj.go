@@ -2,7 +2,7 @@ package rbj
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/filters/rbjc"
+	rbjc "github.com/almerlucke/muse/components/filters/rbj"
 )
 
 type RBJFilter struct {

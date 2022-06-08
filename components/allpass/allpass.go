@@ -1,15 +1,15 @@
-package allpassc
+package allpass
 
-import "github.com/almerlucke/muse/components/delayc"
+import "github.com/almerlucke/muse/components/delay"
 
 type Allpass struct {
-	*delayc.Delay
+	*delay.Delay
 	Feedback float64
 }
 
 func NewAllpass(length int, feedback float64) *Allpass {
 	return &Allpass{
-		Delay:    delayc.NewDelay(length),
+		Delay:    delay.NewDelay(length),
 		Feedback: feedback,
 	}
 }

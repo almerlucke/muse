@@ -1,9 +1,0 @@
-[
-  [{"address": "osc1", "content": {"frequency": 30.0}}],
-  [{"address": "osc1", "content": {"frequency": 30.0}}],
-  [{"address": "osc1", "content": {"frequency": 60.0}}],
-  [{"address": "osc1", "content": {"frequency": 120.0}}],
-  [{"address": "osc1", "content": {"frequency": 60.0}}],
-  [{"address": "osc1", "content": {"frequency": 120.0}}],
-  [{"address": "osc1", "content": {"frequency": 150.0}}]
-]

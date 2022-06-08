@@ -1,0 +1,23 @@
+[
+  [{"address": "osc1", "content": {"frequency": 30.0}}],
+  [{"address": "osc1", "content": {"frequency": 30.0}}],
+  [{"address": "osc1", "content": {"frequency": 60.0}}],
+  [{"address": "osc1", "content": {"frequency": 120.0}}],
+  [{"address": "osc1", "content": {"frequency": 60.0}}],
+  [{"address": "osc1", "content": {"frequency": 120.0}}],
+  [{"address": "osc1", "content": {"frequency": 150.0}}],
+  [{"address": "osc1", "content": {"frequency": 60.0}}],
+  [{"address": "osc1", "content": {"frequency": 60.0}}],
+  [{"address": "osc1", "content": {"frequency": 120.0}}],
+  [{"address": "osc1", "content": {"frequency": 240.0}}],
+  [{"address": "osc1", "content": {"frequency": 120.0}}],
+  [{"address": "osc1", "content": {"frequency": 240.0}}],
+  [{"address": "osc1", "content": {"frequency": 300.0}}],
+  [{"address": "osc1", "content": {"frequency": 120.0}}],
+  [{"address": "osc1", "content": {"frequency": 120.0}}],
+  [{"address": "osc1", "content": {"frequency": 240.0}}],
+  [{"address": "osc1", "content": {"frequency": 480.0}}],
+  [{"address": "osc1", "content": {"frequency": 240.0}}],
+  [{"address": "osc1", "content": {"frequency": 480.0}}],
+  [{"address": "osc1", "content": {"frequency": 600.0}}]
+]

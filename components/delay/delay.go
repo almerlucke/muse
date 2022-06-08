@@ -1,4 +1,4 @@
-package delayc
+package delay
 
 // Delay structure
 type Delay struct {
