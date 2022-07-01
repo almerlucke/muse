@@ -43,7 +43,7 @@ func (r *RBJFilter) Synthesize() bool {
 			r.filter.Update(r.Config.SampleRate)
 		}
 
-		filterOut[i] = r.filter.Filter(rawIn[i])
+		filterOut[i] = r.filter.Process(rawIn[i])
 	}
 
 	return true

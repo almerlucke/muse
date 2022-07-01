@@ -2,9 +2,13 @@ package main
 
 import (
 	"github.com/almerlucke/muse"
+
+	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shapingc "github.com/almerlucke/muse/components/shaping"
-	"github.com/almerlucke/muse/messengers/sequencer"
-	"github.com/almerlucke/muse/messengers/stepper"
+
+	"github.com/almerlucke/muse/messengers"
+	"github.com/almerlucke/muse/messengers/generators/sequencer"
+	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/filters/moog/moog1"
@@ -34,26 +38,26 @@ func paramMapper(param int, value float64, shaper shapingc.Shaper) {
 func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 
-	sequence1, _ := sequencer.ReadSequence("examples/shaping_example/sequence1.json")
+	sequencer, _ := sequencer.NewSequencerWithFile("examples/shaping_example/sequence1.json")
 
-	env.AddMessenger(sequencer.NewSequencer(sequence1, "sequencer1"))
+	env.AddMessenger(messengers.NewGenerator(sequencer, "sequencer1"))
 
 	env.AddMessenger(stepper.NewStepper(
 		stepper.NewSliceProvider([]float64{250, -125, 250, 250, -125, 125, -125, 250}),
 		[]string{"sequencer1", "adsr1"}, "",
 	))
 
-	steps := []adsr.ADSRStep{
-		{LevelRatio: 1.0, DurationRatio: 0.05, Shape: 0.0},
-		{LevelRatio: 0.4, DurationRatio: 0.05, Shape: 0.0},
-		{DurationRatio: 0.1},
-		{DurationRatio: 0.35, Shape: 0.0},
+	steps := []adsrc.Step{
+		{Level: 1.0, Duration: 20, Shape: 0.0},
+		{Level: 0.4, Duration: 20, Shape: 0.0},
+		{Duration: 20},
+		{Duration: 100, Shape: 0.0},
 	}
 
 	paramVarTri1 := env.AddModule(vartri.NewVarTri(0.25, 0.0, 0.5, env.Config, "vartri1"))
 	paramVarTri2 := env.AddModule(vartri.NewVarTri(0.325, 0.0, 0.5, env.Config, "vartri2"))
 	superSawParam := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.82 + 0.15 }, env.Config, "superSaw"))
-	adsrEnv1 := env.AddModule(adsr.NewADSRModule(steps, 1.0, env.Config, "adsr1"))
+	adsrEnv1 := env.AddModule(adsr.NewADSRModule(steps, adsrc.Absolute, adsrc.Automatic, 1.0, env.Config, "adsr1"))
 	mult1 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config, ""))
 	filterParam := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*2200.0 + 40.0 }, env.Config, ""))
 	osc1 := env.AddModule(phasor.NewPhasor(140.0, 0.0, env.Config, "osc1"))

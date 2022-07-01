@@ -3,36 +3,93 @@ package main
 import (
 	"log"
 
-	"github.com/almerlucke/muse/modules/adsr"
+	"github.com/almerlucke/muse/components/envelopes/adsr"
 )
 
-func main() {
-	steps := []adsr.ADSRStep{{
-		LevelRatio:    1.0,
-		DurationRatio: 0.05,
+func testRatioAuto() {
+	steps := []adsr.Step{{
+		Level:         1.0,
+		DurationRatio: 0.7,
 		Shape:         -0.5,
 	}, {
-		LevelRatio:    0.4,
-		DurationRatio: 0.05,
+		Level:         0.4,
+		DurationRatio: 0.7,
 		Shape:         -0.5,
 	}, {
-		DurationRatio: 0.05,
+		DurationRatio: 0.7,
 	}, {
-		DurationRatio: 0.05,
+		DurationRatio: 0.7,
 		Shape:         -0.5,
 	}}
 
 	adsrEnv := &adsr.ADSR{}
 
-	adsrEnv.Initialize(steps, 0.75, 44100.0)
+	adsrEnv.Initialize(steps, adsr.Ratio, adsr.Automatic, 44100.0)
+	adsrEnv.Trigger(1.0)
 
-	for i := 0; i < 100; i++ {
-		log.Printf("out %v: %v", i+1, adsrEnv.Synthesize())
+	index := 0
+	for !adsrEnv.IsFinished() {
+		index++
+		log.Printf("out %v: %v", index, adsrEnv.Synthesize())
 	}
+}
 
-	adsrEnv.Retrigger(1.0)
+func testAbsoluteAuto() {
+	steps := []adsr.Step{{
+		Level:    1.0,
+		Duration: 1,
+		Shape:    -0.5,
+	}, {
+		Level:    0.4,
+		Duration: 1,
+		Shape:    -0.5,
+	}, {
+		Duration: 1,
+	}, {
+		Duration: 1,
+		Shape:    -0.5,
+	}}
 
-	for i := 0; i < 200; i++ {
-		log.Printf("retrigger %v: %v", i+1, adsrEnv.Synthesize())
+	adsrEnv := &adsr.ADSR{}
+
+	adsrEnv.Initialize(steps, adsr.Absolute, adsr.Automatic, 44100.0)
+	adsrEnv.Trigger(1.0)
+
+	index := 0
+	for !adsrEnv.IsFinished() {
+		index++
+		log.Printf("out %v: %v", index, adsrEnv.Synthesize())
 	}
+}
+
+func testAbsoluteDuration() {
+	steps := []adsr.Step{{
+		Level:    1.0,
+		Duration: 1,
+		Shape:    -0.5,
+	}, {
+		Level:    0.4,
+		Duration: 1,
+		Shape:    -0.5,
+	}, {
+		Duration: 1,
+	}, {
+		Duration: 1,
+		Shape:    -0.5,
+	}}
+
+	adsrEnv := &adsr.ADSR{}
+
+	adsrEnv.Initialize(steps, adsr.Absolute, adsr.Duration, 44100.0)
+	adsrEnv.TriggerDuration(1.0, 2.2)
+
+	index := 0
+	for !adsrEnv.IsFinished() {
+		index++
+		log.Printf("out %v: %v", index, adsrEnv.Synthesize())
+	}
+}
+
+func main() {
+	testRatioAuto()
 }

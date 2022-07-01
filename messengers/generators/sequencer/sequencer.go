@@ -5,37 +5,41 @@ import (
 	"os"
 
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/messengers"
 )
 
 type Sequence [][]*muse.Message
 
 type Sequencer struct {
-	*muse.BaseMessenger
 	sequence [][]*muse.Message
 	index    int
 }
 
-func NewSequencer(sequence Sequence, identifier string) *Sequencer {
+func NewSequencer(sequence Sequence) *Sequencer {
 	return &Sequencer{
-		BaseMessenger: muse.NewBaseMessenger(identifier),
-		sequence:      sequence,
+		sequence: sequence,
 	}
 }
 
-func (s *Sequencer) ReceiveMessage(msg any) []*muse.Message {
-	if messengers.IsBang(msg) {
-		msgs := s.sequence[s.index]
-
-		s.index++
-		if s.index >= len(s.sequence) {
-			s.index = 0
-		}
-
-		return msgs
+func NewSequencerWithFile(file string) (*Sequencer, error) {
+	sequence, err := ReadSequence(file)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
+	return &Sequencer{
+		sequence: sequence,
+	}, nil
+}
+
+func (s *Sequencer) Bang() []*muse.Message {
+	msgs := s.sequence[s.index]
+
+	s.index++
+	if s.index >= len(s.sequence) {
+		s.index = 0
+	}
+
+	return msgs
 }
 
 func ReadSequence(file string) (Sequence, error) {

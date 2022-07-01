@@ -51,7 +51,7 @@ func (b *Butterworth) Synthesize() bool {
 			b.filter.Set(fc, q, b.Config.SampleRate)
 		}
 
-		out[i] = b.filter.Filter(in[i])
+		out[i] = b.filter.Process(in[i])
 	}
 
 	return true

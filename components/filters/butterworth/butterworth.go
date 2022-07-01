@@ -41,7 +41,7 @@ func (bwc *Butterworth) Set(fc float64, q float64, fs float64) {
 	bwc.coef3 = (bd_tmp - t2*b1) * bd
 }
 
-func (bwc *Butterworth) Filter(input float64) float64 {
+func (bwc *Butterworth) Process(input float64) float64 {
 	output := input * bwc.gain
 
 	output -= bwc.history1 * bwc.coef0

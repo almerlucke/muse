@@ -48,7 +48,7 @@ func NewRBJFilter(filterType RBJFilterType, frequency float64, q float64, dbGain
 	return filter
 }
 
-func (r *RBJFilter) Filter(in0 float64) float64 {
+func (r *RBJFilter) Process(in0 float64) float64 {
 	yn := r.b0a0*in0 + r.b1a0*r.in1 + r.b2a0*r.in2 - r.a1a0*r.ou1 - r.a2a0*r.ou2
 
 	r.in2 = r.in1

@@ -2,23 +2,28 @@ package main
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/messengers/sequencer"
-	"github.com/almerlucke/muse/messengers/stepper"
+
+	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
+
+	"github.com/almerlucke/muse/messengers"
+	"github.com/almerlucke/muse/messengers/generators/sequencer"
+	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/blosc"
 	"github.com/almerlucke/muse/modules/filters/moog/stilson"
 	"github.com/almerlucke/muse/modules/functor"
+
 	"github.com/mkb218/gosndfile/sndfile"
 )
 
 func main() {
 	env := muse.NewEnvironment(2, 44100, 128)
 
-	sequence1, _ := sequencer.ReadSequence("examples/blosc_example/sequence1.json")
-	sequence2, _ := sequencer.ReadSequence("examples/blosc_example/sequence2.json")
+	sequencer1, _ := sequencer.NewSequencerWithFile("examples/blosc_example/sequence1.json")
+	sequencer2, _ := sequencer.NewSequencerWithFile("examples/blosc_example/sequence2.json")
 
-	env.AddMessenger(sequencer.NewSequencer(sequence1, "sequencer1"))
-	env.AddMessenger(sequencer.NewSequencer(sequence2, "sequencer2"))
+	env.AddMessenger(messengers.NewGenerator(sequencer1, "sequencer1"))
+	env.AddMessenger(messengers.NewGenerator(sequencer2, "sequencer2"))
 
 	env.AddMessenger(stepper.NewStepper(
 		stepper.NewSliceProvider([]float64{250, -125, 250, 250, -125, 125, -125, 250}),
@@ -29,15 +34,15 @@ func main() {
 		[]string{"sequencer2", "adsr2"}, "",
 	))
 
-	steps := []adsr.ADSRStep{
-		{LevelRatio: 1.0, DurationRatio: 0.1, Shape: 0.1},
-		{LevelRatio: 0.4, DurationRatio: 0.1, Shape: -0.1},
+	steps := []adsrc.Step{
+		{Level: 1.0, DurationRatio: 0.1, Shape: 0.1},
+		{Level: 0.4, DurationRatio: 0.1, Shape: -0.1},
 		{DurationRatio: 0.1},
 		{DurationRatio: 0.3, Shape: -0.1},
 	}
 
-	adsrEnv1 := env.AddModule(adsr.NewADSRModule(steps, 1.0, env.Config, "adsr1"))
-	adsrEnv2 := env.AddModule(adsr.NewADSRModule(steps, 1.0, env.Config, "adsr2"))
+	adsrEnv1 := env.AddModule(adsr.NewADSRModule(steps, adsrc.Ratio, adsrc.Automatic, 1.0, env.Config, "adsr1"))
+	adsrEnv2 := env.AddModule(adsr.NewADSRModule(steps, adsrc.Ratio, adsrc.Automatic, 1.0, env.Config, "adsr2"))
 	mult1 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config, ""))
 	mult2 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config, ""))
 	osc1 := env.AddModule(blosc.NewBloscModule(100.0, 0.0, 1.0, env.Config, "blosc1"))
