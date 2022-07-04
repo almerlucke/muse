@@ -47,10 +47,6 @@ func (vp *voicePool) Push(e *voicePoolElement) {
 	vp.sentinel.next = e
 }
 
-type VoiceFactory interface {
-	NewVoice(*Configuration) Voice
-}
-
 type VoicePlayer struct {
 	*BaseModule
 	freePool   voicePool

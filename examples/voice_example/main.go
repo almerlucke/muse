@@ -43,14 +43,14 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 		{Level: 1.0, Duration: 20, Shape: 0.0},
 		{Level: 0.3, Duration: 20, Shape: 0.0},
 		{Duration: 20},
-		{Duration: 200, Shape: 0.0},
+		{Duration: 500, Shape: 0.0},
 	}
 
 	adsrEnv := testVoice.AddModule(adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	shape := testVoice.AddModule(shaper.NewShaper(shapingc.NewSuperSaw(), 1, paramMapper, nil, config, "shaper"))
-	filter := testVoice.AddModule(moog1.NewMoog1(1700.0, 0.45, 1.75, config, "filter"))
+	filter := testVoice.AddModule(moog1.NewMoog1(1700.0, 0.48, 1.75, config, "filter"))
 
 	muse.Connect(osc, 0, shape, 0)
 	muse.Connect(shape, 0, multiplier, 0)
@@ -100,17 +100,18 @@ func main() {
 		NewVoiceMessage("voicePlayer", 750, 1.0, 50.0),
 		NewVoiceMessage("voicePlayer", 500, 0.3, 100.0),
 		NewVoiceMessage("voicePlayer", 375, 1.0, 250.0),
-		NewVoiceMessage("voicePlayer", 250, 0.7, 250.0),
+		NewVoiceMessage("voicePlayer", 250, 0.7, 750.0),
+		NewVoiceMessage("voicePlayer", 250, 1.0, 375.0),
 	})
 
 	env.AddMessenger(messengers.NewGenerator(sequencer, "sequencer1"))
 
 	env.AddMessenger(stepper.NewStepper(
-		stepper.NewSliceProvider([]float64{250, -125, 250, 250, -125, 125, -125, 250}),
+		stepper.NewSliceProvider([]float64{125, -250, 125, 250, 125, -125, 250, -125, 125, -250}),
 		[]string{"sequencer1"}, "",
 	))
 
-	paramVarTri1 := env.AddModule(vartri.NewVarTri(0.25, 0.0, 0.5, env.Config, "vartri1"))
+	paramVarTri1 := env.AddModule(vartri.NewVarTri(0.155, 0.0, 0.5, env.Config, "vartri1"))
 	paramVarTri2 := env.AddModule(vartri.NewVarTri(0.325, 0.0, 0.5, env.Config, "vartri2"))
 	superSawDrive := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.82 + 0.15 }, env.Config, ""))
 	filterCutOff := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*2200.0 + 40.0 }, env.Config, ""))
@@ -129,8 +130,8 @@ func main() {
 	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.8 }, env.Config, ""))
 	reverb := env.AddModule(freeverb.NewFreeVerb(env.Config, "freeverb"))
 
-	reverb.(*freeverb.FreeVerb).SetDamp(0.1)
-	reverb.(*freeverb.FreeVerb).SetDry(0.5)
+	reverb.(*freeverb.FreeVerb).SetDamp(0.01)
+	reverb.(*freeverb.FreeVerb).SetDry(0.7)
 	reverb.(*freeverb.FreeVerb).SetWet(0.2)
 	reverb.(*freeverb.FreeVerb).SetRoomSize(0.8)
 	reverb.(*freeverb.FreeVerb).SetWidth(0.8)
