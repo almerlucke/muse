@@ -24,8 +24,8 @@ type TestVoice struct {
 	*muse.BasePatch
 	adsrEnv *adsr.ADSR
 	Shaper  *shaper.Shaper
-	Phasor  *phasor.Phasor
 	Filter  *moog1.Moog1
+	phasor  *phasor.Phasor
 }
 
 func paramMapper(param int, value float64, shaper shapingc.Shaper) {
@@ -41,7 +41,7 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 
 	steps := []adsrc.Step{
 		{Level: 1.0, Duration: 20, Shape: 0.0},
-		{Level: 0.4, Duration: 20, Shape: 0.0},
+		{Level: 0.3, Duration: 20, Shape: 0.0},
 		{Duration: 20},
 		{Duration: 200, Shape: 0.0},
 	}
@@ -61,7 +61,7 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
 	testVoice.Shaper = shape.(*shaper.Shaper)
 	testVoice.Filter = filter.(*moog1.Moog1)
-	testVoice.Phasor = osc.(*phasor.Phasor)
+	testVoice.phasor = osc.(*phasor.Phasor)
 
 	return testVoice
 }
@@ -74,22 +74,33 @@ func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, 
 	msg := message.(map[string]any)
 
 	tv.adsrEnv.TriggerWithDuration(duration, amplitude)
-	tv.Phasor.ReceiveMessage(msg["osc"])
+	tv.phasor.ReceiveMessage(msg["osc"])
 }
 
-func NewVoiceMessage(address string, duration float64, amplitude float64, message map[string]any) []*muse.Message {
-	return []*muse.Message{muse.NewMessage(address, map[string]any{"duration": duration, "amplitude": amplitude, "message": message})}
+func NewVoiceMessage(address string, duration float64, amplitude float64, frequency float64) []*muse.Message {
+	return []*muse.Message{muse.NewMessage(
+		address,
+		map[string]any{
+			"duration":  duration,
+			"amplitude": amplitude,
+			"message":   map[string]any{"osc": map[string]any{"frequency": frequency}},
+		})}
 }
 
 func main() {
-	env := muse.NewEnvironment(2, 44100, 512)
+	env := muse.NewEnvironment(2, 3*44100, 512)
 
 	sequencer := sequencer.NewSequencer([][]*muse.Message{
-		NewVoiceMessage("voicePlayer", 200, 1.0, map[string]any{"osc": map[string]any{"frequency": 200.0}}),
-		NewVoiceMessage("voicePlayer", 100, 1.0, map[string]any{"osc": map[string]any{"frequency": 400.0}}),
-		NewVoiceMessage("voicePlayer", 400, 1.0, map[string]any{"osc": map[string]any{"frequency": 500.0}}),
-		NewVoiceMessage("voicePlayer", 100, 1.0, map[string]any{"osc": map[string]any{"frequency": 600.0}}),
-		NewVoiceMessage("voicePlayer", 200, 1.0, map[string]any{"osc": map[string]any{"frequency": 100.0}}),
+		NewVoiceMessage("voicePlayer", 250, 0.4, 200.0),
+		NewVoiceMessage("voicePlayer", 125, 1.0, 400.0),
+		NewVoiceMessage("voicePlayer", 500, 0.6, 500.0),
+		NewVoiceMessage("voicePlayer", 125, 1.0, 600.0),
+		NewVoiceMessage("voicePlayer", 250, 0.5, 100.0),
+		NewVoiceMessage("voicePlayer", 250, 0.5, 50.0),
+		NewVoiceMessage("voicePlayer", 750, 1.0, 50.0),
+		NewVoiceMessage("voicePlayer", 500, 0.3, 100.0),
+		NewVoiceMessage("voicePlayer", 375, 1.0, 250.0),
+		NewVoiceMessage("voicePlayer", 250, 0.7, 250.0),
 	})
 
 	env.AddMessenger(messengers.NewGenerator(sequencer, "sequencer1"))
@@ -108,12 +119,13 @@ func main() {
 	for i := 0; i < 20; i++ {
 		voice := NewTestVoice(env.Config)
 		voices = append(voices, voice)
+		// connect lfo to voices
 		muse.Connect(superSawDrive, 0, voice.Shaper, 1)
 		muse.Connect(filterCutOff, 0, voice.Filter, 1)
 	}
 
 	voicePlayer := env.AddModule(muse.NewVoicePlayer(1, voices, env.Config, "voicePlayer"))
-	allpass := env.AddModule(allpass.NewAllpass(375.0, 375.0, 0.5, env.Config, "allpass"))
+	allpass := env.AddModule(allpass.NewAllpass(375.0, 375.0, 0.3, env.Config, "allpass"))
 	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.8 }, env.Config, ""))
 	reverb := env.AddModule(freeverb.NewFreeVerb(env.Config, "freeverb"))
 
@@ -123,6 +135,8 @@ func main() {
 	reverb.(*freeverb.FreeVerb).SetRoomSize(0.8)
 	reverb.(*freeverb.FreeVerb).SetWidth(0.8)
 
+	// connect external voice inputs to voice player so the external modules
+	// are always synthesized even if no voice is active at the moment
 	muse.Connect(superSawDrive, 0, voicePlayer, 0)
 	muse.Connect(filterCutOff, 0, voicePlayer, 0)
 
@@ -135,5 +149,5 @@ func main() {
 	muse.Connect(reverb, 0, env, 0)
 	muse.Connect(reverb, 1, env, 1)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/voices.aiff", 24.0, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/voices.aiff", 24.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
 }

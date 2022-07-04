@@ -59,5 +59,5 @@ func main() {
 	muse.Connect(filter1, 0, env, 0)
 	muse.Connect(filter2, 0, env, 1)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 15.0, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 15.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
 }

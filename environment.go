@@ -25,10 +25,10 @@ func (e *Environment) Synthesize() bool {
 	return e.BasePatch.Synthesize()
 }
 
-func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64, format sndfile.Format) error {
+func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64, outputSampleRate float64, format sndfile.Format) error {
 	numChannels := e.NumOutputs()
 
-	swr := io.NewSoundWriter(numChannels, int(e.Config.SampleRate), 44100, true)
+	swr := io.NewSoundWriter(numChannels, int(e.Config.SampleRate), int(outputSampleRate), true)
 
 	interleaveBuffer := make([]float64, e.NumOutputs()*e.Config.BufferSize)
 
