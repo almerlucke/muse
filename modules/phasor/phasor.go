@@ -26,14 +26,6 @@ func (p *Phasor) ReceiveMessage(msg any) []*muse.Message {
 		phase, ok := params["phase"]
 		if ok {
 			p.phase = phase.(float64)
-
-			for p.phase >= 1.0 {
-				p.phase -= 1.0
-			}
-
-			for p.phase < 0.0 {
-				p.phase += 1.0
-			}
 		}
 	}
 

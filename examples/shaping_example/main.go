@@ -57,7 +57,7 @@ func main() {
 	paramVarTri1 := env.AddModule(vartri.NewVarTri(0.25, 0.0, 0.5, env.Config, "vartri1"))
 	paramVarTri2 := env.AddModule(vartri.NewVarTri(0.325, 0.0, 0.5, env.Config, "vartri2"))
 	superSawParam := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.82 + 0.15 }, env.Config, "superSaw"))
-	adsrEnv1 := env.AddModule(adsr.NewADSRModule(steps, adsrc.Absolute, adsrc.Automatic, 1.0, env.Config, "adsr1"))
+	adsrEnv1 := env.AddModule(adsr.NewADSR(steps, adsrc.Absolute, adsrc.Automatic, 1.0, env.Config, "adsr1"))
 	mult1 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config, ""))
 	filterParam := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*2200.0 + 40.0 }, env.Config, ""))
 	osc1 := env.AddModule(phasor.NewPhasor(140.0, 0.0, env.Config, "osc1"))

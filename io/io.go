@@ -57,6 +57,22 @@ func (sw *SoundWriter) resample() ([]byte, error) {
 	return outBuffer.Bytes(), nil
 }
 
+func (sw *SoundWriter) writeToFile(filePath string, frames []float64, format sndfile.Format) error {
+	outputInfo := sndfile.Info{}
+	outputInfo.Channels = int32(sw.numChannels)
+	outputInfo.Format = format | sndfile.SF_FORMAT_DOUBLE
+	outputInfo.Samplerate = int32(sw.outputSampleRate)
+
+	outputFile, err := sndfile.Open(filePath, sndfile.Write, &outputInfo)
+	if err != nil {
+		return err
+	}
+
+	outputFile.WriteItems(frames)
+
+	return outputFile.Close()
+}
+
 func (sw *SoundWriter) Finish(filePath string, format sndfile.Format) error {
 	frames := sw.frames
 
@@ -73,22 +89,10 @@ func (sw *SoundWriter) Finish(filePath string, format sndfile.Format) error {
 			return err
 		}
 
-		frames = unsafe.Slice((*float64)(unsafe.Pointer(&resampled[0])), len(resampled)/8)
+		return sw.writeToFile(filePath, unsafe.Slice((*float64)(unsafe.Pointer(&resampled[0])), len(resampled)/8), format)
 	}
 
-	outputInfo := sndfile.Info{}
-	outputInfo.Channels = int32(sw.numChannels)
-	outputInfo.Format = format | sndfile.SF_FORMAT_DOUBLE
-	outputInfo.Samplerate = int32(sw.outputSampleRate)
-
-	outputFile, err := sndfile.Open(filePath, sndfile.Write, &outputInfo)
-	if err != nil {
-		return err
-	}
-
-	outputFile.WriteItems(frames)
-
-	return outputFile.Close()
+	return sw.writeToFile(filePath, frames, format)
 }
 
 // WriteFramesToFile writes sample frames to a sound file and close

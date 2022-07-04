@@ -81,7 +81,7 @@ func testAbsoluteDuration() {
 	adsrEnv := &adsr.ADSR{}
 
 	adsrEnv.Initialize(steps, adsr.Absolute, adsr.Duration, 44100.0)
-	adsrEnv.TriggerDuration(1.0, 2.2)
+	adsrEnv.TriggerWithDuration(1.0, 2.2)
 
 	index := 0
 	for !adsrEnv.IsFinished() {

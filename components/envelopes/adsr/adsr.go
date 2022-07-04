@@ -84,7 +84,7 @@ func (adsr *ADSR) Initialize(steps []Step, durationMode DurationMode, releaseMod
 	adsr.stage = Idle
 }
 
-func (adsr *ADSR) TriggerDuration(maxLevel float64, duration float64) {
+func (adsr *ADSR) TriggerWithDuration(duration float64, maxLevel float64) {
 	adsr.releaseCnt = int64(duration * adsr.sampleRate * 0.001)
 	adsr.Trigger(maxLevel)
 }

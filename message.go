@@ -10,6 +10,13 @@ type Message struct {
 	Content any    `json:"content"`
 }
 
+func NewMessage(address string, content any) *Message {
+	return &Message{
+		Address: address,
+		Content: content,
+	}
+}
+
 func ReadMessages(file string) ([]*Message, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {

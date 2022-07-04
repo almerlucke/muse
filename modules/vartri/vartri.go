@@ -21,6 +21,10 @@ func NewVarTri(freq float64, phase float64, w float64, config *muse.Configuratio
 func (vt *VarTri) ReceiveMessage(msg any) []*muse.Message {
 	params, ok := msg.(map[string]any)
 	if ok {
+		p, ok := params["phase"]
+		if ok {
+			vt.phase = p.(float64)
+		}
 		f, ok := params["frequency"]
 		if ok {
 			vt.delta = f.(float64) / vt.Config.SampleRate

@@ -1,10 +1,8 @@
 package muse
 
-import "math"
-
 type Voice interface {
 	Module
-	Activate(duration float64, message any, config *Configuration)
+	Activate(duration float64, amplitude float64, message any, config *Configuration)
 	IsActive() bool
 }
 
@@ -53,63 +51,47 @@ type VoiceFactory interface {
 	NewVoice(*Configuration) Voice
 }
 
-type VoiceStep struct {
-	Duration   float64 // duration in milli
-	InterOnset float64 // interonset in milli
-	Message    any
-}
-
-type VoiceSequence interface {
-	NextStep(float64, *Configuration) *VoiceStep
-}
-
 type VoicePlayer struct {
 	*BaseModule
-	sequence   VoiceSequence
 	freePool   voicePool
 	activePool voicePool
-	timestamp  int64
-	nextOnset  int64
-	nextStep   *VoiceStep
 }
 
-func NewVoicePlayer(numChannels int, maxVoices int, sequence VoiceSequence, factory VoiceFactory, config *Configuration, identifier string) *VoicePlayer {
+func NewVoicePlayer(numChannels int, voices []Voice, config *Configuration, identifier string) *VoicePlayer {
 	player := &VoicePlayer{
-		BaseModule: NewBaseModule(0, numChannels, config, identifier),
-		sequence:   sequence,
+		BaseModule: NewBaseModule(1, numChannels, config, identifier),
 	}
 
-	player.nextStep = sequence.NextStep(0, config)
-	player.nextOnset = int64(math.Ceil((player.nextStep.InterOnset * 0.001 * config.SampleRate) / float64(config.BufferSize)))
+	player.freePool.Initialize()
+	player.activePool.Initialize()
 
-	for i := 0; i < maxVoices; i++ {
-		player.freePool.Push(&voicePoolElement{voice: factory.NewVoice(config)})
+	for _, voice := range voices {
+		player.freePool.Push(&voicePoolElement{voice: voice})
 	}
 
 	return player
 }
 
+// ReceiveMessage is used to activate voices
+func (vp *VoicePlayer) ReceiveMessage(msg any) []*Message {
+	content := msg.(map[string]any)
+
+	duration := content["duration"].(float64)
+	amplitude := content["amplitude"].(float64)
+	voiceMsg := content["message"]
+
+	elem := vp.freePool.Pop()
+	if elem != nil {
+		vp.activePool.Push(elem)
+		elem.voice.Activate(duration, amplitude, voiceMsg, vp.Config)
+	}
+
+	return nil
+}
+
 func (vp *VoicePlayer) Synthesize() bool {
 	if !vp.BaseModule.Synthesize() {
 		return false
-	}
-
-	timestampMilli := (float64(vp.timestamp) / vp.Config.SampleRate) * 1000.0
-	done := false
-
-	for !done {
-		if vp.nextOnset == 0 {
-			elem := vp.freePool.Pop()
-			if elem != nil {
-				vp.activePool.Push(elem)
-				elem.voice.Activate(vp.nextStep.Duration, vp.nextStep.Message, vp.Config)
-			}
-
-			vp.nextStep = vp.sequence.NextStep(timestampMilli, vp.Config)
-			vp.nextOnset = int64(math.Ceil((vp.nextStep.InterOnset * 0.001 * vp.Config.SampleRate) / float64(vp.Config.BufferSize)))
-		} else {
-			done = true
-		}
 	}
 
 	// Clear output buffers
@@ -145,9 +127,6 @@ func (vp *VoicePlayer) Synthesize() bool {
 			vp.freePool.Push(prev)
 		}
 	}
-
-	vp.timestamp += int64(vp.Config.BufferSize)
-	vp.nextOnset--
 
 	return true
 }

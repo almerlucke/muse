@@ -7,14 +7,14 @@ import (
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 )
 
-type ADSRModule struct {
+type ADSR struct {
 	*muse.BaseModule
 	adsr     *adsrc.ADSR
 	maxLevel float64
 }
 
-func NewADSRModule(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode adsrc.ReleaseMode, maxLevel float64, config *muse.Configuration, identifier string) *ADSRModule {
-	am := &ADSRModule{
+func NewADSR(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode adsrc.ReleaseMode, maxLevel float64, config *muse.Configuration, identifier string) *ADSR {
+	am := &ADSR{
 		BaseModule: muse.NewBaseModule(0, 1, config, identifier),
 	}
 
@@ -25,7 +25,7 @@ func NewADSRModule(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseM
 	return am
 }
 
-func (a *ADSRModule) ReceiveMessage(msg any) []*muse.Message {
+func (a *ADSR) ReceiveMessage(msg any) []*muse.Message {
 	if messengers.IsBang(msg) {
 		a.adsr.Trigger(a.maxLevel)
 	}
@@ -33,7 +33,15 @@ func (a *ADSRModule) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (a *ADSRModule) Synthesize() bool {
+func (a *ADSR) TriggerWithDuration(duration float64, maxLevel float64) {
+	a.adsr.TriggerWithDuration(duration, maxLevel)
+}
+
+func (a *ADSR) IsActive() bool {
+	return !a.adsr.IsFinished()
+}
+
+func (a *ADSR) Synthesize() bool {
 	if !a.BaseModule.Synthesize() {
 		return false
 	}

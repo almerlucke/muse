@@ -41,8 +41,8 @@ func main() {
 		{DurationRatio: 0.3, Shape: -0.1},
 	}
 
-	adsrEnv1 := env.AddModule(adsr.NewADSRModule(steps, adsrc.Ratio, adsrc.Automatic, 1.0, env.Config, "adsr1"))
-	adsrEnv2 := env.AddModule(adsr.NewADSRModule(steps, adsrc.Ratio, adsrc.Automatic, 1.0, env.Config, "adsr2"))
+	adsrEnv1 := env.AddModule(adsr.NewADSR(steps, adsrc.Ratio, adsrc.Automatic, 1.0, env.Config, "adsr1"))
+	adsrEnv2 := env.AddModule(adsr.NewADSR(steps, adsrc.Ratio, adsrc.Automatic, 1.0, env.Config, "adsr2"))
 	mult1 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config, ""))
 	mult2 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config, ""))
 	osc1 := env.AddModule(blosc.NewBloscModule(100.0, 0.0, 1.0, env.Config, "blosc1"))
