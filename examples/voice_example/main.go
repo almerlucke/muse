@@ -4,12 +4,19 @@ import (
 	"github.com/almerlucke/muse"
 	"github.com/mkb218/gosndfile/sndfile"
 
+	// Components
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shapingc "github.com/almerlucke/muse/components/shaping"
-	"github.com/almerlucke/muse/messengers"
-	"github.com/almerlucke/muse/messengers/generators/sequencer"
-	"github.com/almerlucke/muse/messengers/triggers/stepper"
 
+	// Parameters
+	params "github.com/almerlucke/muse/parameters"
+
+	// Messengers
+	"github.com/almerlucke/muse/messengers/generators/prototype"
+	"github.com/almerlucke/muse/messengers/triggers/stepper"
+	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
+
+	// Modules
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/filters/moog/moog1"
@@ -23,9 +30,9 @@ import (
 type TestVoice struct {
 	*muse.BasePatch
 	adsrEnv *adsr.ADSR
+	phasor  *phasor.Phasor
 	Shaper  *shaper.Shaper
 	Filter  *moog1.Moog1
-	phasor  *phasor.Phasor
 }
 
 func paramMapper(param int, value float64, shaper shapingc.Shaper) {
@@ -43,14 +50,14 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 		{Level: 1.0, Duration: 20, Shape: 0.0},
 		{Level: 0.3, Duration: 20, Shape: 0.0},
 		{Duration: 20},
-		{Duration: 500, Shape: 0.0},
+		{Duration: 350, Shape: 0.1},
 	}
 
 	adsrEnv := testVoice.AddModule(adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	shape := testVoice.AddModule(shaper.NewShaper(shapingc.NewSuperSaw(), 1, paramMapper, nil, config, "shaper"))
-	filter := testVoice.AddModule(moog1.NewMoog1(1700.0, 0.48, 1.75, config, "filter"))
+	filter := testVoice.AddModule(moog1.NewMoog1(1700.0, 0.48, 1.25, config, "filter"))
 
 	muse.Connect(osc, 0, shape, 0)
 	muse.Connect(shape, 0, multiplier, 0)
@@ -77,44 +84,35 @@ func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, 
 	tv.phasor.ReceiveMessage(msg["osc"])
 }
 
-func NewVoiceMessage(address string, duration float64, amplitude float64, frequency float64) []*muse.Message {
-	return []*muse.Message{muse.NewMessage(
-		address,
-		map[string]any{
-			"duration":  duration,
-			"amplitude": amplitude,
-			"message":   map[string]any{"osc": map[string]any{"frequency": frequency}},
-		})}
-}
-
 func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 
-	sequencer := sequencer.NewSequencer([][]*muse.Message{
-		NewVoiceMessage("voicePlayer", 250, 0.4, 200.0),
-		NewVoiceMessage("voicePlayer", 125, 1.0, 400.0),
-		NewVoiceMessage("voicePlayer", 500, 0.6, 500.0),
-		NewVoiceMessage("voicePlayer", 125, 1.0, 600.0),
-		NewVoiceMessage("voicePlayer", 250, 0.5, 100.0),
-		NewVoiceMessage("voicePlayer", 250, 0.5, 50.0),
-		NewVoiceMessage("voicePlayer", 750, 1.0, 50.0),
-		NewVoiceMessage("voicePlayer", 500, 0.3, 100.0),
-		NewVoiceMessage("voicePlayer", 375, 1.0, 250.0),
-		NewVoiceMessage("voicePlayer", 250, 0.7, 750.0),
-		NewVoiceMessage("voicePlayer", 250, 1.0, 375.0),
-	})
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"voicePlayer"}, params.Prototype{
+		"duration":  params.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}),
+		"amplitude": params.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}),
+		"message": params.Prototype{
+			"osc": params.Prototype{
+				"frequency": params.NewSequence([]any{50.0, 50.0, 500.0, 50.0, 50.0, 25.0, 100.0, 100.0, 100.0, 600.0, 50.0}),
+				"phase":     params.NewConst(0.0),
+			},
+		},
+	}, "prototype"))
 
-	env.AddMessenger(messengers.NewGenerator(sequencer, "sequencer1"))
+	bpm := 100.0
 
 	env.AddMessenger(stepper.NewStepper(
-		stepper.NewSliceProvider([]float64{125, -250, 125, 250, 125, -125, 250, -125, 125, -250}),
-		[]string{"sequencer1"}, "",
+		swing.New(bpm, 4.0, []*swing.Step{
+			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipFactor: 0.3},
+		}),
+		[]string{"prototype"}, "",
 	))
 
-	paramVarTri1 := env.AddModule(vartri.NewVarTri(0.155, 0.0, 0.5, env.Config, "vartri1"))
+	milliPerBeat := 60000.0 / bpm / 4.0
+
+	paramVarTri1 := env.AddModule(vartri.NewVarTri(0.265, 0.0, 0.5, env.Config, "vartri1"))
 	paramVarTri2 := env.AddModule(vartri.NewVarTri(0.325, 0.0, 0.5, env.Config, "vartri2"))
-	superSawDrive := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.82 + 0.15 }, env.Config, ""))
-	filterCutOff := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*2200.0 + 40.0 }, env.Config, ""))
+	superSawDrive := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.84 + 0.15 }, env.Config, ""))
+	filterCutOff := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*3200.0 + 40.0 }, env.Config, ""))
 
 	voices := []muse.Voice{}
 	for i := 0; i < 20; i++ {
@@ -126,13 +124,13 @@ func main() {
 	}
 
 	voicePlayer := env.AddModule(muse.NewVoicePlayer(1, voices, env.Config, "voicePlayer"))
-	allpass := env.AddModule(allpass.NewAllpass(375.0, 375.0, 0.3, env.Config, "allpass"))
-	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.8 }, env.Config, ""))
+	allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config, "allpass"))
+	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config, ""))
 	reverb := env.AddModule(freeverb.NewFreeVerb(env.Config, "freeverb"))
 
-	reverb.(*freeverb.FreeVerb).SetDamp(0.01)
+	reverb.(*freeverb.FreeVerb).SetDamp(0.1)
 	reverb.(*freeverb.FreeVerb).SetDry(0.7)
-	reverb.(*freeverb.FreeVerb).SetWet(0.2)
+	reverb.(*freeverb.FreeVerb).SetWet(0.1)
 	reverb.(*freeverb.FreeVerb).SetRoomSize(0.8)
 	reverb.(*freeverb.FreeVerb).SetWidth(0.8)
 

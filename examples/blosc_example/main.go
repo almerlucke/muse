@@ -8,6 +8,7 @@ import (
 	"github.com/almerlucke/muse/messengers"
 	"github.com/almerlucke/muse/messengers/generators/sequencer"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
+	"github.com/almerlucke/muse/messengers/triggers/stepper/sliceprovider"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/blosc"
 	"github.com/almerlucke/muse/modules/filters/moog/stilson"
@@ -26,11 +27,11 @@ func main() {
 	env.AddMessenger(messengers.NewGenerator(sequencer2, "sequencer2"))
 
 	env.AddMessenger(stepper.NewStepper(
-		stepper.NewSliceProvider([]float64{250, -125, 250, 250, -125, 125, -125, 250}),
+		sliceprovider.New([]float64{250, -125, 250, 250, -125, 125, -125, 250}),
 		[]string{"sequencer1", "adsr1"}, "",
 	))
 	env.AddMessenger(stepper.NewStepper(
-		stepper.NewSliceProvider([]float64{-125, 125, 125, 125, -125, 250, -125}),
+		sliceprovider.New([]float64{-125, 125, 125, 125, -125, 250, -125}),
 		[]string{"sequencer2", "adsr2"}, "",
 	))
 

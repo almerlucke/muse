@@ -104,7 +104,9 @@ func (vp *VoicePlayer) Synthesize() bool {
 
 	// Run active voices
 	elem = vp.activePool.sentinel.next
+	cnt := 0
 	for elem != vp.activePool.sentinel {
+		cnt++
 		prev := elem
 		elem = elem.next
 

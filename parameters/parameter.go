@@ -88,6 +88,20 @@ func (f *Function) Int() int64 {
 type Map map[string]any
 type Prototype map[string]any
 
+func (p Prototype) MapRaw() map[string]any {
+	m := map[string]any{}
+
+	for k, v := range p {
+		if sub, ok := v.(Prototype); ok {
+			m[k] = sub.MapRaw()
+		} else {
+			m[k] = v.(Valuer).Value()
+		}
+	}
+
+	return m
+}
+
 func (p Prototype) Map() Map {
 	m := Map{}
 
