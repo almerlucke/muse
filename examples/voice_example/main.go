@@ -8,8 +8,8 @@ import (
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shapingc "github.com/almerlucke/muse/components/shaping"
 
-	// Parameters
-	params "github.com/almerlucke/muse/parameters"
+	// Values
+	"github.com/almerlucke/muse/values"
 
 	// Messengers
 	"github.com/almerlucke/muse/messengers/generators/prototype"
@@ -87,18 +87,18 @@ func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, 
 func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"voicePlayer"}, params.Prototype{
-		"duration":  params.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}),
-		"amplitude": params.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}),
-		"message": params.Prototype{
-			"osc": params.Prototype{
-				"frequency": params.NewSequence([]any{50.0, 50.0, 500.0, 50.0, 50.0, 25.0, 100.0, 100.0, 100.0, 600.0, 50.0}),
-				"phase":     params.NewConst(0.0),
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"voicePlayer"}, values.MapPrototype{
+		"duration":  values.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}, true),
+		"amplitude": values.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}, true),
+		"message": values.MapPrototype{
+			"osc": values.MapPrototype{
+				"frequency": values.NewSequence([]any{50.0, 50.0, 25.0, 50.0, 150.0, 25.0, 150.0, 100.0, 100.0, 200.0, 50.0}, true),
+				"phase":     values.NewConst[any](0.0),
 			},
 		},
 	}, "prototype"))
 
-	bpm := 100.0
+	bpm := 120.0
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 4.0, []*swing.Step{

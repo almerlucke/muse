@@ -12,7 +12,7 @@ import (
 	"github.com/mkb218/gosndfile/sndfile"
 
 	"github.com/almerlucke/muse/modules/player"
-	params "github.com/almerlucke/muse/parameters"
+	"github.com/almerlucke/muse/values"
 )
 
 func addRhythm(env *muse.Environment, module string, tempo float64, division float64, lowSpeed float64, highSpeed float64, steps []*swing.Step) {
@@ -20,8 +20,8 @@ func addRhythm(env *muse.Environment, module string, tempo float64, division flo
 
 	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{module}, params.Prototype{
-		"speed": params.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{module}, values.MapPrototype{
+		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 	}, identifier))
 }
 

@@ -3,22 +3,22 @@ package prototype
 import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/messengers"
-	params "github.com/almerlucke/muse/parameters"
+	"github.com/almerlucke/muse/values"
 )
 
 type Prototype struct {
 	addresses []string
-	proto     params.Prototype
+	proto     values.MapPrototype
 }
 
-func NewPrototype(addresses []string, proto params.Prototype) *Prototype {
+func NewPrototype(addresses []string, proto values.MapPrototype) *Prototype {
 	return &Prototype{
 		addresses: addresses,
 		proto:     proto,
 	}
 }
 
-func NewPrototypeGenerator(addresses []string, proto params.Prototype, identifier string) *messengers.Generator {
+func NewPrototypeGenerator(addresses []string, proto values.MapPrototype, identifier string) *messengers.Generator {
 	return messengers.NewGenerator(NewPrototype(addresses, proto), identifier)
 }
 
