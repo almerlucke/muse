@@ -1,6 +1,10 @@
 package swing
 
-import "math/rand"
+import (
+	"math/rand"
+
+	"github.com/almerlucke/muse/values"
+)
 
 type Step struct {
 	Skip        bool
@@ -25,12 +29,12 @@ func (s *Step) shuffleNote(milliPerNote float64) float64 {
 
 type Swing struct {
 	currentStep  int
-	steps        []*Step
+	steps        values.Generator[*Step]
 	milliPerNote float64
 	delay        float64
 }
 
-func New(bpm float64, noteDivision float64, steps []*Step) *Swing {
+func New(bpm float64, noteDivision float64, steps values.Generator[*Step]) *Swing {
 	milliPerBeat := 60000.0 / bpm
 	milliPerNote := milliPerBeat / noteDivision
 
@@ -41,10 +45,10 @@ func New(bpm float64, noteDivision float64, steps []*Step) *Swing {
 }
 
 func (sw *Swing) NextStep() float64 {
-	step := sw.steps[sw.currentStep]
-	sw.currentStep++
-	if sw.currentStep >= len(sw.steps) {
-		sw.currentStep = 0
+	step := sw.steps.Next()
+
+	if sw.steps.Finished() {
+		sw.steps.Reset()
 	}
 
 	dur := step.shuffleNote(sw.milliPerNote)

@@ -1,9 +1,12 @@
 package values
 
 import (
-	"log"
 	"math/rand"
 )
+
+type Transformer[T any] interface {
+	Transform(T) T
+}
 
 type Generator[T any] interface {
 	Next() T
@@ -35,13 +38,13 @@ func (c *Const[T]) Finished() bool {
 }
 
 type Sequence[T any] struct {
-	values    []T
-	index     int
-	continous bool
+	values     []T
+	index      int
+	continuous bool
 }
 
 func NewSequence[T any](values []T, continuous bool) *Sequence[T] {
-	return &Sequence[T]{values: values, continous: continuous}
+	return &Sequence[T]{values: values, continuous: continuous}
 }
 
 func (s *Sequence[T]) Next() T {
@@ -50,7 +53,7 @@ func (s *Sequence[T]) Next() T {
 	if s.index < len(s.values) {
 		v = s.values[s.index]
 		s.index++
-		if s.index == len(s.values) && s.continous {
+		if s.index == len(s.values) && s.continuous {
 			s.index = 0
 		}
 	} else {
@@ -61,7 +64,7 @@ func (s *Sequence[T]) Next() T {
 }
 
 func (s *Sequence[T]) Continuous() bool {
-	return s.continous
+	return s.continuous
 }
 
 func (s *Sequence[T]) Reset() {
@@ -69,7 +72,7 @@ func (s *Sequence[T]) Reset() {
 }
 
 func (s *Sequence[T]) Finished() bool {
-	return !s.continous && s.index == len(s.values)
+	return !s.continuous && s.index == len(s.values)
 }
 
 type Function[T any] struct {
@@ -94,6 +97,46 @@ func (f *Function[T]) Finished() bool {
 	return false
 }
 
+type Ramp struct {
+	current    float64
+	increment  float64
+	continuous bool
+}
+
+func NewRamp(increment float64, continuous bool) *Ramp {
+	return &Ramp{
+		current:    0,
+		increment:  increment,
+		continuous: continuous,
+	}
+}
+
+func (r *Ramp) Next() float64 {
+	if r.current >= 1.0 {
+		return 0
+	}
+	v := r.current
+	r.current += r.increment
+	if r.current >= 1.0 {
+		if r.continuous {
+			r.current -= 1.0
+		}
+	}
+	return v
+}
+
+func (r *Ramp) Continuous() bool {
+	return r.continuous
+}
+
+func (r *Ramp) Reset() {
+	r.current = 0
+}
+
+func (r *Ramp) Finished() bool {
+	return !r.continuous && r.current >= 1.0
+}
+
 // Repeat can make a continous generator non-continous by only repeating Next() n times,
 // or can extend a non-continuos generator by repeating it n times
 type Repeat[T any] struct {
@@ -104,13 +147,11 @@ type Repeat[T any] struct {
 }
 
 func NewRepeat[T any](generator Generator[T], min int, max int) *Repeat[T] {
-	n := min + rand.Intn((max-min)+1)
-	log.Printf("n %d", n)
 	return &Repeat[T]{
 		generator: generator,
 		min:       min,
 		max:       max,
-		n:         n,
+		n:         min + rand.Intn((max-min)+1),
 	}
 }
 
@@ -145,50 +186,50 @@ func (r *Repeat[T]) Finished() bool {
 	return r.n == 0
 }
 
-type Pattern[T any] struct {
+// And is a meta-sequence, a sequence of Generators
+type And[T any] struct {
 	generators []Generator[T]
 	current    Generator[T]
 	index      int
 	continous  bool
 }
 
-func NewPattern[T any](generators []Generator[T], continous bool) *Pattern[T] {
-	return &Pattern[T]{
+func NewAnd[T any](generators []Generator[T], continous bool) *And[T] {
+	return &And[T]{
 		generators: generators,
-		current:    nil,
 		continous:  continous,
 	}
 }
 
-func (p *Pattern[T]) Next() T {
+func (a *And[T]) Next() T {
 	var v T
 
-	if p.index == len(p.generators) {
+	if a.index == len(a.generators) {
 		return v
 	}
 
-	if p.current == nil {
-		p.current = p.generators[p.index]
+	if a.current == nil {
+		a.current = a.generators[a.index]
 	}
 
-	if p.current.Continuous() {
-		v = p.current.Next()
-		p.index++
-		if p.index == len(p.generators) && p.continous {
-			p.Reset()
+	if a.current.Continuous() {
+		v = a.current.Next()
+		a.index++
+		if a.index == len(a.generators) && a.continous {
+			a.Reset()
 		}
-		if p.index != len(p.generators) {
-			p.current = p.generators[p.index]
+		if a.index != len(a.generators) {
+			a.current = a.generators[a.index]
 		}
-	} else if !p.current.Finished() {
-		v = p.current.Next()
-		if p.current.Finished() {
-			p.index++
-			if p.index == len(p.generators) && p.continous {
-				p.Reset()
+	} else if !a.current.Finished() {
+		v = a.current.Next()
+		if a.current.Finished() {
+			a.index++
+			if a.index == len(a.generators) && a.continous {
+				a.Reset()
 			}
-			if p.index != len(p.generators) {
-				p.current = p.generators[p.index]
+			if a.index != len(a.generators) {
+				a.current = a.generators[a.index]
 			}
 		}
 	}
@@ -196,21 +237,104 @@ func (p *Pattern[T]) Next() T {
 	return v
 }
 
-func (p *Pattern[T]) Continuous() bool {
-	return p.continous
+func (a *And[T]) Continuous() bool {
+	return a.continous
 }
 
-func (p *Pattern[T]) Reset() {
-	for _, v := range p.generators {
+func (a *And[T]) Reset() {
+	for _, v := range a.generators {
 		v.Reset()
 	}
 
-	p.index = 0
-	p.current = nil
+	a.index = 0
+	a.current = nil
 }
 
-func (p *Pattern[T]) Finished() bool {
-	return !p.continous && p.index == len(p.generators)
+func (a *And[T]) Finished() bool {
+	return !a.continous && a.index == len(a.generators)
+}
+
+// Or chooses one of the generators each cycle
+type Or[T any] struct {
+	generators []Generator[T]
+	current    Generator[T]
+	finished   bool
+	continuous bool
+}
+
+func NewOr[T any](generators []Generator[T], continuous bool) *Or[T] {
+	return &Or[T]{
+		generators: generators,
+		continuous: continuous,
+	}
+}
+
+func (o *Or[T]) Next() T {
+	var v T
+
+	if o.current == nil {
+		o.current = o.generators[rand.Intn(len(o.generators))]
+	}
+
+	if o.current.Continuous() {
+		v = o.current.Next()
+		if o.continuous {
+			o.current = o.generators[rand.Intn(len(o.generators))]
+		} else {
+			o.finished = true
+		}
+	} else {
+		v = o.current.Next()
+		if o.current.Finished() {
+			if o.continuous {
+				o.current.Reset()
+				o.current = o.generators[rand.Intn(len(o.generators))]
+			} else {
+				o.finished = true
+			}
+		}
+	}
+
+	return v
+}
+
+func (o *Or[T]) Continuous() bool {
+	return o.continuous
+}
+
+func (o *Or[T]) Reset() {
+	for _, v := range o.generators {
+		v.Reset()
+	}
+
+	o.current = nil
+	o.finished = false
+}
+
+func (o *Or[T]) Finished() bool {
+	return !o.continuous && o.finished
+}
+
+// Transform transforms the output of a generator with a transformer
+type Transform[T any] struct {
+	generator   Generator[T]
+	transformer Transformer[T]
+}
+
+func (t *Transform[T]) Next() T {
+	return t.transformer.Transform(t.generator.Next())
+}
+
+func (t *Transform[T]) Continuous() bool {
+	return t.generator.Continuous()
+}
+
+func (t *Transform[T]) Reset() {
+	t.generator.Reset()
+}
+
+func (t *Transform[T]) Finished() bool {
+	return t.generator.Finished()
 }
 
 type Map map[string]any
