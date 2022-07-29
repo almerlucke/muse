@@ -15,41 +15,44 @@ import (
 	"github.com/almerlucke/muse/values"
 )
 
-func addRhythm(env *muse.Environment, module string, tempo float64, division float64, lowSpeed float64, highSpeed float64, steps values.Generator[*swing.Step]) {
-	identifier := module + "Speed"
+type DrumKit struct {
+	HiHat string
+	Kick  string
+	Snare string
+	Ride  string
+}
+
+func addRhythm(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo float64, division float64, lowSpeed float64, highSpeed float64, steps values.Generator[*swing.Step]) muse.Module {
+	identifier := moduleName + "Speed"
 
 	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{module}, values.MapPrototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, values.MapPrototype{
 		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 	}, identifier))
+
+	return env.AddModule(player.NewPlayer(soundBuffer, 1.0, true, env.Config, moduleName))
 }
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	env := muse.NewEnvironment(1, 44100.0, 512)
 
-	hihatSound, _ := io.NewSoundFileBuffer("/Users/almerlucke/Documents/Private/Sounds/Cymatics - Humble Hip Hop Sample Pack/Drums - One Shots/Cymbals/Cymatics - Humble Closed Hihat 1.wav")
-	kickSound, _ := io.NewSoundFileBuffer("/Users/almerlucke/Documents/Private/Sounds/Cymatics - Humble Hip Hop Sample Pack/Drums - One Shots/Kicks/Cymatics - Humble You Kick - A.wav")
-	snareSound, _ := io.NewSoundFileBuffer("/Users/almerlucke/Documents/Private/Sounds/Cymatics - Humble Hip Hop Sample Pack/Drums - One Shots/Snare/Cymatics - Humble Friday Snare - E.wav")
+	hihatSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/closed_hihat.wav")
+	kickSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/kick.wav")
+	snareSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/snare.wav")
 
-	addRhythm(env, "hihat", 120.0, 4.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
+	hihatPlayer := addRhythm(env, "hihat", hihatSound, 120.0, 4.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
 		{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
 	}, true))
 
-	hihatPlayer := env.AddModule(player.NewPlayer(hihatSound, 1.0, true, env.Config, "hihat"))
-
-	addRhythm(env, "kick", 120.0, 4.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
+	kickPlayer := addRhythm(env, "kick", kickSound, 120.0, 4.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
 	}, true))
 
-	kickPlayer := env.AddModule(player.NewPlayer(kickSound, 1.0, true, env.Config, "kick"))
-
-	addRhythm(env, "snare", 120.0, 2.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
+	snarePlayer := addRhythm(env, "snare", snareSound, 120.0, 2.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.1, ShuffleRand: 0.1},
 	}, true))
-
-	snarePlayer := env.AddModule(player.NewPlayer(snareSound, 1.0, true, env.Config, "snare"))
 
 	muse.Connect(kickPlayer, 0, env, 0)
 	muse.Connect(hihatPlayer, 0, env, 0)
