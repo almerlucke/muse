@@ -22,7 +22,7 @@ type DrumKit struct {
 	Ride  string
 }
 
-func addRhythm(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo float64, division float64, lowSpeed float64, highSpeed float64, steps values.Generator[*swing.Step]) muse.Module {
+func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo float64, division float64, lowSpeed float64, highSpeed float64, steps values.Generator[*swing.Step]) muse.Module {
 	identifier := moduleName + "Speed"
 
 	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
@@ -38,19 +38,31 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 	env := muse.NewEnvironment(1, 44100.0, 512)
 
+	bpm := 120.0
+
 	hihatSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/closed_hihat.wav")
 	kickSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/kick.wav")
 	snareSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/snare.wav")
 
-	hihatPlayer := addRhythm(env, "hihat", hihatSound, 120.0, 4.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
-		{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
+	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 4.0, 0.875, 1.125, values.NewAnd([]values.Generator[*swing.Step]{
+		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+			{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
+		}, false), 2, 3),
+		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+			{}, {Shuffle: 0.3}, {Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {SkipFactor: 0.4}, {SkipFactor: 0.4}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
+		}, false), 1, 2),
 	}, true))
 
-	kickPlayer := addRhythm(env, "kick", kickSound, 120.0, 4.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
-		{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
+	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4.0, 0.875, 1.125, values.NewAnd([]values.Generator[*swing.Step]{
+		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+			{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
+		}, false), 2, 3),
+		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+			{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {SkipFactor: 0.4}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {Skip: true},
+		}, false), 1, 2),
 	}, true))
 
-	snarePlayer := addRhythm(env, "snare", snareSound, 120.0, 2.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
+	snarePlayer := addDrumTrack(env, "snare", snareSound, bpm, 2.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.1, ShuffleRand: 0.1},
 	}, true))
 

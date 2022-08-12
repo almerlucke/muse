@@ -15,6 +15,19 @@ type Generator[T any] interface {
 	Finished() bool
 }
 
+func Generate[T any](generator Generator[T], n int) []T {
+	sequence := []T{}
+
+	for i := 0; i < n; i++ {
+		sequence = append(sequence, generator.Next())
+		if generator.Finished() {
+			generator.Reset()
+		}
+	}
+
+	return sequence
+}
+
 type Const[T any] struct {
 	value T
 }

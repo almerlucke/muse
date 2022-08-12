@@ -2,6 +2,7 @@ package muse
 
 import (
 	"github.com/almerlucke/muse/io"
+	"github.com/gordonklaus/portaudio"
 	"github.com/mkb218/gosndfile/sndfile"
 )
 
@@ -16,6 +17,28 @@ func NewEnvironment(numOutputs int, sampleRate float64, bufferSize int) *Environ
 	return &Environment{
 		BasePatch: NewPatch(0, numOutputs, config, "environment"),
 		Config:    config,
+	}
+}
+
+func (e *Environment) PortaudioStream() (*portaudio.Stream, error) {
+	return portaudio.OpenDefaultStream(
+		1,
+		e.NumOutputs(),
+		e.Config.SampleRate,
+		e.Config.BufferSize,
+		e.portaudioCallback,
+	)
+}
+
+func (e *Environment) portaudioCallback(in, out [][]float32) {
+	e.Synthesize()
+
+	numOutputs := e.NumOutputs()
+
+	for i := 0; i < e.Config.BufferSize; i++ {
+		for j := 0; j < numOutputs; j++ {
+			out[j][i] = float32(e.OutputAtIndex(j).Buffer[i])
+		}
 	}
 }
 
