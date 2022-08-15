@@ -28,6 +28,29 @@ func NewChain(shapers ...Shaper) *Chain {
 	}
 }
 
+type LookupTable []float64
+
+func (lt LookupTable) Shape(x float64) float64 {
+	nf := x * float64(len(lt)-1)
+	n1 := int(nf)
+	n2 := n1 + 1
+	fr := nf - float64(n1)
+	return lt[n1] + fr*(lt[n2]-lt[n1])
+}
+
+func NewSineTable(n int) LookupTable {
+	table := make(LookupTable, n)
+	phase := 0.0
+	inc := 2.0 * math.Pi / float64(n-1)
+
+	for i := 0; i < n; i++ {
+		table[i] = math.Sin(phase)
+		phase += inc
+	}
+
+	return table
+}
+
 type ParallelFunction func(float64, float64) float64
 
 type Parallel struct {
