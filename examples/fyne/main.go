@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/gordonklaus/portaudio"
@@ -29,6 +32,34 @@ import (
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/shaper"
 )
+
+type FixedWidthLayout struct {
+	Width float32
+}
+
+func NewFixedWidthLayout(w float32) *FixedWidthLayout {
+	return &FixedWidthLayout{Width: w}
+}
+
+func (fwl *FixedWidthLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
+	for _, object := range objects {
+		object.Resize(fyne.NewSize(fwl.Width, objects[0].MinSize().Height))
+		object.Move(fyne.NewPos(0, 0))
+	}
+}
+
+func (fwl *FixedWidthLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	maxH := float32(0.0)
+
+	for _, object := range objects {
+		childSize := object.MinSize()
+		if childSize.Height > maxH {
+			maxH = childSize.Height
+		}
+	}
+
+	return fyne.NewSize(fwl.Width, maxH)
+}
 
 type TestVoice struct {
 	*muse.BasePatch
@@ -122,8 +153,6 @@ func main() {
 
 	voicePlayer := env.AddModule(muse.NewVoicePlayer(1, voices, env.Config, "voicePlayer"))
 
-	// connect external voice inputs to voice player so the external modules
-	// are always synthesized even if no voice is active at the moment
 	muse.Connect(voicePlayer, 0, env, 0)
 
 	portaudio.Initialize()
@@ -140,15 +169,116 @@ func main() {
 
 	a := app.New()
 
-	w := a.NewWindow("Hello")
+	a.Settings().SetTheme(theme.LightTheme())
 
-	hello := widget.NewLabel("Hello Fyne!")
-	w.SetContent(container.NewVBox(
-		hello,
-		widget.NewButton("Hi!", func() {
-			hello.SetText("Welcome :)")
-		}),
-	))
+	w := a.NewWindow("Muse")
+
+	w.Resize(fyne.Size{
+		Width:  300,
+		Height: 200,
+	})
+
+	attackMSLabel := widget.NewLabel("5.0")
+	attackMSLabel.Alignment = fyne.TextAlignTrailing
+	attackMSSlider := widget.NewSlider(5.0, 1500.0)
+	attackMSSlider.Value = 5.0
+	attackMSSlider.OnChanged = func(f float64) {
+		attackMSLabel.SetText(fmt.Sprintf("%.2f", f))
+	}
+
+	attackAmpLabel := widget.NewLabel("1.0")
+	attackAmpLabel.Alignment = fyne.TextAlignTrailing
+	attackAmpSlider := widget.NewSlider(0.0, 1.0)
+	attackAmpSlider.Step = 0.01
+	attackAmpSlider.Value = 1.0
+	attackAmpSlider.OnChanged = func(f float64) {
+		attackAmpLabel.SetText(fmt.Sprintf("%.2f", f))
+	}
+
+	attackShapeLabel := widget.NewLabel("0.0")
+	attackShapeLabel.Alignment = fyne.TextAlignTrailing
+	attackShapeSlider := widget.NewSlider(-1.0, 1.0)
+	attackShapeSlider.Step = 0.01
+	attackShapeSlider.Value = 0.0
+	attackShapeSlider.OnChanged = func(f float64) {
+		attackShapeLabel.SetText(fmt.Sprintf("%.2f", f))
+	}
+
+	decayMSLabel := widget.NewLabel("5.0")
+	decayMSLabel.Alignment = fyne.TextAlignTrailing
+	decayMSSlider := widget.NewSlider(5.0, 1500.0)
+	decayMSSlider.Value = 5.0
+	decayMSSlider.OnChanged = func(f float64) {
+		decayMSLabel.SetText(fmt.Sprintf("%.2f", f))
+	}
+
+	decayAmpLabel := widget.NewLabel("1.0")
+	decayAmpLabel.Alignment = fyne.TextAlignTrailing
+	decayAmpSlider := widget.NewSlider(0.0, 1.0)
+	decayAmpSlider.Step = 0.01
+	decayAmpSlider.Value = 1.0
+	decayAmpSlider.OnChanged = func(f float64) {
+		decayAmpLabel.SetText(fmt.Sprintf("%.2f", f))
+	}
+
+	decayShapeLabel := widget.NewLabel("0.0")
+	decayShapeLabel.Alignment = fyne.TextAlignTrailing
+	decayShapeSlider := widget.NewSlider(-1.0, 1.0)
+	decayShapeSlider.Step = 0.01
+	decayShapeSlider.Value = 0.0
+	decayShapeSlider.OnChanged = func(f float64) {
+		decayShapeLabel.SetText(fmt.Sprintf("%.2f", f))
+	}
+
+	releaseMSLabel := widget.NewLabel("5.0")
+	releaseMSLabel.Alignment = fyne.TextAlignTrailing
+	releaseMSSlider := widget.NewSlider(5.0, 1500.0)
+	releaseMSSlider.Value = 5.0
+	releaseMSSlider.OnChanged = func(f float64) {
+		releaseMSLabel.SetText(fmt.Sprintf("%.2f", f))
+	}
+
+	releaseShapeLabel := widget.NewLabel("0.0")
+	releaseShapeLabel.Alignment = fyne.TextAlignTrailing
+	releaseShapeSlider := widget.NewSlider(-1.0, 1.0)
+	releaseShapeSlider.Step = 0.01
+	releaseShapeSlider.Value = 0.0
+	releaseShapeSlider.OnChanged = func(f float64) {
+		releaseShapeLabel.SetText(fmt.Sprintf("%.2f", f))
+	}
+
+	w.SetContent(
+		container.NewHBox(
+			container.New(NewFixedWidthLayout(250),
+				widget.NewCard("Attack", "", container.NewVBox(
+					widget.NewLabel("attack duration (ms)"),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackMSLabel), attackMSSlider),
+					widget.NewLabel("attack amplitude (0.0 - 1.0)"),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackAmpLabel), attackAmpSlider),
+					widget.NewLabel("attack shape (-1.0 - 1.0)"),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackShapeLabel), attackShapeSlider),
+				)),
+			),
+			container.New(NewFixedWidthLayout(250),
+				widget.NewCard("Decay", "", container.NewVBox(
+					widget.NewLabel("decay duration (ms)"),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayMSLabel), decayMSSlider),
+					widget.NewLabel("decay amplitude (0.0 - 1.0)"),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayAmpLabel), decayAmpSlider),
+					widget.NewLabel("decay shape (-1.0 - 1.0)"),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayShapeLabel), decayShapeSlider),
+				)),
+			),
+			container.New(NewFixedWidthLayout(250),
+				widget.NewCard("Release", "", container.NewVBox(
+					widget.NewLabel("release duration (ms)"),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), releaseMSLabel), releaseMSSlider),
+					widget.NewLabel("release shape (-1.0 - 1.0)"),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), releaseShapeLabel), releaseShapeSlider),
+				)),
+			),
+		),
+	)
 
 	w.ShowAndRun()
 }

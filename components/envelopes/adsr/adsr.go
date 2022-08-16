@@ -17,8 +17,8 @@ const (
 type DurationMode int
 
 const (
-	Ratio DurationMode = iota
-	Absolute
+	Ratio    DurationMode = iota // use ratio for durations
+	Absolute                     // use absolute ms for durations
 )
 
 type ReleaseMode int
@@ -82,6 +82,14 @@ func (adsr *ADSR) Initialize(steps []Step, durationMode DurationMode, releaseMod
 	adsr.durationMode = durationMode
 	adsr.releaseMode = releaseMode
 	adsr.stage = Idle
+}
+
+func (adsr *ADSR) TriggerFull(duration float64, maxLevel float64, steps []Step, durationMode DurationMode, releaseMode ReleaseMode) {
+	adsr.releaseCnt = int64(duration * adsr.sampleRate * 0.001)
+	adsr.steps = steps
+	adsr.durationMode = durationMode
+	adsr.releaseMode = releaseMode
+	adsr.Trigger(maxLevel)
 }
 
 func (adsr *ADSR) TriggerWithDuration(duration float64, maxLevel float64) {
