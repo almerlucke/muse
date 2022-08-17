@@ -28,6 +28,7 @@ import (
 
 	// Modules
 	"github.com/almerlucke/muse/modules/adsr"
+	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/shaper"
@@ -61,26 +62,33 @@ func (fwl *FixedWidthLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(fwl.Width, maxH)
 }
 
-type TestVoice struct {
-	*muse.BasePatch
-	adsrEnv *adsr.ADSR
-	phasor  *phasor.Phasor
-	Shaper  *shaper.Shaper
+type StepProvider interface {
+	Steps() []adsrc.Step
 }
 
-func NewTestVoice(config *muse.Configuration) *TestVoice {
+type StepSetter struct {
+	TheSteps []adsrc.Step
+}
+
+func (s *StepSetter) Steps() []adsrc.Step {
+	return s.TheSteps
+}
+
+type TestVoice struct {
+	*muse.BasePatch
+	adsrEnv      *adsr.ADSR
+	phasor       *phasor.Phasor
+	Shaper       *shaper.Shaper
+	stepProvider StepProvider
+}
+
+func NewTestVoice(config *muse.Configuration, stepProvider StepProvider) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch: muse.NewPatch(0, 1, config, ""),
+		BasePatch:    muse.NewPatch(0, 1, config, ""),
+		stepProvider: stepProvider,
 	}
 
-	steps := []adsrc.Step{
-		{Level: 1.0, Duration: 10, Shape: 0.0},
-		{Level: 0.2, Duration: 10, Shape: 0.0},
-		{Duration: 30},
-		{Duration: 550, Shape: 0.1},
-	}
-
-	adsrEnv := testVoice.AddModule(adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
+	adsrEnv := testVoice.AddModule(adsr.NewADSR(stepProvider.Steps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	shape := testVoice.AddModule(shaper.NewShaper(shapingc.NewSineTable(512), 0, nil, nil, config, "shaper"))
@@ -104,12 +112,12 @@ func (tv *TestVoice) IsActive() bool {
 func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, config *muse.Configuration) {
 	msg := message.(map[string]any)
 
-	tv.adsrEnv.TriggerWithDuration(duration, amplitude)
+	tv.adsrEnv.TriggerFull(duration, amplitude, tv.stepProvider.Steps(), adsrc.Absolute, adsrc.Duration)
 	tv.phasor.ReceiveMessage(msg["osc"])
 }
 
 func main() {
-	env := muse.NewEnvironment(1, 44100, 512)
+	env := muse.NewEnvironment(2, 44100, 512)
 
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"voicePlayer"}, values.MapPrototype{
 		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}, true),
@@ -130,13 +138,23 @@ func main() {
 		"message": values.MapPrototype{
 			"osc": values.MapPrototype{
 				"frequency": values.NewSequence([]any{
-					110.0, 220.0, 330.0, 110.0, 220.0, 220.0}, true),
+					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1540.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0,
+					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1110.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0}, true),
 				"phase": values.NewConst[any](0.0),
 			},
 		},
 	}, "prototype2"))
 
-	bpm := 100.0
+	bpm := 80.0
+
+	stepProvider := &StepSetter{
+		TheSteps: []adsrc.Step{
+			{Level: 1.0, Duration: 5, Shape: 0.0},
+			{Level: 0.3, Duration: 5, Shape: 0.0},
+			{Duration: 20},
+			{Duration: 5, Shape: 0.0},
+		},
+	}
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 4.0, values.NewSequence([]*swing.Step{
@@ -147,13 +165,18 @@ func main() {
 
 	voices := []muse.Voice{}
 	for i := 0; i < 20; i++ {
-		voice := NewTestVoice(env.Config)
+		voice := NewTestVoice(env.Config, stepProvider)
 		voices = append(voices, voice)
 	}
 
-	voicePlayer := env.AddModule(muse.NewVoicePlayer(1, voices, env.Config, "voicePlayer"))
+	milliPerBeat := 60000.0 / bpm
 
+	voicePlayer := env.AddModule(muse.NewVoicePlayer(1, voices, env.Config, "voicePlayer"))
+	allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.1, env.Config, "allpass"))
+
+	muse.Connect(voicePlayer, 0, allpass, 0)
 	muse.Connect(voicePlayer, 0, env, 0)
+	muse.Connect(allpass, 0, env, 1)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()
@@ -180,10 +203,11 @@ func main() {
 
 	attackMSLabel := widget.NewLabel("5.0")
 	attackMSLabel.Alignment = fyne.TextAlignTrailing
-	attackMSSlider := widget.NewSlider(5.0, 1500.0)
+	attackMSSlider := widget.NewSlider(5.0, 500.0)
 	attackMSSlider.Value = 5.0
 	attackMSSlider.OnChanged = func(f float64) {
 		attackMSLabel.SetText(fmt.Sprintf("%.2f", f))
+		stepProvider.TheSteps[0].Duration = f
 	}
 
 	attackAmpLabel := widget.NewLabel("1.0")
@@ -193,6 +217,7 @@ func main() {
 	attackAmpSlider.Value = 1.0
 	attackAmpSlider.OnChanged = func(f float64) {
 		attackAmpLabel.SetText(fmt.Sprintf("%.2f", f))
+		stepProvider.TheSteps[0].Level = f
 	}
 
 	attackShapeLabel := widget.NewLabel("0.0")
@@ -202,23 +227,26 @@ func main() {
 	attackShapeSlider.Value = 0.0
 	attackShapeSlider.OnChanged = func(f float64) {
 		attackShapeLabel.SetText(fmt.Sprintf("%.2f", f))
+		stepProvider.TheSteps[0].Shape = f
 	}
 
 	decayMSLabel := widget.NewLabel("5.0")
 	decayMSLabel.Alignment = fyne.TextAlignTrailing
-	decayMSSlider := widget.NewSlider(5.0, 1500.0)
+	decayMSSlider := widget.NewSlider(5.0, 500.0)
 	decayMSSlider.Value = 5.0
 	decayMSSlider.OnChanged = func(f float64) {
 		decayMSLabel.SetText(fmt.Sprintf("%.2f", f))
+		stepProvider.TheSteps[1].Duration = f
 	}
 
-	decayAmpLabel := widget.NewLabel("1.0")
+	decayAmpLabel := widget.NewLabel("0.3")
 	decayAmpLabel.Alignment = fyne.TextAlignTrailing
 	decayAmpSlider := widget.NewSlider(0.0, 1.0)
 	decayAmpSlider.Step = 0.01
-	decayAmpSlider.Value = 1.0
+	decayAmpSlider.Value = 0.3
 	decayAmpSlider.OnChanged = func(f float64) {
 		decayAmpLabel.SetText(fmt.Sprintf("%.2f", f))
+		stepProvider.TheSteps[1].Level = f
 	}
 
 	decayShapeLabel := widget.NewLabel("0.0")
@@ -228,14 +256,16 @@ func main() {
 	decayShapeSlider.Value = 0.0
 	decayShapeSlider.OnChanged = func(f float64) {
 		decayShapeLabel.SetText(fmt.Sprintf("%.2f", f))
+		stepProvider.TheSteps[1].Shape = f
 	}
 
 	releaseMSLabel := widget.NewLabel("5.0")
 	releaseMSLabel.Alignment = fyne.TextAlignTrailing
-	releaseMSSlider := widget.NewSlider(5.0, 1500.0)
+	releaseMSSlider := widget.NewSlider(5.0, 500.0)
 	releaseMSSlider.Value = 5.0
 	releaseMSSlider.OnChanged = func(f float64) {
 		releaseMSLabel.SetText(fmt.Sprintf("%.2f", f))
+		stepProvider.TheSteps[3].Duration = f
 	}
 
 	releaseShapeLabel := widget.NewLabel("0.0")
@@ -245,37 +275,40 @@ func main() {
 	releaseShapeSlider.Value = 0.0
 	releaseShapeSlider.OnChanged = func(f float64) {
 		releaseShapeLabel.SetText(fmt.Sprintf("%.2f", f))
+		stepProvider.TheSteps[3].Shape = f
 	}
 
 	w.SetContent(
-		container.NewHBox(
-			container.New(NewFixedWidthLayout(250),
-				widget.NewCard("Attack", "", container.NewVBox(
-					widget.NewLabel("attack duration (ms)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackMSLabel), attackMSSlider),
-					widget.NewLabel("attack amplitude (0.0 - 1.0)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackAmpLabel), attackAmpSlider),
-					widget.NewLabel("attack shape (-1.0 - 1.0)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackShapeLabel), attackShapeSlider),
-				)),
-			),
-			container.New(NewFixedWidthLayout(250),
-				widget.NewCard("Decay", "", container.NewVBox(
-					widget.NewLabel("decay duration (ms)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayMSLabel), decayMSSlider),
-					widget.NewLabel("decay amplitude (0.0 - 1.0)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayAmpLabel), decayAmpSlider),
-					widget.NewLabel("decay shape (-1.0 - 1.0)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayShapeLabel), decayShapeSlider),
-				)),
-			),
-			container.New(NewFixedWidthLayout(250),
-				widget.NewCard("Release", "", container.NewVBox(
-					widget.NewLabel("release duration (ms)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), releaseMSLabel), releaseMSSlider),
-					widget.NewLabel("release shape (-1.0 - 1.0)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), releaseShapeLabel), releaseShapeSlider),
-				)),
+		widget.NewCard("ADSR Envelope", "",
+			container.NewHBox(
+				container.New(NewFixedWidthLayout(250),
+					widget.NewCard("Attack", "", container.NewVBox(
+						widget.NewLabel("attack duration (ms)"),
+						container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackMSLabel), attackMSSlider),
+						widget.NewLabel("attack amplitude (0.0 - 1.0)"),
+						container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackAmpLabel), attackAmpSlider),
+						widget.NewLabel("attack shape (-1.0 - 1.0)"),
+						container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackShapeLabel), attackShapeSlider),
+					)),
+				),
+				container.New(NewFixedWidthLayout(250),
+					widget.NewCard("Decay", "", container.NewVBox(
+						widget.NewLabel("decay duration (ms)"),
+						container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayMSLabel), decayMSSlider),
+						widget.NewLabel("decay amplitude (0.0 - 1.0)"),
+						container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayAmpLabel), decayAmpSlider),
+						widget.NewLabel("decay shape (-1.0 - 1.0)"),
+						container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayShapeLabel), decayShapeSlider),
+					)),
+				),
+				container.New(NewFixedWidthLayout(250),
+					widget.NewCard("Release", "", container.NewVBox(
+						widget.NewLabel("release duration (ms)"),
+						container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), releaseMSLabel), releaseMSSlider),
+						widget.NewLabel("release shape (-1.0 - 1.0)"),
+						container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), releaseShapeLabel), releaseShapeSlider),
+					)),
+				),
 			),
 		),
 	)

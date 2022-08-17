@@ -72,7 +72,7 @@ func testAbsoluteDuration() {
 		Duration: 1,
 		Shape:    -0.5,
 	}, {
-		Duration: 1,
+		Duration: 0.2,
 	}, {
 		Duration: 1,
 		Shape:    -0.5,
@@ -80,8 +80,9 @@ func testAbsoluteDuration() {
 
 	adsrEnv := &adsr.ADSR{}
 
-	adsrEnv.Initialize(steps, adsr.Absolute, adsr.Duration, 44100.0)
-	adsrEnv.TriggerWithDuration(1.0, 2.2)
+	adsrEnv.Initialize(steps, adsr.Absolute, adsr.Automatic, 44100.0)
+	adsrEnv.TriggerWithDuration(2.4, 1.0)
+	adsrEnv.Trigger(1.0)
 
 	index := 0
 	for !adsrEnv.IsFinished() {
@@ -91,5 +92,5 @@ func testAbsoluteDuration() {
 }
 
 func main() {
-	testRatioAuto()
+	testAbsoluteDuration()
 }

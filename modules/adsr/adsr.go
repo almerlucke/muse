@@ -33,6 +33,10 @@ func (a *ADSR) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
+func (a *ADSR) TriggerFull(duration float64, maxLevel float64, steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode adsrc.ReleaseMode) {
+	a.adsr.TriggerFull(duration, maxLevel, steps, durationMode, releaseMode)
+}
+
 func (a *ADSR) TriggerWithDuration(duration float64, maxLevel float64) {
 	a.adsr.TriggerWithDuration(duration, maxLevel)
 }

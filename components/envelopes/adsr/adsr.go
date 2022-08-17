@@ -113,6 +113,7 @@ func (adsr *ADSR) Trigger(maxLevel float64) {
 }
 
 func (adsr *ADSR) Release() {
+	adsr.from = adsr.lastOut
 	adsr.stage = Release
 	adsr.to = 0.0
 	adsr.ramp = 0
