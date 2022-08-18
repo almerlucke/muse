@@ -60,6 +60,13 @@ func NewSequence[T any](values []T, continuous bool) *Sequence[T] {
 	return &Sequence[T]{values: values, continuous: continuous}
 }
 
+func (s *Sequence[T]) ChangeValues(values []T) {
+	s.values = values
+	if s.index >= len(values) {
+		s.index = 0
+	}
+}
+
 func (s *Sequence[T]) Next() T {
 	var v T
 
@@ -69,6 +76,9 @@ func (s *Sequence[T]) Next() T {
 		if s.index == len(s.values) && s.continuous {
 			s.index = 0
 		}
+	} else if s.continuous {
+		s.index = 0
+		return s.Next()
 	} else {
 		v = s.values[s.index-1]
 	}
