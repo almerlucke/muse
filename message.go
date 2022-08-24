@@ -40,6 +40,7 @@ type Receiver interface {
 type Messenger interface {
 	Identifiable
 	Receiver
+	Stater
 	Messages(timestamp int64, config *Configuration) []*Message
 }
 
@@ -69,4 +70,13 @@ func (m *BaseMessenger) Identifier() string {
 
 func (m *BaseMessenger) SetIdentifier(identifier string) {
 	m.identifier = identifier
+}
+
+func (m *BaseMessenger) SetState(state map[string]any) {
+	// STUB
+}
+
+func (m *BaseMessenger) GetState() map[string]any {
+	// STUB
+	return map[string]any{}
 }

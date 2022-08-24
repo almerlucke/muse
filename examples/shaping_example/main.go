@@ -5,11 +5,12 @@ import (
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shapingc "github.com/almerlucke/muse/components/shaping"
+	"github.com/almerlucke/muse/values"
 
 	"github.com/almerlucke/muse/messengers"
 	"github.com/almerlucke/muse/messengers/generators/sequencer"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
-	"github.com/almerlucke/muse/messengers/triggers/stepper/sliceprovider"
+	"github.com/almerlucke/muse/messengers/triggers/stepper/sequence"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/filters/moog/moog1"
@@ -44,7 +45,7 @@ func main() {
 	env.AddMessenger(messengers.NewGenerator(sequencer, "sequencer1"))
 
 	env.AddMessenger(stepper.NewStepper(
-		sliceprovider.New([]float64{250, -125, 250, 250, -125, 125, -125, 250}),
+		sequence.New(values.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250}, true)),
 		[]string{"sequencer1", "adsr1"}, "",
 	))
 

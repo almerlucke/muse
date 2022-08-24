@@ -43,6 +43,22 @@ type Step struct {
 	Shape         float64
 }
 
+func (s *Step) GetState() map[string]any {
+	return map[string]any{
+		"level":         s.Level,
+		"durationRatio": s.DurationRatio,
+		"duration":      s.Duration,
+		"shape":         s.Shape,
+	}
+}
+
+func (s *Step) SetState(state map[string]any) {
+	s.Level = state["level"].(float64)
+	s.DurationRatio = state["durationRatio"].(float64)
+	s.Duration = state["duration"].(float64)
+	s.Shape = state["shape"].(float64)
+}
+
 type ADSR struct {
 	releaseMode  ReleaseMode
 	durationMode DurationMode

@@ -7,10 +7,10 @@ import (
 )
 
 type Step struct {
-	Skip        bool
-	Shuffle     float64 // 0.0 - 1.0 -> (0.5 + shuffle * 0.35) * milliPerNote * 2.0  50% - 85%  --- 50, 54, 58, 62, 66, 70, 74, 78, 82, 86
-	ShuffleRand float64
-	SkipFactor  float64 // 0% - 90% chance of skipping
+	Skip        bool    `json:"skip"`
+	Shuffle     float64 `json:"shuffle"` // 0.0 - 1.0 -> (0.5 + shuffle * 0.35) * milliPerNote * 2.0  50% - 85%  --- 50, 54, 58, 62, 66, 70, 74, 78, 82, 86
+	ShuffleRand float64 `json:"shuffleRand"`
+	SkipFactor  float64 `json:"skipFactor"` // 0% - 90% chance of skipping
 }
 
 func (s *Step) shuffleNote(milliPerNote float64) float64 {
@@ -28,7 +28,6 @@ func (s *Step) shuffleNote(milliPerNote float64) float64 {
 }
 
 type Swing struct {
-	currentStep  int
 	steps        values.Generator[*Step]
 	milliPerNote float64
 	delay        float64
@@ -61,4 +60,18 @@ func (sw *Swing) NextStep() float64 {
 	}
 
 	return dur
+}
+
+func (sw *Swing) GetState() map[string]any {
+	return map[string]any{
+		"steps":        sw.steps.GetState(),
+		"milliPerNote": sw.milliPerNote,
+		"delay":        sw.delay,
+	}
+}
+
+func (sw *Swing) SetState(state map[string]any) {
+	sw.steps.SetState(state["steps"].(map[string]any))
+	sw.milliPerNote = state["milliPerNote"].(float64)
+	sw.delay = state["delay"].(float64)
 }

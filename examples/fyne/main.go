@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -34,6 +35,52 @@ import (
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/shaper"
 )
+
+type ADSRStepProvider interface {
+	ADSRSteps() []adsrc.Step
+}
+
+type TestVoice struct {
+	*muse.BasePatch
+	adsrEnv      *adsr.ADSR
+	phasor       *phasor.Phasor
+	Shaper       *shaper.Shaper
+	stepProvider ADSRStepProvider
+}
+
+func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *TestVoice {
+	testVoice := &TestVoice{
+		BasePatch:    muse.NewPatch(0, 1, config, ""),
+		stepProvider: stepProvider,
+	}
+
+	adsrEnv := testVoice.AddModule(adsr.NewADSR(stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
+	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
+	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
+	shape := testVoice.AddModule(shaper.NewShaper(shapingc.NewSineTable(512), 0, nil, nil, config, "shaper"))
+
+	muse.Connect(osc, 0, shape, 0)
+	muse.Connect(shape, 0, multiplier, 0)
+	muse.Connect(adsrEnv, 0, multiplier, 1)
+	muse.Connect(multiplier, 0, testVoice, 0)
+
+	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
+	testVoice.Shaper = shape.(*shaper.Shaper)
+	testVoice.phasor = osc.(*phasor.Phasor)
+
+	return testVoice
+}
+
+func (tv *TestVoice) IsActive() bool {
+	return tv.adsrEnv.IsActive()
+}
+
+func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, config *muse.Configuration) {
+	msg := message.(map[string]any)
+
+	tv.adsrEnv.TriggerFull(duration, amplitude, tv.stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration)
+	tv.phasor.ReceiveMessage(msg["osc"])
+}
 
 type FixedWidthLayout struct {
 	Width float32
@@ -63,142 +110,176 @@ func (fwl *FixedWidthLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(fwl.Width, maxH)
 }
 
-type StepProvider interface {
-	Steps() []adsrc.Step
-}
-
-type TestVoice struct {
-	*muse.BasePatch
-	adsrEnv      *adsr.ADSR
-	phasor       *phasor.Phasor
-	Shaper       *shaper.Shaper
-	stepProvider StepProvider
-}
-
-func NewTestVoice(config *muse.Configuration, stepProvider StepProvider) *TestVoice {
-	testVoice := &TestVoice{
-		BasePatch:    muse.NewPatch(0, 1, config, ""),
-		stepProvider: stepProvider,
-	}
-
-	adsrEnv := testVoice.AddModule(adsr.NewADSR(stepProvider.Steps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
-	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
-	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	shape := testVoice.AddModule(shaper.NewShaper(shapingc.NewSineTable(512), 0, nil, nil, config, "shaper"))
-
-	muse.Connect(osc, 0, shape, 0)
-	muse.Connect(shape, 0, multiplier, 0)
-	muse.Connect(adsrEnv, 0, multiplier, 1)
-	muse.Connect(multiplier, 0, testVoice, 0)
-
-	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
-	testVoice.Shaper = shape.(*shaper.Shaper)
-	testVoice.phasor = osc.(*phasor.Phasor)
-
-	return testVoice
-}
-
-func (tv *TestVoice) IsActive() bool {
-	return tv.adsrEnv.IsActive()
-}
-
-func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, config *muse.Configuration) {
-	msg := message.(map[string]any)
-
-	tv.adsrEnv.TriggerFull(duration, amplitude, tv.stepProvider.Steps(), adsrc.Absolute, adsrc.Duration)
-	tv.phasor.ReceiveMessage(msg["osc"])
-}
-
 type ADSRControl struct {
-	steps []adsrc.Step
+	steps                        []adsrc.Step
+	attackDurationLabelBinding   binding.String
+	attackDurationSliderBinding  binding.Float
+	attackLevelLabelBinding      binding.String
+	attackLevelSliderBinding     binding.Float
+	attackShapeLabelBinding      binding.String
+	attackShapeSliderBinding     binding.Float
+	decayDurationLabelBinding    binding.String
+	decayDurationSliderBinding   binding.Float
+	decayLevelLabelBinding       binding.String
+	decayLevelSliderBinding      binding.Float
+	decayShapeLabelBinding       binding.String
+	decayShapeSliderBinding      binding.Float
+	releaseDurationLabelBinding  binding.String
+	releaseDurationSliderBinding binding.Float
+	releaseShapeLabelBinding     binding.String
+	releaseShapeSliderBinding    binding.Float
 }
 
-func (ctrl *ADSRControl) CanvasObject() fyne.CanvasObject {
-	attackMSLabel := widget.NewLabel(fmt.Sprintf("%.2f", ctrl.steps[0].Duration))
-	attackMSLabel.Alignment = fyne.TextAlignTrailing
-	attackMSSlider := widget.NewSlider(5.0, 500.0)
-	attackMSSlider.Value = 5.0
-	attackMSSlider.OnChanged = func(f float64) {
-		attackMSLabel.SetText(fmt.Sprintf("%.2f", f))
-		ctrl.steps[0].Duration = f
-	}
+func (ctrl *ADSRControl) UI() fyne.CanvasObject {
+	// Attack Duration
+	ctrl.attackDurationLabelBinding = binding.NewString()
+	ctrl.attackDurationLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[0].Duration))
+	attackDurationLabel := widget.NewLabelWithData(ctrl.attackDurationLabelBinding)
+	attackDurationLabel.Alignment = fyne.TextAlignTrailing
 
-	attackAmpLabel := widget.NewLabel(fmt.Sprintf("%.2f", ctrl.steps[0].Level))
-	attackAmpLabel.Alignment = fyne.TextAlignTrailing
-	attackAmpSlider := widget.NewSlider(0.0, 1.0)
-	attackAmpSlider.Step = 0.01
-	attackAmpSlider.Value = 1.0
-	attackAmpSlider.OnChanged = func(f float64) {
-		attackAmpLabel.SetText(fmt.Sprintf("%.2f", f))
-		ctrl.steps[0].Level = f
-	}
+	ctrl.attackDurationSliderBinding = binding.NewFloat()
+	ctrl.attackDurationSliderBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ctrl.attackDurationSliderBinding.Get()
+		if err == nil {
+			ctrl.attackDurationLabelBinding.Set(fmt.Sprintf("%.2f", v))
+			ctrl.steps[0].Duration = v
+		}
+	}))
+	ctrl.attackDurationSliderBinding.Set(5.0)
+	attackDurationSlider := widget.NewSliderWithData(5.0, 500.0, ctrl.attackDurationSliderBinding)
 
-	attackShapeLabel := widget.NewLabel(fmt.Sprintf("%.2f", ctrl.steps[0].Shape))
+	// Attack Level
+	ctrl.attackLevelLabelBinding = binding.NewString()
+	ctrl.attackLevelLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[0].Level))
+	attackLevelLabel := widget.NewLabelWithData(ctrl.attackLevelLabelBinding)
+	attackLevelLabel.Alignment = fyne.TextAlignTrailing
+
+	ctrl.attackLevelSliderBinding = binding.NewFloat()
+	ctrl.attackLevelSliderBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ctrl.attackLevelSliderBinding.Get()
+		if err == nil {
+			ctrl.attackLevelLabelBinding.Set(fmt.Sprintf("%.2f", v))
+			ctrl.steps[0].Level = v
+		}
+	}))
+	ctrl.attackLevelSliderBinding.Set(1.0)
+	attackLevelSlider := widget.NewSliderWithData(0.0, 1.0, ctrl.attackLevelSliderBinding)
+	attackLevelSlider.Step = 0.01
+
+	// Attack Shape
+	ctrl.attackShapeLabelBinding = binding.NewString()
+	ctrl.attackShapeLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[0].Level))
+	attackShapeLabel := widget.NewLabelWithData(ctrl.attackShapeLabelBinding)
 	attackShapeLabel.Alignment = fyne.TextAlignTrailing
-	attackShapeSlider := widget.NewSlider(-1.0, 1.0)
+
+	ctrl.attackShapeSliderBinding = binding.NewFloat()
+	ctrl.attackShapeSliderBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ctrl.attackShapeSliderBinding.Get()
+		if err == nil {
+			ctrl.attackShapeLabelBinding.Set(fmt.Sprintf("%.2f", v))
+			ctrl.steps[0].Shape = v
+		}
+	}))
+	ctrl.attackShapeSliderBinding.Set(0.0)
+	attackShapeSlider := widget.NewSliderWithData(-1.0, 1.0, ctrl.attackShapeSliderBinding)
 	attackShapeSlider.Step = 0.01
-	attackShapeSlider.Value = 0.0
-	attackShapeSlider.OnChanged = func(f float64) {
-		attackShapeLabel.SetText(fmt.Sprintf("%.2f", f))
-		ctrl.steps[0].Shape = f
-	}
 
-	decayMSLabel := widget.NewLabel(fmt.Sprintf("%.2f", ctrl.steps[1].Duration))
-	decayMSLabel.Alignment = fyne.TextAlignTrailing
-	decayMSSlider := widget.NewSlider(5.0, 500.0)
-	decayMSSlider.Value = 5.0
-	decayMSSlider.OnChanged = func(f float64) {
-		decayMSLabel.SetText(fmt.Sprintf("%.2f", f))
-		ctrl.steps[1].Duration = f
-	}
+	// Decay Duration
+	ctrl.decayDurationLabelBinding = binding.NewString()
+	ctrl.decayDurationLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[1].Duration))
+	decayDurationLabel := widget.NewLabelWithData(ctrl.decayDurationLabelBinding)
+	decayDurationLabel.Alignment = fyne.TextAlignTrailing
 
-	decayAmpLabel := widget.NewLabel(fmt.Sprintf("%.2f", ctrl.steps[1].Level))
-	decayAmpLabel.Alignment = fyne.TextAlignTrailing
-	decayAmpSlider := widget.NewSlider(0.0, 1.0)
-	decayAmpSlider.Step = 0.01
-	decayAmpSlider.Value = 0.3
-	decayAmpSlider.OnChanged = func(f float64) {
-		decayAmpLabel.SetText(fmt.Sprintf("%.2f", f))
-		ctrl.steps[1].Level = f
-	}
+	ctrl.decayDurationSliderBinding = binding.NewFloat()
+	ctrl.decayDurationSliderBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ctrl.decayDurationSliderBinding.Get()
+		if err == nil {
+			ctrl.decayDurationLabelBinding.Set(fmt.Sprintf("%.2f", v))
+			ctrl.steps[1].Duration = v
+		}
+	}))
+	ctrl.decayDurationSliderBinding.Set(5.0)
+	decayDurationSlider := widget.NewSliderWithData(5.0, 500.0, ctrl.decayDurationSliderBinding)
 
-	decayShapeLabel := widget.NewLabel(fmt.Sprintf("%.2f", ctrl.steps[1].Shape))
+	// Decay Level
+	ctrl.decayLevelLabelBinding = binding.NewString()
+	ctrl.decayLevelLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[1].Level))
+	decayLevelLabel := widget.NewLabelWithData(ctrl.decayLevelLabelBinding)
+	decayLevelLabel.Alignment = fyne.TextAlignTrailing
+
+	ctrl.decayLevelSliderBinding = binding.NewFloat()
+	ctrl.decayLevelSliderBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ctrl.decayLevelSliderBinding.Get()
+		if err == nil {
+			ctrl.decayLevelLabelBinding.Set(fmt.Sprintf("%.2f", v))
+			ctrl.steps[1].Level = v
+		}
+	}))
+	ctrl.decayLevelSliderBinding.Set(0.3)
+	decayLevelSlider := widget.NewSliderWithData(0.0, 1.0, ctrl.decayLevelSliderBinding)
+	decayLevelSlider.Step = 0.01
+
+	// Decay Shape
+	ctrl.decayShapeLabelBinding = binding.NewString()
+	ctrl.decayShapeLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[1].Level))
+	decayShapeLabel := widget.NewLabelWithData(ctrl.decayShapeLabelBinding)
 	decayShapeLabel.Alignment = fyne.TextAlignTrailing
-	decayShapeSlider := widget.NewSlider(-1.0, 1.0)
+
+	ctrl.decayShapeSliderBinding = binding.NewFloat()
+	ctrl.decayShapeSliderBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ctrl.decayShapeSliderBinding.Get()
+		if err == nil {
+			ctrl.decayShapeLabelBinding.Set(fmt.Sprintf("%.2f", v))
+			ctrl.steps[1].Shape = v
+		}
+	}))
+	ctrl.decayShapeSliderBinding.Set(0.0)
+	decayShapeSlider := widget.NewSliderWithData(-1.0, 1.0, ctrl.decayShapeSliderBinding)
 	decayShapeSlider.Step = 0.01
-	decayShapeSlider.Value = 0.0
-	decayShapeSlider.OnChanged = func(f float64) {
-		decayShapeLabel.SetText(fmt.Sprintf("%.2f", f))
-		ctrl.steps[1].Shape = f
-	}
 
-	releaseMSLabel := widget.NewLabel(fmt.Sprintf("%.2f", ctrl.steps[3].Duration))
-	releaseMSLabel.Alignment = fyne.TextAlignTrailing
-	releaseMSSlider := widget.NewSlider(5.0, 500.0)
-	releaseMSSlider.Value = 5.0
-	releaseMSSlider.OnChanged = func(f float64) {
-		releaseMSLabel.SetText(fmt.Sprintf("%.2f", f))
-		ctrl.steps[3].Duration = f
-	}
+	// Release Duration
+	ctrl.releaseDurationLabelBinding = binding.NewString()
+	ctrl.releaseDurationLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[3].Duration))
+	releaseDurationLabel := widget.NewLabelWithData(ctrl.releaseDurationLabelBinding)
+	releaseDurationLabel.Alignment = fyne.TextAlignTrailing
 
-	releaseShapeLabel := widget.NewLabel(fmt.Sprintf("%.2f", ctrl.steps[3].Shape))
+	ctrl.releaseDurationSliderBinding = binding.NewFloat()
+	ctrl.releaseDurationSliderBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ctrl.releaseDurationSliderBinding.Get()
+		if err == nil {
+			ctrl.releaseDurationLabelBinding.Set(fmt.Sprintf("%.2f", v))
+			ctrl.steps[3].Duration = v
+		}
+	}))
+	ctrl.releaseDurationSliderBinding.Set(5.0)
+	releaseDurationSlider := widget.NewSliderWithData(5.0, 500.0, ctrl.releaseDurationSliderBinding)
+
+	// Release Shape
+	ctrl.releaseShapeLabelBinding = binding.NewString()
+	ctrl.releaseShapeLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[3].Level))
+	releaseShapeLabel := widget.NewLabelWithData(ctrl.releaseShapeLabelBinding)
 	releaseShapeLabel.Alignment = fyne.TextAlignTrailing
-	releaseShapeSlider := widget.NewSlider(-1.0, 1.0)
+
+	ctrl.releaseShapeSliderBinding = binding.NewFloat()
+	ctrl.releaseShapeSliderBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ctrl.releaseShapeSliderBinding.Get()
+		if err == nil {
+			ctrl.releaseShapeLabelBinding.Set(fmt.Sprintf("%.2f", v))
+			ctrl.steps[3].Shape = v
+		}
+	}))
+	ctrl.releaseShapeSliderBinding.Set(0.0)
+	releaseShapeSlider := widget.NewSliderWithData(-1.0, 1.0, ctrl.releaseShapeSliderBinding)
 	releaseShapeSlider.Step = 0.01
-	releaseShapeSlider.Value = 0.0
-	releaseShapeSlider.OnChanged = func(f float64) {
-		releaseShapeLabel.SetText(fmt.Sprintf("%.2f", f))
-		ctrl.steps[3].Shape = f
-	}
 
 	return widget.NewCard("ADSR Envelope", "",
 		container.NewHBox(
 			container.New(NewFixedWidthLayout(250),
 				widget.NewCard("Attack", "", container.NewVBox(
 					widget.NewLabel("attack duration (ms)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackMSLabel), attackMSSlider),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackDurationLabel), attackDurationSlider),
 					widget.NewLabel("attack amplitude (0.0 - 1.0)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackAmpLabel), attackAmpSlider),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackLevelLabel), attackLevelSlider),
 					widget.NewLabel("attack shape (-1.0 - 1.0)"),
 					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), attackShapeLabel), attackShapeSlider),
 				)),
@@ -206,9 +287,9 @@ func (ctrl *ADSRControl) CanvasObject() fyne.CanvasObject {
 			container.New(NewFixedWidthLayout(250),
 				widget.NewCard("Decay", "", container.NewVBox(
 					widget.NewLabel("decay duration (ms)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayMSLabel), decayMSSlider),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayDurationLabel), decayDurationSlider),
 					widget.NewLabel("decay amplitude (0.0 - 1.0)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayAmpLabel), decayAmpSlider),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayLevelLabel), decayLevelSlider),
 					widget.NewLabel("decay shape (-1.0 - 1.0)"),
 					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), decayShapeLabel), decayShapeSlider),
 				)),
@@ -216,7 +297,7 @@ func (ctrl *ADSRControl) CanvasObject() fyne.CanvasObject {
 			container.New(NewFixedWidthLayout(250),
 				widget.NewCard("Release", "", container.NewVBox(
 					widget.NewLabel("release duration (ms)"),
-					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), releaseMSLabel), releaseMSSlider),
+					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), releaseDurationLabel), releaseDurationSlider),
 					widget.NewLabel("release shape (-1.0 - 1.0)"),
 					container.NewBorder(nil, nil, nil, container.New(NewFixedWidthLayout(80), releaseShapeLabel), releaseShapeSlider),
 				)),
@@ -225,8 +306,35 @@ func (ctrl *ADSRControl) CanvasObject() fyne.CanvasObject {
 	)
 }
 
-func (ctrl *ADSRControl) Steps() []adsrc.Step {
+func (ctrl *ADSRControl) ADSRSteps() []adsrc.Step {
 	return ctrl.steps
+}
+
+func (ctrl *ADSRControl) GetState() map[string]any {
+	stepStates := make([]map[string]any, len(ctrl.steps))
+
+	for index, step := range ctrl.steps {
+		stepStates[index] = step.GetState()
+	}
+
+	return map[string]any{"steps": stepStates}
+}
+
+func (ctrl *ADSRControl) SetState(state map[string]any) {
+	stepStates := state["steps"].([]map[string]any)
+
+	for index, stepState := range stepStates {
+		ctrl.steps[index].SetState(stepState)
+	}
+
+	ctrl.attackDurationSliderBinding.Set(ctrl.steps[0].Duration)
+	ctrl.attackLevelSliderBinding.Set(ctrl.steps[0].Level)
+	ctrl.attackShapeSliderBinding.Set(ctrl.steps[0].Shape)
+	ctrl.decayDurationSliderBinding.Set(ctrl.steps[1].Duration)
+	ctrl.decayLevelSliderBinding.Set(ctrl.steps[1].Level)
+	ctrl.decayShapeSliderBinding.Set(ctrl.steps[1].Shape)
+	ctrl.releaseDurationSliderBinding.Set(ctrl.steps[3].Duration)
+	ctrl.releaseShapeSliderBinding.Set(ctrl.steps[3].Shape)
 }
 
 func NewADSRControl() *ADSRControl {
@@ -246,28 +354,22 @@ type SwingControl struct {
 	stepSequence *values.Sequence[*swing.Step]
 	steps        []*swing.Step
 	n            int
-	i            int
 	prevCheck    int
 	runChecks    []*widget.Check
+	nEntry       *widget.Entry
 }
 
-func (sc *SwingControl) Update() {
+func (sc *SwingControl) Listen(state map[string]any) {
 	if sc.runChecks != nil {
-		log.Printf("check update sc.prevCheck %d", sc.prevCheck)
 
 		sc.runChecks[sc.prevCheck].Checked = false
 		sc.runChecks[sc.prevCheck].Refresh()
 
-		sc.i++
-		if sc.i >= sc.n {
-			sc.i = 0
-		}
+		i := state["steps"].(map[string]any)["index"].(int)
 
-		sc.prevCheck = sc.i
-		sc.runChecks[sc.i].Checked = true
-		sc.runChecks[sc.i].Refresh()
-
-		log.Printf("check update sc.i %d", sc.i)
+		sc.prevCheck = i
+		sc.runChecks[i].Checked = true
+		sc.runChecks[i].Refresh()
 	}
 }
 
@@ -275,7 +377,7 @@ func (sc *SwingControl) Sequence() *values.Sequence[*swing.Step] {
 	return sc.stepSequence
 }
 
-func (sc *SwingControl) CanvasObject() fyne.CanvasObject {
+func (sc *SwingControl) UI() fyne.CanvasObject {
 	stepControls := []fyne.CanvasObject{}
 	runChecks := make([]*widget.Check, 64)
 
@@ -312,14 +414,15 @@ func (sc *SwingControl) CanvasObject() fyne.CanvasObject {
 		})
 
 		skipCheck.Checked = !sc.steps[i].Skip
-
-		stepControls = append(stepControls, widget.NewForm(
+		stepForm := widget.NewForm(
 			widget.NewFormItem(fmt.Sprintf("%d", i+1), skipCheck),
 			widget.NewFormItem("Swing", swingEntry),
 			widget.NewFormItem("Rand", randEntry),
 			widget.NewFormItem("Skip", skipEntry),
 			widget.NewFormItem("", check),
-		))
+		)
+
+		stepControls = append(stepControls, stepForm)
 
 		if (i+1)%8 == 0 {
 			stepControls = append(stepControls, widget.NewSeparator())
@@ -328,11 +431,46 @@ func (sc *SwingControl) CanvasObject() fyne.CanvasObject {
 
 	sc.runChecks = runChecks
 
-	return container.NewHScroll(
-		container.NewHBox(
-			stepControls...,
-		),
-	)
+	nEntry := widget.NewEntry()
+	nEntry.Text = "8"
+	nEntry.OnSubmitted = func(v string) {
+		n, _ := strconv.ParseInt(v, 10, 64)
+		if n > 1 && n < 64 {
+			sc.n = int(n)
+			sc.stepSequence.ChangeValues(sc.steps[:sc.n])
+		}
+	}
+
+	sc.nEntry = nEntry
+
+	return widget.NewCard("Rhythm", "",
+		container.NewVBox(
+			container.NewHBox(
+				nEntry,
+				widget.NewButton("-", func() {
+					if sc.n > 2 {
+						sc.n--
+						sc.nEntry.Text = fmt.Sprintf("%d", sc.n)
+						sc.nEntry.Refresh()
+						sc.stepSequence.ChangeValues(sc.steps[:sc.n])
+					}
+				}),
+				widget.NewButton("+", func() {
+					sc.n++
+					if sc.n > 64 {
+						sc.n = 64
+					}
+					sc.nEntry.Text = fmt.Sprintf("%d", sc.n)
+					sc.nEntry.Refresh()
+					sc.stepSequence.ChangeValues(sc.steps[:sc.n])
+				}),
+			),
+			container.NewHScroll(
+				container.NewHBox(
+					stepControls...,
+				),
+			),
+		))
 }
 
 func NewSwingControl() *SwingControl {
@@ -450,8 +588,8 @@ func main() {
 					stream.Stop()
 				}),
 			),
-			adsrControl.CanvasObject(),
-			swingControl.CanvasObject(),
+			adsrControl.UI(),
+			swingControl.UI(),
 		),
 	)
 

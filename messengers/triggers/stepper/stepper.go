@@ -2,14 +2,12 @@ package stepper
 
 import (
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/ui"
 )
 
 type StepProvider interface {
+	muse.Stater
 	NextStep() float64
-}
-
-type Listener interface {
-	Update()
 }
 
 type Stepper struct {
@@ -17,14 +15,14 @@ type Stepper struct {
 	addresses []string
 	accum     int64
 	provider  StepProvider
-	listener  Listener
+	listener  ui.Listener
 }
 
 func NewStepper(provider StepProvider, addresses []string, identifier string) *Stepper {
 	return NewStepperWithListener(provider, addresses, nil, identifier)
 }
 
-func NewStepperWithListener(provider StepProvider, addresses []string, listener Listener, identifier string) *Stepper {
+func NewStepperWithListener(provider StepProvider, addresses []string, listener ui.Listener, identifier string) *Stepper {
 	return &Stepper{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		addresses:     addresses,
@@ -51,7 +49,7 @@ func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.
 		}
 
 		if s.listener != nil {
-			s.listener.Update()
+			s.listener.Listen(s.provider.GetState())
 		}
 	}
 

@@ -3,6 +3,7 @@ package muse
 type Module interface {
 	Receiver
 	Identifiable
+	Stater
 	NumInputs() int
 	NumOutputs() int
 	Configuration() *Configuration
@@ -119,4 +120,13 @@ func (m *BaseModule) Synthesize() bool {
 func (m *BaseModule) ReceiveMessage(msg any) []*Message {
 	// STUB
 	return nil
+}
+
+func (m *BaseModule) SetState(state map[string]any) {
+	// STUB
+}
+
+func (m *BaseModule) GetState() map[string]any {
+	// STUB
+	return map[string]any{}
 }
