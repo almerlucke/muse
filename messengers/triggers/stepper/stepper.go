@@ -40,16 +40,16 @@ func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.
 			break
 		}
 
+		if s.listener != nil {
+			s.listener.Listen(s.provider.GetState())
+		}
+
 		wait := int64(s.provider.NextStep() * 0.001 * config.SampleRate)
 		if wait > 0 {
 			bang = true
 			s.accum += wait
 		} else {
 			s.accum += -wait
-		}
-
-		if s.listener != nil {
-			s.listener.Listen(s.provider.GetState())
 		}
 	}
 

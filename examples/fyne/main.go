@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"strconv"
 
@@ -9,6 +11,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -138,6 +141,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	attackDurationLabel.Alignment = fyne.TextAlignTrailing
 
 	ctrl.attackDurationSliderBinding = binding.NewFloat()
+	ctrl.attackDurationSliderBinding.Set(5.0)
 	ctrl.attackDurationSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.attackDurationSliderBinding.Get()
 		if err == nil {
@@ -145,7 +149,6 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[0].Duration = v
 		}
 	}))
-	ctrl.attackDurationSliderBinding.Set(5.0)
 	attackDurationSlider := widget.NewSliderWithData(5.0, 500.0, ctrl.attackDurationSliderBinding)
 
 	// Attack Level
@@ -155,6 +158,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	attackLevelLabel.Alignment = fyne.TextAlignTrailing
 
 	ctrl.attackLevelSliderBinding = binding.NewFloat()
+	ctrl.attackLevelSliderBinding.Set(1.0)
 	ctrl.attackLevelSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.attackLevelSliderBinding.Get()
 		if err == nil {
@@ -162,7 +166,6 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[0].Level = v
 		}
 	}))
-	ctrl.attackLevelSliderBinding.Set(1.0)
 	attackLevelSlider := widget.NewSliderWithData(0.0, 1.0, ctrl.attackLevelSliderBinding)
 	attackLevelSlider.Step = 0.01
 
@@ -173,6 +176,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	attackShapeLabel.Alignment = fyne.TextAlignTrailing
 
 	ctrl.attackShapeSliderBinding = binding.NewFloat()
+	ctrl.attackShapeSliderBinding.Set(0.0)
 	ctrl.attackShapeSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.attackShapeSliderBinding.Get()
 		if err == nil {
@@ -180,7 +184,6 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[0].Shape = v
 		}
 	}))
-	ctrl.attackShapeSliderBinding.Set(0.0)
 	attackShapeSlider := widget.NewSliderWithData(-1.0, 1.0, ctrl.attackShapeSliderBinding)
 	attackShapeSlider.Step = 0.01
 
@@ -191,6 +194,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	decayDurationLabel.Alignment = fyne.TextAlignTrailing
 
 	ctrl.decayDurationSliderBinding = binding.NewFloat()
+	ctrl.decayDurationSliderBinding.Set(5.0)
 	ctrl.decayDurationSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.decayDurationSliderBinding.Get()
 		if err == nil {
@@ -198,7 +202,6 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[1].Duration = v
 		}
 	}))
-	ctrl.decayDurationSliderBinding.Set(5.0)
 	decayDurationSlider := widget.NewSliderWithData(5.0, 500.0, ctrl.decayDurationSliderBinding)
 
 	// Decay Level
@@ -208,6 +211,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	decayLevelLabel.Alignment = fyne.TextAlignTrailing
 
 	ctrl.decayLevelSliderBinding = binding.NewFloat()
+	ctrl.decayLevelSliderBinding.Set(0.3)
 	ctrl.decayLevelSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.decayLevelSliderBinding.Get()
 		if err == nil {
@@ -215,7 +219,6 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[1].Level = v
 		}
 	}))
-	ctrl.decayLevelSliderBinding.Set(0.3)
 	decayLevelSlider := widget.NewSliderWithData(0.0, 1.0, ctrl.decayLevelSliderBinding)
 	decayLevelSlider.Step = 0.01
 
@@ -226,6 +229,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	decayShapeLabel.Alignment = fyne.TextAlignTrailing
 
 	ctrl.decayShapeSliderBinding = binding.NewFloat()
+	ctrl.decayShapeSliderBinding.Set(0.0)
 	ctrl.decayShapeSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.decayShapeSliderBinding.Get()
 		if err == nil {
@@ -233,7 +237,6 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[1].Shape = v
 		}
 	}))
-	ctrl.decayShapeSliderBinding.Set(0.0)
 	decayShapeSlider := widget.NewSliderWithData(-1.0, 1.0, ctrl.decayShapeSliderBinding)
 	decayShapeSlider.Step = 0.01
 
@@ -244,6 +247,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	releaseDurationLabel.Alignment = fyne.TextAlignTrailing
 
 	ctrl.releaseDurationSliderBinding = binding.NewFloat()
+	ctrl.releaseDurationSliderBinding.Set(5.0)
 	ctrl.releaseDurationSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.releaseDurationSliderBinding.Get()
 		if err == nil {
@@ -251,7 +255,6 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[3].Duration = v
 		}
 	}))
-	ctrl.releaseDurationSliderBinding.Set(5.0)
 	releaseDurationSlider := widget.NewSliderWithData(5.0, 500.0, ctrl.releaseDurationSliderBinding)
 
 	// Release Shape
@@ -261,6 +264,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	releaseShapeLabel.Alignment = fyne.TextAlignTrailing
 
 	ctrl.releaseShapeSliderBinding = binding.NewFloat()
+	ctrl.releaseShapeSliderBinding.Set(0.0)
 	ctrl.releaseShapeSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.releaseShapeSliderBinding.Get()
 		if err == nil {
@@ -268,7 +272,6 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[3].Shape = v
 		}
 	}))
-	ctrl.releaseShapeSliderBinding.Set(0.0)
 	releaseShapeSlider := widget.NewSliderWithData(-1.0, 1.0, ctrl.releaseShapeSliderBinding)
 	releaseShapeSlider.Step = 0.01
 
@@ -321,10 +324,10 @@ func (ctrl *ADSRControl) GetState() map[string]any {
 }
 
 func (ctrl *ADSRControl) SetState(state map[string]any) {
-	stepStates := state["steps"].([]map[string]any)
+	stepStates := state["steps"].([]any)
 
 	for index, stepState := range stepStates {
-		ctrl.steps[index].SetState(stepState)
+		ctrl.steps[index].SetState(stepState.(map[string]any))
 	}
 
 	ctrl.attackDurationSliderBinding.Set(ctrl.steps[0].Duration)
@@ -350,26 +353,114 @@ func NewADSRControl() *ADSRControl {
 	return control
 }
 
+func parseFloatWithBounds(s string, min float64, max float64) float64 {
+	f, _ := strconv.ParseFloat(s, 64)
+	if f < min {
+		f = min
+	}
+	if f > max {
+		f = max
+	}
+	return f
+}
+
+type SwingStepControl struct {
+	step               *swing.Step
+	skipBinding        binding.Bool
+	shuffleBinding     binding.String
+	shuffleRandBinding binding.String
+	skipFactorBinding  binding.String
+	currentBinding     binding.Bool
+	index              int
+	isCurrent          bool
+}
+
+func NewSwingStepControl(step *swing.Step, index int, isCurrent bool) *SwingStepControl {
+	return &SwingStepControl{
+		step:      step,
+		index:     index,
+		isCurrent: isCurrent,
+	}
+}
+
+func (ssc *SwingStepControl) SetCurrent(c bool) {
+	ssc.isCurrent = c
+	ssc.currentBinding.Set(c)
+}
+
+func (ssc *SwingStepControl) UI() fyne.CanvasObject {
+	ssc.skipBinding = binding.NewBool()
+	ssc.skipBinding.Set(!ssc.step.Skip)
+	ssc.skipBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ssc.skipBinding.Get()
+		if err == nil {
+			ssc.step.Skip = !v
+		}
+	}))
+	skipCheck := widget.NewCheckWithData("", ssc.skipBinding)
+
+	ssc.shuffleBinding = binding.NewString()
+	ssc.shuffleBinding.Set(fmt.Sprintf("%.2f", ssc.step.Shuffle))
+	ssc.shuffleBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ssc.shuffleBinding.Get()
+		if err == nil {
+			ssc.step.Shuffle = parseFloatWithBounds(v, 0, 1)
+		}
+	}))
+	shuffleEntry := widget.NewEntryWithData(ssc.shuffleBinding)
+	shuffleEntry.Validator = nil
+
+	ssc.shuffleRandBinding = binding.NewString()
+	ssc.shuffleRandBinding.Set(fmt.Sprintf("%.2f", ssc.step.ShuffleRand))
+	ssc.shuffleRandBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ssc.shuffleRandBinding.Get()
+		if err == nil {
+			ssc.step.ShuffleRand = parseFloatWithBounds(v, 0, 1)
+		}
+	}))
+	shuffleRandEntry := widget.NewEntryWithData(ssc.shuffleBinding)
+	shuffleRandEntry.Validator = nil
+
+	ssc.skipFactorBinding = binding.NewString()
+	ssc.skipFactorBinding.Set(fmt.Sprintf("%.2f", ssc.step.SkipFactor))
+	ssc.skipFactorBinding.AddListener(binding.NewDataListener(func() {
+		v, err := ssc.skipFactorBinding.Get()
+		if err == nil {
+			ssc.step.SkipFactor = parseFloatWithBounds(v, 0, 1)
+		}
+	}))
+	skipFactorEntry := widget.NewEntryWithData(ssc.skipFactorBinding)
+	skipFactorEntry.Validator = nil
+
+	ssc.currentBinding = binding.NewBool()
+	ssc.currentBinding.Set(ssc.isCurrent)
+	currentCheck := widget.NewCheckWithData("", ssc.currentBinding)
+	currentCheck.Disable()
+
+	return widget.NewForm(
+		widget.NewFormItem(fmt.Sprintf("%d", ssc.index), skipCheck),
+		widget.NewFormItem("Swing", shuffleEntry),
+		widget.NewFormItem("Rand", shuffleRandEntry),
+		widget.NewFormItem("Skip", skipFactorEntry),
+		widget.NewFormItem("", currentCheck),
+	)
+}
+
 type SwingControl struct {
 	stepSequence *values.Sequence[*swing.Step]
+	stepControls []*SwingStepControl
 	steps        []*swing.Step
 	n            int
 	prevCheck    int
-	runChecks    []*widget.Check
 	nEntry       *widget.Entry
 }
 
 func (sc *SwingControl) Listen(state map[string]any) {
-	if sc.runChecks != nil {
-
-		sc.runChecks[sc.prevCheck].Checked = false
-		sc.runChecks[sc.prevCheck].Refresh()
-
+	if sc.stepControls != nil {
+		sc.stepControls[sc.prevCheck].SetCurrent(false)
 		i := state["steps"].(map[string]any)["index"].(int)
-
+		sc.stepControls[i].SetCurrent(true)
 		sc.prevCheck = i
-		sc.runChecks[i].Checked = true
-		sc.runChecks[i].Refresh()
 	}
 }
 
@@ -378,58 +469,56 @@ func (sc *SwingControl) Sequence() *values.Sequence[*swing.Step] {
 }
 
 func (sc *SwingControl) UI() fyne.CanvasObject {
-	stepControls := []fyne.CanvasObject{}
-	runChecks := make([]*widget.Check, 64)
+	stepCanvasObjects := []fyne.CanvasObject{}
+	sc.stepControls = make([]*SwingStepControl, 64)
 
 	for i := 0; i < 64; i++ {
-		j := i
+		sc.stepControls[i] = NewSwingStepControl(sc.steps[i], i, i == 0)
 
-		swingEntry := widget.NewEntry()
-		swingEntry.Text = fmt.Sprintf("%.2f", sc.steps[i].Shuffle)
-		swingEntry.OnChanged = func(v string) {
-			f, _ := strconv.ParseFloat(v, 64)
-			sc.steps[j].Shuffle = f
-		}
-		randEntry := widget.NewEntry()
-		randEntry.Text = fmt.Sprintf("%.2f", sc.steps[i].ShuffleRand)
-		randEntry.OnChanged = func(v string) {
-			f, _ := strconv.ParseFloat(v, 64)
-			sc.steps[j].ShuffleRand = f
-		}
-		skipEntry := widget.NewEntry()
-		skipEntry.Text = fmt.Sprintf("%.2f", sc.steps[i].SkipFactor)
-		skipEntry.OnChanged = func(v string) {
-			f, _ := strconv.ParseFloat(v, 64)
-			sc.steps[j].SkipFactor = f
-		}
+		// swingEntry := widget.NewEntry()
+		// swingEntry.Text = fmt.Sprintf("%.2f", sc.steps[i].Shuffle)
+		// swingEntry.OnChanged = func(v string) {
+		// 	f, _ := strconv.ParseFloat(v, 64)
+		// 	sc.steps[j].Shuffle = f
+		// }
+		// randEntry := widget.NewEntry()
+		// randEntry.Text = fmt.Sprintf("%.2f", sc.steps[i].ShuffleRand)
+		// randEntry.OnChanged = func(v string) {
+		// 	f, _ := strconv.ParseFloat(v, 64)
+		// 	sc.steps[j].ShuffleRand = f
+		// }
+		// skipEntry := widget.NewEntry()
+		// skipEntry.Text = fmt.Sprintf("%.2f", sc.steps[i].SkipFactor)
+		// skipEntry.OnChanged = func(v string) {
+		// 	f, _ := strconv.ParseFloat(v, 64)
+		// 	sc.steps[j].SkipFactor = f
+		// }
 
-		check := widget.NewCheck("", nil)
-		check.Checked = i == 0
-		check.Disable()
+		// check := widget.NewCheck("", nil)
+		// check.Checked = i == 0
+		// check.Disable()
 
-		runChecks[i] = check
+		// runChecks[i] = check
 
-		skipCheck := widget.NewCheck("", func(v bool) {
-			sc.steps[j].Skip = !v
-		})
+		// skipCheck := widget.NewCheck("", func(v bool) {
+		// 	sc.steps[j].Skip = !v
+		// })
 
-		skipCheck.Checked = !sc.steps[i].Skip
-		stepForm := widget.NewForm(
-			widget.NewFormItem(fmt.Sprintf("%d", i+1), skipCheck),
-			widget.NewFormItem("Swing", swingEntry),
-			widget.NewFormItem("Rand", randEntry),
-			widget.NewFormItem("Skip", skipEntry),
-			widget.NewFormItem("", check),
-		)
+		// skipCheck.Checked = !sc.steps[i].Skip
+		// stepForm := widget.NewForm(
+		// 	widget.NewFormItem(fmt.Sprintf("%d", i+1), skipCheck),
+		// 	widget.NewFormItem("Swing", swingEntry),
+		// 	widget.NewFormItem("Rand", randEntry),
+		// 	widget.NewFormItem("Skip", skipEntry),
+		// 	widget.NewFormItem("", check),
+		// )
 
-		stepControls = append(stepControls, stepForm)
+		stepCanvasObjects = append(stepCanvasObjects, sc.stepControls[i].UI())
 
 		if (i+1)%8 == 0 {
-			stepControls = append(stepControls, widget.NewSeparator())
+			stepCanvasObjects = append(stepCanvasObjects, widget.NewSeparator())
 		}
 	}
-
-	sc.runChecks = runChecks
 
 	nEntry := widget.NewEntry()
 	nEntry.Text = "8"
@@ -467,7 +556,7 @@ func (sc *SwingControl) UI() fyne.CanvasObject {
 			),
 			container.NewHScroll(
 				container.NewHBox(
-					stepControls...,
+					stepCanvasObjects...,
 				),
 			),
 		))
@@ -586,6 +675,27 @@ func main() {
 				}),
 				widget.NewButton("Stop", func() {
 					stream.Stop()
+				}),
+				widget.NewButton("Save", func() {
+					d := dialog.NewFileSave(func(wc fyne.URIWriteCloser, err error) {
+						adsrState := adsrControl.GetState()
+						jsonData, _ := json.Marshal(adsrState)
+						wc.Write(jsonData)
+						wc.Close()
+					}, w)
+
+					d.Show()
+				}),
+				widget.NewButton("Load", func() {
+					d := dialog.NewFileOpen(func(rc fyne.URIReadCloser, err error) {
+						data, _ := ioutil.ReadAll(rc)
+						rc.Close()
+						var state map[string]any
+						json.Unmarshal(data, &state)
+						adsrControl.SetState(state)
+					}, w)
+
+					d.Show()
 				}),
 			),
 			adsrControl.UI(),
