@@ -22,10 +22,10 @@ type DrumKit struct {
 	Ride  string
 }
 
-func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo float64, division float64, lowSpeed float64, highSpeed float64, steps values.Generator[*swing.Step]) muse.Module {
+func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo float64, division float64, lowSpeed float64, highSpeed float64, steps values.Valuer[*swing.Step]) muse.Module {
 	identifier := moduleName + "Speed"
 
-	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
+	env.AddMessenger(stepper.NewStepper(swing.New(values.NewConst(tempo), values.NewConst(division), steps), []string{identifier}, ""))
 
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, values.MapPrototype{
 		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
@@ -44,7 +44,7 @@ func main() {
 	kickSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/kick.wav")
 	snareSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/snare.wav")
 
-	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 4.0, 0.875, 1.125, values.NewAnd([]values.Generator[*swing.Step]{
+	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 4.0, 0.875, 1.125, values.NewAnd([]values.Valuer[*swing.Step]{
 		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
 			{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
 		}, false), 2, 3),
@@ -53,7 +53,7 @@ func main() {
 		}, false), 1, 2),
 	}, true))
 
-	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4.0, 0.875, 1.125, values.NewAnd([]values.Generator[*swing.Step]{
+	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4.0, 0.875, 1.125, values.NewAnd([]values.Valuer[*swing.Step]{
 		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
 			{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
 		}, false), 2, 3),

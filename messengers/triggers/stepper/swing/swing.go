@@ -28,30 +28,32 @@ func (s *Step) shuffleNote(milliPerNote float64) float64 {
 }
 
 type Swing struct {
-	steps        values.Generator[*Step]
-	milliPerNote float64
+	steps        values.Valuer[*Step]
+	bpm          values.Valuer[float64]
+	noteDivision values.Valuer[float64]
 	delay        float64
 }
 
-func New(bpm float64, noteDivision float64, steps values.Generator[*Step]) *Swing {
-	milliPerBeat := 60000.0 / bpm
-	milliPerNote := milliPerBeat / noteDivision
-
+func New(bpm values.Valuer[float64], noteDivision values.Valuer[float64], steps values.Valuer[*Step]) *Swing {
 	return &Swing{
 		steps:        steps,
-		milliPerNote: milliPerNote,
+		noteDivision: noteDivision,
+		bpm:          bpm,
 	}
 }
 
 func (sw *Swing) NextStep() float64 {
-	step := sw.steps.Next()
+	milliPerBeat := 60000.0 / sw.bpm.Value()
+	milliPerNote := milliPerBeat / sw.noteDivision.Value()
+
+	step := sw.steps.Value()
 
 	if sw.steps.Finished() {
 		sw.steps.Reset()
 	}
 
-	dur := step.shuffleNote(sw.milliPerNote)
-	delay := dur - sw.milliPerNote
+	dur := step.shuffleNote(milliPerNote)
+	delay := dur - milliPerNote
 	dur -= sw.delay
 	sw.delay = delay
 
@@ -65,13 +67,15 @@ func (sw *Swing) NextStep() float64 {
 func (sw *Swing) GetState() map[string]any {
 	return map[string]any{
 		"steps":        sw.steps.GetState(),
-		"milliPerNote": sw.milliPerNote,
+		"noteDivision": sw.noteDivision.GetState(),
+		"bpm":          sw.bpm.GetState(),
 		"delay":        sw.delay,
 	}
 }
 
 func (sw *Swing) SetState(state map[string]any) {
 	sw.steps.SetState(state["steps"].(map[string]any))
-	sw.milliPerNote = state["milliPerNote"].(float64)
+	sw.noteDivision.SetState(state["noteDivision"].(map[string]any))
+	sw.bpm.SetState(state["bpm"].(map[string]any))
 	sw.delay = state["delay"].(float64)
 }

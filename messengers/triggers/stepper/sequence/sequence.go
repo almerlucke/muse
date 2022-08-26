@@ -15,7 +15,7 @@ func New(sequence *values.Sequence[float64]) *Sequence {
 }
 
 func (sp *Sequence) NextStep() float64 {
-	return sp.sequence.Next()
+	return sp.sequence.Value()
 }
 
 func (sp *Sequence) GetState() map[string]any {

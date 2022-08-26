@@ -6,12 +6,14 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -22,6 +24,7 @@ import (
 	// Components
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shapingc "github.com/almerlucke/muse/components/shaping"
+	"github.com/almerlucke/muse/ui"
 
 	// Values
 	"github.com/almerlucke/muse/values"
@@ -33,7 +36,6 @@ import (
 
 	// Modules
 	"github.com/almerlucke/muse/modules/adsr"
-	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/shaper"
@@ -401,29 +403,32 @@ func (ssc *SwingStepControl) UI() fyne.CanvasObject {
 
 	ssc.shuffleBinding = binding.NewString()
 	ssc.shuffleBinding.Set(fmt.Sprintf("%.2f", ssc.step.Shuffle))
-	ssc.shuffleBinding.AddListener(binding.NewDataListener(func() {
+	ssc.shuffleBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
 		v, err := ssc.shuffleBinding.Get()
 		if err == nil {
 			ssc.step.Shuffle = parseFloatWithBounds(v, 0, 1)
 		}
 	}))
 	shuffleEntry := widget.NewEntryWithData(ssc.shuffleBinding)
+	shuffleEntry.OnSubmitted = func(v string) {
+		ssc.step.Shuffle = parseFloatWithBounds(v, 0, 1)
+	}
 	shuffleEntry.Validator = nil
 
 	ssc.shuffleRandBinding = binding.NewString()
 	ssc.shuffleRandBinding.Set(fmt.Sprintf("%.2f", ssc.step.ShuffleRand))
-	ssc.shuffleRandBinding.AddListener(binding.NewDataListener(func() {
+	ssc.shuffleRandBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
 		v, err := ssc.shuffleRandBinding.Get()
 		if err == nil {
 			ssc.step.ShuffleRand = parseFloatWithBounds(v, 0, 1)
 		}
 	}))
-	shuffleRandEntry := widget.NewEntryWithData(ssc.shuffleBinding)
+	shuffleRandEntry := widget.NewEntryWithData(ssc.shuffleRandBinding)
 	shuffleRandEntry.Validator = nil
 
 	ssc.skipFactorBinding = binding.NewString()
 	ssc.skipFactorBinding.Set(fmt.Sprintf("%.2f", ssc.step.SkipFactor))
-	ssc.skipFactorBinding.AddListener(binding.NewDataListener(func() {
+	ssc.skipFactorBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
 		v, err := ssc.skipFactorBinding.Get()
 		if err == nil {
 			ssc.step.SkipFactor = parseFloatWithBounds(v, 0, 1)
@@ -447,25 +452,37 @@ func (ssc *SwingStepControl) UI() fyne.CanvasObject {
 }
 
 type SwingControl struct {
-	stepSequence *values.Sequence[*swing.Step]
-	stepControls []*SwingStepControl
-	steps        []*swing.Step
-	n            int
-	prevCheck    int
-	nEntry       *widget.Entry
+	stepSequence        *values.Sequence[*swing.Step]
+	stepControls        []*SwingStepControl
+	steps               []*swing.Step
+	bpm                 *values.Const[float64]
+	noteDivision        *values.Const[float64]
+	n                   int
+	prevStepIndex       int
+	nBinding            binding.String
+	bpmBinding          binding.String
+	noteDivisionBinding binding.String
 }
 
 func (sc *SwingControl) Listen(state map[string]any) {
 	if sc.stepControls != nil {
-		sc.stepControls[sc.prevCheck].SetCurrent(false)
+		sc.stepControls[sc.prevStepIndex].SetCurrent(false)
 		i := state["steps"].(map[string]any)["index"].(int)
 		sc.stepControls[i].SetCurrent(true)
-		sc.prevCheck = i
+		sc.prevStepIndex = i
 	}
 }
 
 func (sc *SwingControl) Sequence() *values.Sequence[*swing.Step] {
 	return sc.stepSequence
+}
+
+func (sc *SwingControl) BPM() *values.Const[float64] {
+	return sc.bpm
+}
+
+func (sc *SwingControl) NoteDivision() *values.Const[float64] {
+	return sc.noteDivision
 }
 
 func (sc *SwingControl) UI() fyne.CanvasObject {
@@ -475,44 +492,6 @@ func (sc *SwingControl) UI() fyne.CanvasObject {
 	for i := 0; i < 64; i++ {
 		sc.stepControls[i] = NewSwingStepControl(sc.steps[i], i, i == 0)
 
-		// swingEntry := widget.NewEntry()
-		// swingEntry.Text = fmt.Sprintf("%.2f", sc.steps[i].Shuffle)
-		// swingEntry.OnChanged = func(v string) {
-		// 	f, _ := strconv.ParseFloat(v, 64)
-		// 	sc.steps[j].Shuffle = f
-		// }
-		// randEntry := widget.NewEntry()
-		// randEntry.Text = fmt.Sprintf("%.2f", sc.steps[i].ShuffleRand)
-		// randEntry.OnChanged = func(v string) {
-		// 	f, _ := strconv.ParseFloat(v, 64)
-		// 	sc.steps[j].ShuffleRand = f
-		// }
-		// skipEntry := widget.NewEntry()
-		// skipEntry.Text = fmt.Sprintf("%.2f", sc.steps[i].SkipFactor)
-		// skipEntry.OnChanged = func(v string) {
-		// 	f, _ := strconv.ParseFloat(v, 64)
-		// 	sc.steps[j].SkipFactor = f
-		// }
-
-		// check := widget.NewCheck("", nil)
-		// check.Checked = i == 0
-		// check.Disable()
-
-		// runChecks[i] = check
-
-		// skipCheck := widget.NewCheck("", func(v bool) {
-		// 	sc.steps[j].Skip = !v
-		// })
-
-		// skipCheck.Checked = !sc.steps[i].Skip
-		// stepForm := widget.NewForm(
-		// 	widget.NewFormItem(fmt.Sprintf("%d", i+1), skipCheck),
-		// 	widget.NewFormItem("Swing", swingEntry),
-		// 	widget.NewFormItem("Rand", randEntry),
-		// 	widget.NewFormItem("Skip", skipEntry),
-		// 	widget.NewFormItem("", check),
-		// )
-
 		stepCanvasObjects = append(stepCanvasObjects, sc.stepControls[i].UI())
 
 		if (i+1)%8 == 0 {
@@ -520,49 +499,86 @@ func (sc *SwingControl) UI() fyne.CanvasObject {
 		}
 	}
 
-	nEntry := widget.NewEntry()
-	nEntry.Text = "8"
-	nEntry.OnSubmitted = func(v string) {
-		n, _ := strconv.ParseInt(v, 10, 64)
-		if n > 1 && n < 64 {
-			sc.n = int(n)
-			sc.stepSequence.ChangeValues(sc.steps[:sc.n])
+	sc.nBinding = binding.NewString()
+	sc.nBinding.Set("8")
+	sc.nBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
+		v, err := sc.nBinding.Get()
+		if err == nil {
+			n, _ := strconv.ParseInt(v, 10, 64)
+			if n > 0 && n < 65 {
+				sc.n = int(n)
+				sc.stepSequence.Set(sc.steps[:sc.n])
+			}
 		}
-	}
+	}))
 
-	sc.nEntry = nEntry
+	nEntry := widget.NewEntryWithData(sc.nBinding)
+	nEntry.Validator = nil
+
+	sc.bpmBinding = binding.NewString()
+	sc.bpmBinding.Set("80")
+	sc.bpmBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
+		v, err := sc.bpmBinding.Get()
+		if err == nil {
+			bpm, _ := strconv.ParseInt(v, 10, 64)
+			if bpm > 0 && bpm < 400 {
+				sc.bpm.Set(float64(bpm))
+			}
+		}
+	}))
+
+	bpmEntry := widget.NewEntryWithData(sc.bpmBinding)
+	bpmEntry.Validator = nil
+
+	sc.noteDivisionBinding = binding.NewString()
+	sc.noteDivisionBinding.Set("4")
+	sc.noteDivisionBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
+		v, err := sc.noteDivisionBinding.Get()
+		if err == nil {
+			noteDivision, _ := strconv.ParseInt(v, 10, 64)
+			if noteDivision > 0 && noteDivision < 257 {
+				sc.noteDivision.Set(float64(noteDivision))
+			}
+		}
+	}))
+
+	noteDivisionEntry := widget.NewEntryWithData(sc.noteDivisionBinding)
+	noteDivisionEntry.Validator = nil
 
 	return widget.NewCard("Rhythm", "",
 		container.NewVBox(
-			container.NewHBox(
-				nEntry,
-				widget.NewButton("-", func() {
-					if sc.n > 2 {
-						sc.n--
-						sc.nEntry.Text = fmt.Sprintf("%d", sc.n)
-						sc.nEntry.Refresh()
-						sc.stepSequence.ChangeValues(sc.steps[:sc.n])
-					}
-				}),
-				widget.NewButton("+", func() {
-					sc.n++
-					if sc.n > 64 {
-						sc.n = 64
-					}
-					sc.nEntry.Text = fmt.Sprintf("%d", sc.n)
-					sc.nEntry.Refresh()
-					sc.stepSequence.ChangeValues(sc.steps[:sc.n])
-				}),
-			),
-			container.NewHScroll(
+			widget.NewCard("", "",
 				container.NewHBox(
-					stepCanvasObjects...,
+					widget.NewLabel("steps"),
+					nEntry,
+					widget.NewButton("-", func() {
+						if sc.n > 1 {
+							sc.nBinding.Set(fmt.Sprintf("%d", sc.n-1))
+						}
+					}),
+					widget.NewButton("+", func() {
+						if sc.n < 64 {
+							sc.nBinding.Set(fmt.Sprintf("%d", sc.n+1))
+						}
+					}),
+					layout.NewSpacer(),
+					bpmEntry,
+					widget.NewLabel("BPM"),
+					noteDivisionEntry,
+					widget.NewLabel("note division"),
+				),
+			),
+			widget.NewCard("", "",
+				container.NewHScroll(
+					container.NewHBox(
+						stepCanvasObjects...,
+					),
 				),
 			),
 		))
 }
 
-func NewSwingControl() *SwingControl {
+func NewSwingControl(bpm float64, noteDivision float64) *SwingControl {
 	steps := make([]*swing.Step, 64)
 
 	for i := 0; i < 64; i++ {
@@ -579,13 +595,15 @@ func NewSwingControl() *SwingControl {
 
 	return &SwingControl{
 		steps:        steps,
+		bpm:          values.NewConst(bpm),
+		noteDivision: values.NewConst(noteDivision),
 		n:            8,
 		stepSequence: values.NewSequence(steps[:8], true),
 	}
 }
 
 func main() {
-	env := muse.NewEnvironment(2, 44100, 512)
+	env := muse.NewEnvironment(1, 44100, 512)
 
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"voicePlayer"}, values.MapPrototype{
 		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}, true),
@@ -613,10 +631,8 @@ func main() {
 		},
 	}, "prototype2"))
 
-	bpm := 80.0
-
 	adsrControl := NewADSRControl()
-	swingControl := NewSwingControl()
+	swingControl := NewSwingControl(80.0, 4.0)
 
 	/*
 		values.NewSequence([]*swing.Step{
@@ -625,7 +641,7 @@ func main() {
 	*/
 
 	env.AddMessenger(stepper.NewStepperWithListener(
-		swing.New(bpm, 4.0, swingControl.Sequence()),
+		swing.New(swingControl.BPM(), swingControl.NoteDivision(), swingControl.Sequence()),
 		[]string{"prototype1", "prototype2"},
 		swingControl,
 		"",
@@ -637,14 +653,12 @@ func main() {
 		voices = append(voices, voice)
 	}
 
-	milliPerBeat := 60000.0 / bpm
-
 	voicePlayer := env.AddModule(muse.NewVoicePlayer(1, voices, env.Config, "voicePlayer"))
-	allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.1, env.Config, "allpass"))
+	// allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.1, env.Config, "allpass"))
 
-	muse.Connect(voicePlayer, 0, allpass, 0)
+	// muse.Connect(voicePlayer, 0, allpass, 0)
 	muse.Connect(voicePlayer, 0, env, 0)
-	muse.Connect(allpass, 0, env, 1)
+	// muse.Connect(allpass, 0, env, 1)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()

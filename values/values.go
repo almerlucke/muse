@@ -10,21 +10,21 @@ type Transformer[T any] interface {
 	Transform(T) T
 }
 
-type Generator[T any] interface {
+type Valuer[T any] interface {
 	muse.Stater
-	Next() T
+	Value() T
 	Continuous() bool
 	Reset()
 	Finished() bool
 }
 
-func Generate[T any](generator Generator[T], n int) []T {
+func Generate[T any](value Valuer[T], n int) []T {
 	sequence := []T{}
 
 	for i := 0; i < n; i++ {
-		sequence = append(sequence, generator.Next())
-		if generator.Finished() {
-			generator.Reset()
+		sequence = append(sequence, value.Value())
+		if value.Finished() {
+			value.Reset()
 		}
 	}
 
@@ -39,7 +39,15 @@ func NewConst[T any](c T) *Const[T] {
 	return &Const[T]{value: c}
 }
 
-func (c *Const[T]) Next() T {
+func (c *Const[T]) Get() T {
+	return c.value
+}
+
+func (c *Const[T]) Set(v T) {
+	c.value = v
+}
+
+func (c *Const[T]) Value() T {
 	return c.value
 }
 
@@ -79,14 +87,18 @@ func NewSequence[T any](values []T, continuous bool) *Sequence[T] {
 	return &Sequence[T]{values: values, continuous: continuous}
 }
 
-func (s *Sequence[T]) ChangeValues(values []T) {
-	s.values = values
-	if s.index >= len(values) {
+func (s *Sequence[T]) Get() []T {
+	return s.values
+}
+
+func (s *Sequence[T]) Set(v []T) {
+	s.values = v
+	if s.index >= len(v) {
 		s.index = 0
 	}
 }
 
-func (s *Sequence[T]) Next() T {
+func (s *Sequence[T]) Value() T {
 	var v T
 
 	if s.index < len(s.values) {
@@ -97,7 +109,7 @@ func (s *Sequence[T]) Next() T {
 		}
 	} else if s.continuous {
 		s.index = 0
-		return s.Next()
+		return s.Value()
 	} else {
 		v = s.values[s.index-1]
 	}
@@ -135,7 +147,7 @@ func NewFunction[T any](f func() T) *Function[T] {
 	return &Function[T]{f: f}
 }
 
-func (f *Function[T]) Next() T {
+func (f *Function[T]) Value() T {
 	return f.f()
 }
 
@@ -170,7 +182,7 @@ func NewRamp(increment float64, continuous bool) *Ramp {
 	}
 }
 
-func (r *Ramp) Next() float64 {
+func (r *Ramp) Value() float64 {
 	if r.current >= 1.0 {
 		return 0
 	}
@@ -209,32 +221,32 @@ func (r *Ramp) SetState(state map[string]any) {
 // Repeat can make a continous generator non-continous by only repeating Next() n times,
 // or can extend a non-continuos generator by repeating it n times
 type Repeat[T any] struct {
-	generator Generator[T]
-	min       int
-	max       int
-	n         int
+	value Valuer[T]
+	min   int
+	max   int
+	n     int
 }
 
-func NewRepeat[T any](generator Generator[T], min int, max int) *Repeat[T] {
+func NewRepeat[T any](value Valuer[T], min int, max int) *Repeat[T] {
 	return &Repeat[T]{
-		generator: generator,
-		min:       min,
-		max:       max,
-		n:         min + rand.Intn((max-min)+1),
+		value: value,
+		min:   min,
+		max:   max,
+		n:     min + rand.Intn((max-min)+1),
 	}
 }
 
-func (r *Repeat[T]) Next() T {
+func (r *Repeat[T]) Value() T {
 	var v T
 
 	if r.n > 0 {
-		v = r.generator.Next()
-		if r.generator.Continuous() {
+		v = r.value.Value()
+		if r.value.Continuous() {
 			r.n--
-		} else if r.generator.Finished() {
+		} else if r.value.Finished() {
 			r.n--
 			if r.n > 0 {
-				r.generator.Reset()
+				r.value.Reset()
 			}
 		}
 	}
@@ -247,7 +259,7 @@ func (r *Repeat[T]) Continuous() bool {
 }
 
 func (r *Repeat[T]) Reset() {
-	r.generator.Reset()
+	r.value.Reset()
 	r.n = r.min + rand.Intn((r.max-r.min)+1)
 }
 
@@ -256,11 +268,11 @@ func (r *Repeat[T]) Finished() bool {
 }
 
 func (r *Repeat[T]) GetState() map[string]any {
-	return map[string]any{"generator": r.generator.GetState(), "min": r.min, "max": r.max, "n": r.n}
+	return map[string]any{"value": r.value.GetState(), "min": r.min, "max": r.max, "n": r.n}
 }
 
 func (r *Repeat[T]) SetState(state map[string]any) {
-	r.generator.SetState(state["generator"].(map[string]any))
+	r.value.SetState(state["value"].(map[string]any))
 	r.min = state["min"].(int)
 	r.max = state["max"].(int)
 	r.n = state["n"].(int)
@@ -268,48 +280,48 @@ func (r *Repeat[T]) SetState(state map[string]any) {
 
 // And is a meta-sequence, a sequence of Generators
 type And[T any] struct {
-	generators []Generator[T]
-	current    Generator[T]
+	values     []Valuer[T]
+	current    Valuer[T]
 	index      int
 	continuous bool
 }
 
-func NewAnd[T any](generators []Generator[T], continuous bool) *And[T] {
+func NewAnd[T any](values []Valuer[T], continuous bool) *And[T] {
 	return &And[T]{
-		generators: generators,
+		values:     values,
 		continuous: continuous,
 	}
 }
 
-func (a *And[T]) Next() T {
+func (a *And[T]) Value() T {
 	var v T
 
-	if a.index == len(a.generators) {
+	if a.index == len(a.values) {
 		return v
 	}
 
 	if a.current == nil {
-		a.current = a.generators[a.index]
+		a.current = a.values[a.index]
 	}
 
 	if a.current.Continuous() {
-		v = a.current.Next()
+		v = a.current.Value()
 		a.index++
-		if a.index == len(a.generators) && a.continuous {
+		if a.index == len(a.values) && a.continuous {
 			a.Reset()
 		}
-		if a.index != len(a.generators) {
-			a.current = a.generators[a.index]
+		if a.index != len(a.values) {
+			a.current = a.values[a.index]
 		}
 	} else if !a.current.Finished() {
-		v = a.current.Next()
+		v = a.current.Value()
 		if a.current.Finished() {
 			a.index++
-			if a.index == len(a.generators) && a.continuous {
+			if a.index == len(a.values) && a.continuous {
 				a.Reset()
 			}
-			if a.index != len(a.generators) {
-				a.current = a.generators[a.index]
+			if a.index != len(a.values) {
+				a.current = a.values[a.index]
 			}
 		}
 	}
@@ -322,7 +334,7 @@ func (a *And[T]) Continuous() bool {
 }
 
 func (a *And[T]) Reset() {
-	for _, v := range a.generators {
+	for _, v := range a.values {
 		v.Reset()
 	}
 
@@ -331,21 +343,21 @@ func (a *And[T]) Reset() {
 }
 
 func (a *And[T]) Finished() bool {
-	return !a.continuous && a.index == len(a.generators)
+	return !a.continuous && a.index == len(a.values)
 }
 
 func (a *And[T]) GetState() map[string]any {
 	states := []map[string]any{}
-	for index, generator := range a.generators {
-		states[index] = generator.GetState()
+	for index, value := range a.values {
+		states[index] = value.GetState()
 	}
 
-	return map[string]any{"generators": states, "isCurrentSet": a.current != nil, "index": a.index, "continuous": a.continuous}
+	return map[string]any{"values": states, "isCurrentSet": a.current != nil, "index": a.index, "continuous": a.continuous}
 }
 
 func (a *And[T]) SetState(state map[string]any) {
-	for index, state := range state["generators"].([]map[string]any) {
-		a.generators[index].SetState(state)
+	for index, state := range state["values"].([]map[string]any) {
+		a.values[index].SetState(state)
 	}
 
 	a.continuous = state["continuous"].(bool)
@@ -353,49 +365,49 @@ func (a *And[T]) SetState(state map[string]any) {
 	a.current = nil
 
 	if state["isCurrentSet"].(bool) {
-		a.current = a.generators[a.index]
+		a.current = a.values[a.index]
 	}
 }
 
 // Or chooses one of the generators each cycle
 type Or[T any] struct {
-	generators []Generator[T]
-	current    Generator[T]
+	values     []Valuer[T]
+	current    Valuer[T]
 	index      int
 	finished   bool
 	continuous bool
 }
 
-func NewOr[T any](generators []Generator[T], continuous bool) *Or[T] {
+func NewOr[T any](values []Valuer[T], continuous bool) *Or[T] {
 	return &Or[T]{
-		generators: generators,
+		values:     values,
 		continuous: continuous,
 	}
 }
 
-func (o *Or[T]) Next() T {
+func (o *Or[T]) Value() T {
 	var v T
 
 	if o.current == nil {
-		o.index = rand.Intn(len(o.generators))
-		o.current = o.generators[o.index]
+		o.index = rand.Intn(len(o.values))
+		o.current = o.values[o.index]
 	}
 
 	if o.current.Continuous() {
-		v = o.current.Next()
+		v = o.current.Value()
 		if o.continuous {
-			o.index = rand.Intn(len(o.generators))
-			o.current = o.generators[o.index]
+			o.index = rand.Intn(len(o.values))
+			o.current = o.values[o.index]
 		} else {
 			o.finished = true
 		}
 	} else {
-		v = o.current.Next()
+		v = o.current.Value()
 		if o.current.Finished() {
 			if o.continuous {
 				o.current.Reset()
-				o.index = rand.Intn(len(o.generators))
-				o.current = o.generators[o.index]
+				o.index = rand.Intn(len(o.values))
+				o.current = o.values[o.index]
 			} else {
 				o.finished = true
 			}
@@ -410,7 +422,7 @@ func (o *Or[T]) Continuous() bool {
 }
 
 func (o *Or[T]) Reset() {
-	for _, v := range o.generators {
+	for _, v := range o.values {
 		v.Reset()
 	}
 
@@ -424,16 +436,16 @@ func (o *Or[T]) Finished() bool {
 
 func (o *Or[T]) GetState() map[string]any {
 	states := []map[string]any{}
-	for index, generator := range o.generators {
-		states[index] = generator.GetState()
+	for index, value := range o.values {
+		states[index] = value.GetState()
 	}
 
-	return map[string]any{"generators": states, "isCurrentSet": o.current != nil, "index": o.index, "continuous": o.continuous, "finished": o.finished}
+	return map[string]any{"values": states, "isCurrentSet": o.current != nil, "index": o.index, "continuous": o.continuous, "finished": o.finished}
 }
 
 func (o *Or[T]) SetState(state map[string]any) {
-	for index, state := range state["generators"].([]map[string]any) {
-		o.generators[index].SetState(state)
+	for index, state := range state["values"].([]map[string]any) {
+		o.values[index].SetState(state)
 	}
 
 	o.index = state["index"].(int)
@@ -441,30 +453,30 @@ func (o *Or[T]) SetState(state map[string]any) {
 	o.finished = state["finished"].(bool)
 
 	if state["isCurrentSet"].(bool) {
-		o.current = o.generators[o.index]
+		o.current = o.values[o.index]
 	}
 }
 
-// Transform transforms the output of a generator with a transformer
+// Transform transforms the output of a value with a transformer
 type Transform[T any] struct {
-	generator   Generator[T]
+	value       Valuer[T]
 	transformer Transformer[T]
 }
 
-func (t *Transform[T]) Next() T {
-	return t.transformer.Transform(t.generator.Next())
+func (t *Transform[T]) Value() T {
+	return t.transformer.Transform(t.value.Value())
 }
 
 func (t *Transform[T]) Continuous() bool {
-	return t.generator.Continuous()
+	return t.value.Continuous()
 }
 
 func (t *Transform[T]) Reset() {
-	t.generator.Reset()
+	t.value.Reset()
 }
 
 func (t *Transform[T]) Finished() bool {
-	return t.generator.Finished()
+	return t.value.Finished()
 }
 
 type Map map[string]any
@@ -477,7 +489,7 @@ func (p MapPrototype) Map() Map {
 		if sub, ok := v.(MapPrototype); ok {
 			m[k] = sub.Map()
 		} else {
-			m[k] = v.(Generator[any]).Next()
+			m[k] = v.(Valuer[any]).Value()
 		}
 	}
 
@@ -491,7 +503,7 @@ func (p MapPrototype) MapRaw() map[string]any {
 		if sub, ok := v.(MapPrototype); ok {
 			m[k] = sub.MapRaw()
 		} else {
-			m[k] = v.(Generator[any]).Next()
+			m[k] = v.(Valuer[any]).Value()
 		}
 	}
 
