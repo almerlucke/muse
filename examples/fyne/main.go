@@ -451,6 +451,32 @@ func (ssc *SwingStepControl) UI() fyne.CanvasObject {
 	)
 }
 
+type SwingControlBank struct {
+	Steps []*swing.Step
+	N     int
+}
+
+func NewSwingControlBank() *SwingControlBank {
+	b := &SwingControlBank{
+		Steps: make([]*swing.Step, 64),
+		N:     8,
+	}
+
+	for i := 0; i < 64; i++ {
+		b.Steps[i] = &swing.Step{}
+	}
+
+	b.Steps[1].Shuffle = 0.2
+	b.Steps[2].Skip = true
+	b.Steps[3].Shuffle = 0.4
+	b.Steps[3].ShuffleRand = 0.2
+	b.Steps[5].Shuffle = 0.3
+	b.Steps[6].Shuffle = 0.1
+	b.Steps[7].SkipFactor = 0.3
+
+	return b
+}
+
 type SwingControl struct {
 	stepSequence        *values.Sequence[*swing.Step]
 	stepControls        []*SwingStepControl
@@ -545,27 +571,45 @@ func (sc *SwingControl) UI() fyne.CanvasObject {
 	noteDivisionEntry := widget.NewEntryWithData(sc.noteDivisionBinding)
 	noteDivisionEntry.Validator = nil
 
+	radioGroup := widget.NewRadioGroup([]string{"1", "2", "3", "4", "5", "6", "7", "8"}, func(option string) {
+
+	})
+	radioGroup.Horizontal = true
+	radioGroup.Selected = "1"
+
 	return widget.NewCard("Rhythm", "",
 		container.NewVBox(
-			widget.NewCard("", "",
-				container.NewHBox(
-					widget.NewLabel("steps"),
-					nEntry,
-					widget.NewButton("-", func() {
-						if sc.n > 1 {
-							sc.nBinding.Set(fmt.Sprintf("%d", sc.n-1))
-						}
-					}),
-					widget.NewButton("+", func() {
-						if sc.n < 64 {
-							sc.nBinding.Set(fmt.Sprintf("%d", sc.n+1))
-						}
-					}),
-					layout.NewSpacer(),
-					bpmEntry,
-					widget.NewLabel("BPM"),
-					noteDivisionEntry,
-					widget.NewLabel("note division"),
+			container.NewHBox(
+				widget.NewCard("", "",
+					container.NewHBox(
+						widget.NewLabel("BPM"),
+						bpmEntry,
+						widget.NewLabel("Div"),
+						noteDivisionEntry,
+					),
+				),
+				layout.NewSpacer(),
+				widget.NewCard("", "",
+					container.NewHBox(
+						widget.NewLabel("Steps"),
+						nEntry,
+						widget.NewButton("-", func() {
+							if sc.n > 1 {
+								sc.nBinding.Set(fmt.Sprintf("%d", sc.n-1))
+							}
+						}),
+						widget.NewButton("+", func() {
+							if sc.n < 64 {
+								sc.nBinding.Set(fmt.Sprintf("%d", sc.n+1))
+							}
+						}),
+					),
+				),
+				widget.NewCard("", "",
+					container.NewHBox(
+						widget.NewLabel("Bank"),
+						radioGroup,
+					),
 				),
 			),
 			widget.NewCard("", "",
