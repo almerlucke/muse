@@ -451,6 +451,14 @@ func (ssc *SwingStepControl) UI() fyne.CanvasObject {
 	)
 }
 
+func (ssc *SwingStepControl) ChangeStep(step *swing.Step) {
+	ssc.step = step
+	ssc.skipBinding.Set(!step.Skip)
+	ssc.shuffleBinding.Set(fmt.Sprintf("%.2f", step.Shuffle))
+	ssc.shuffleRandBinding.Set(fmt.Sprintf("%.2f", step.ShuffleRand))
+	ssc.skipFactorBinding.Set(fmt.Sprintf("%.2f", step.SkipFactor))
+}
+
 type SwingControlBank struct {
 	Steps []*swing.Step
 	N     int
@@ -477,13 +485,17 @@ func NewSwingControlBank() *SwingControlBank {
 	return b
 }
 
+func (b *SwingControlBank) SwingSteps() []*swing.Step {
+	return b.Steps[:b.N]
+}
+
 type SwingControl struct {
+	banks               []*SwingControlBank
 	stepSequence        *values.Sequence[*swing.Step]
 	stepControls        []*SwingStepControl
-	steps               []*swing.Step
 	bpm                 *values.Const[float64]
 	noteDivision        *values.Const[float64]
-	n                   int
+	bankIndex           int
 	prevStepIndex       int
 	nBinding            binding.String
 	bpmBinding          binding.String
@@ -499,16 +511,8 @@ func (sc *SwingControl) Listen(state map[string]any) {
 	}
 }
 
-func (sc *SwingControl) Sequence() *values.Sequence[*swing.Step] {
-	return sc.stepSequence
-}
-
-func (sc *SwingControl) BPM() *values.Const[float64] {
-	return sc.bpm
-}
-
-func (sc *SwingControl) NoteDivision() *values.Const[float64] {
-	return sc.noteDivision
+func (sc *SwingControl) Swing() *swing.Swing {
+	return swing.New(sc.bpm, sc.noteDivision, sc.stepSequence)
 }
 
 func (sc *SwingControl) UI() fyne.CanvasObject {
@@ -516,7 +520,7 @@ func (sc *SwingControl) UI() fyne.CanvasObject {
 	sc.stepControls = make([]*SwingStepControl, 64)
 
 	for i := 0; i < 64; i++ {
-		sc.stepControls[i] = NewSwingStepControl(sc.steps[i], i, i == 0)
+		sc.stepControls[i] = NewSwingStepControl(sc.banks[sc.bankIndex].Steps[i], i, i == 0)
 
 		stepCanvasObjects = append(stepCanvasObjects, sc.stepControls[i].UI())
 
@@ -532,8 +536,9 @@ func (sc *SwingControl) UI() fyne.CanvasObject {
 		if err == nil {
 			n, _ := strconv.ParseInt(v, 10, 64)
 			if n > 0 && n < 65 {
-				sc.n = int(n)
-				sc.stepSequence.Set(sc.steps[:sc.n])
+				log.Printf("n binding set")
+				sc.banks[sc.bankIndex].N = int(n)
+				sc.stepSequence.Set(sc.banks[sc.bankIndex].SwingSteps())
 			}
 		}
 	}))
@@ -572,7 +577,18 @@ func (sc *SwingControl) UI() fyne.CanvasObject {
 	noteDivisionEntry.Validator = nil
 
 	radioGroup := widget.NewRadioGroup([]string{"1", "2", "3", "4", "5", "6", "7", "8"}, func(option string) {
+		bankIndex, _ := strconv.ParseInt(option, 10, 64)
+		if sc.bankIndex != (int(bankIndex) - 1) {
+			sc.bankIndex = int(bankIndex) - 1
 
+			for i := 0; i < 64; i++ {
+				sc.stepControls[i].ChangeStep(sc.banks[sc.bankIndex].Steps[i])
+			}
+
+			sc.nBinding.Set(fmt.Sprintf("%d", sc.banks[sc.bankIndex].N))
+
+			sc.stepSequence.Set(sc.banks[sc.bankIndex].SwingSteps())
+		}
 	})
 	radioGroup.Horizontal = true
 	radioGroup.Selected = "1"
@@ -594,13 +610,13 @@ func (sc *SwingControl) UI() fyne.CanvasObject {
 						widget.NewLabel("Steps"),
 						nEntry,
 						widget.NewButton("-", func() {
-							if sc.n > 1 {
-								sc.nBinding.Set(fmt.Sprintf("%d", sc.n-1))
+							if sc.banks[sc.bankIndex].N > 1 {
+								sc.nBinding.Set(fmt.Sprintf("%d", sc.banks[sc.bankIndex].N-1))
 							}
 						}),
 						widget.NewButton("+", func() {
-							if sc.n < 64 {
-								sc.nBinding.Set(fmt.Sprintf("%d", sc.n+1))
+							if sc.banks[sc.bankIndex].N < 64 {
+								sc.nBinding.Set(fmt.Sprintf("%d", sc.banks[sc.bankIndex].N+1))
 							}
 						}),
 					),
@@ -623,27 +639,19 @@ func (sc *SwingControl) UI() fyne.CanvasObject {
 }
 
 func NewSwingControl(bpm float64, noteDivision float64) *SwingControl {
-	steps := make([]*swing.Step, 64)
-
-	for i := 0; i < 64; i++ {
-		steps[i] = &swing.Step{}
-	}
-
-	steps[1].Shuffle = 0.2
-	steps[2].Skip = true
-	steps[3].Shuffle = 0.4
-	steps[3].ShuffleRand = 0.2
-	steps[5].Shuffle = 0.3
-	steps[6].Shuffle = 0.1
-	steps[7].SkipFactor = 0.3
-
-	return &SwingControl{
-		steps:        steps,
+	sc := &SwingControl{
+		banks:        make([]*SwingControlBank, 8),
 		bpm:          values.NewConst(bpm),
 		noteDivision: values.NewConst(noteDivision),
-		n:            8,
-		stepSequence: values.NewSequence(steps[:8], true),
 	}
+
+	for i := 0; i < 8; i++ {
+		sc.banks[i] = NewSwingControlBank()
+	}
+
+	sc.stepSequence = values.NewSequence(sc.banks[0].SwingSteps(), true)
+
+	return sc
 }
 
 func main() {
@@ -678,14 +686,8 @@ func main() {
 	adsrControl := NewADSRControl()
 	swingControl := NewSwingControl(80.0, 4.0)
 
-	/*
-		values.NewSequence([]*swing.Step{
-				{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipFactor: 0.3},
-			}, true)
-	*/
-
 	env.AddMessenger(stepper.NewStepperWithListener(
-		swing.New(swingControl.BPM(), swingControl.NoteDivision(), swingControl.Sequence()),
+		swingControl.Swing(),
 		[]string{"prototype1", "prototype2"},
 		swingControl,
 		"",
