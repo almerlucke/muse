@@ -1,56 +1,17 @@
 package muse
 
+import "github.com/almerlucke/muse/utils/pool"
+
 type Voice interface {
 	Module
 	Activate(duration float64, amplitude float64, message any, config *Configuration)
 	IsActive() bool
 }
 
-type voicePoolElement struct {
-	voice Voice
-	prev  *voicePoolElement
-	next  *voicePoolElement
-}
-
-func (e *voicePoolElement) Unlink() {
-	e.prev.next = e.next
-	e.next.prev = e.prev
-}
-
-type voicePool struct {
-	sentinel *voicePoolElement
-}
-
-func (vp *voicePool) Initialize() {
-	sentinel := &voicePoolElement{}
-	sentinel.next = sentinel
-	sentinel.prev = sentinel
-	vp.sentinel = sentinel
-}
-
-func (vp *voicePool) Pop() *voicePoolElement {
-	first := vp.sentinel.next
-
-	if first == vp.sentinel {
-		return nil
-	}
-
-	first.Unlink()
-
-	return first
-}
-
-func (vp *voicePool) Push(e *voicePoolElement) {
-	e.next = vp.sentinel.next
-	e.prev = vp.sentinel
-	vp.sentinel.next.prev = e
-	vp.sentinel.next = e
-}
-
 type VoicePlayer struct {
 	*BaseModule
-	freePool   voicePool
-	activePool voicePool
+	freePool   pool.Pool[Voice]
+	activePool pool.Pool[Voice]
 }
 
 func NewVoicePlayer(numChannels int, voices []Voice, config *Configuration, identifier string) *VoicePlayer {
@@ -62,7 +23,7 @@ func NewVoicePlayer(numChannels int, voices []Voice, config *Configuration, iden
 	player.activePool.Initialize()
 
 	for _, voice := range voices {
-		player.freePool.Push(&voicePoolElement{voice: voice})
+		player.freePool.Push(&pool.Element[Voice]{Value: voice})
 	}
 
 	return player
@@ -78,8 +39,8 @@ func (vp *VoicePlayer) ReceiveMessage(msg any) []*Message {
 
 	elem := vp.freePool.Pop()
 	if elem != nil {
+		elem.Value.Activate(duration, amplitude, voiceMsg, vp.Config)
 		vp.activePool.Push(elem)
-		elem.voice.Activate(duration, amplitude, voiceMsg, vp.Config)
 	}
 
 	return nil
@@ -96,26 +57,27 @@ func (vp *VoicePlayer) Synthesize() bool {
 	}
 
 	// First prepare all voices for synthesis
-	elem := vp.activePool.sentinel.next
-	for elem != vp.activePool.sentinel {
-		elem.voice.PrepareSynthesis()
-		elem = elem.next
+	elem := vp.activePool.First()
+	end := vp.activePool.End()
+	for elem != end {
+		elem.Value.PrepareSynthesis()
+		elem = elem.Next
 	}
 
 	// Run active voices
-	elem = vp.activePool.sentinel.next
+	elem = vp.activePool.First()
 	cnt := 0
-	for elem != vp.activePool.sentinel {
+	for elem != end {
 		cnt++
 		prev := elem
-		elem = elem.next
+		elem = elem.Next
 
-		if prev.voice.IsActive() {
+		if prev.Value.IsActive() {
 			// Add voice output to buffer
-			prev.voice.Synthesize()
+			prev.Value.Synthesize()
 
 			for outputIndex := 0; outputIndex < len(vp.Outputs); outputIndex++ {
-				socket := prev.voice.OutputAtIndex(outputIndex)
+				socket := prev.Value.OutputAtIndex(outputIndex)
 				for sampIndex := 0; sampIndex < vp.Config.BufferSize; sampIndex++ {
 					vp.Outputs[outputIndex].Buffer[sampIndex] += socket.Buffer[sampIndex]
 				}

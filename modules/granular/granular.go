@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/utils/pool"
 )
 
 type Parameter interface {
@@ -15,39 +16,34 @@ type Parameter interface {
 	Panning() float64
 	// Envelope type
 	EnvType() EnvelopeType
-	// Attack relative portion (only if env type is not parabolice)
+	// Attack relative portion (only if env type is not parabolic)
 	Attack() float64
-	// Release relative portion (only if env type is not parabolice)
+	// Release relative portion (only if env type is not parabolic)
 	Release() float64
 }
 
-type Step[P Parameter] struct {
-	Parameter  P
-	InterOnset int
+type ParameterFactory interface {
+	NextParameter(int64, *muse.Configuration) (Parameter, int64)
 }
 
-type Sequence[P Parameter] interface {
-	NextStep(int64, *muse.Configuration) *Step[P]
+type SourceFactory interface {
+	NewSource() Source
 }
 
-type SourceFactory[P Parameter] interface {
-	NewSource() Source[P]
-}
-
-type Source[P Parameter] interface {
+type Source interface {
 	Synthesize() float64
-	Activate(P, *muse.Configuration)
+	Activate(Parameter, *muse.Configuration)
 }
 
-type grain[P Parameter] struct {
+type grain struct {
 	envelope  Envelope
-	source    Source[P]
+	source    Source
 	sampsToGo int64
 	panLeft   float64
 	panRight  float64
 }
 
-func (g *grain[P]) activate(p P, config *muse.Configuration) {
+func (g *grain) activate(p Parameter, config *muse.Configuration) {
 	pan := p.Panning()
 
 	g.panLeft = math.Cos(pan * math.Pi / 2.0)
@@ -65,7 +61,7 @@ func (g *grain[P]) activate(p P, config *muse.Configuration) {
 	})
 }
 
-func (g *grain[P]) synthesize(out [][]float64) {
+func (g *grain) synthesize(out [][]float64) {
 	bufSize := int64(len(out[0]))
 	sampsToSynthesize := g.sampsToGo
 	if sampsToSynthesize > bufSize {
@@ -87,84 +83,51 @@ func (g *grain[P]) synthesize(out [][]float64) {
 	}
 }
 
-type grainPoolElement[P Parameter] struct {
-	grain *grain[P]
-	prev  *grainPoolElement[P]
-	next  *grainPoolElement[P]
-}
-
-func (e *grainPoolElement[P]) Unlink() {
-	e.prev.next = e.next
-	e.next.prev = e.prev
-}
-
-type grainPool[P Parameter] struct {
-	sentinel *grainPoolElement[P]
-}
-
-func (gp *grainPool[P]) Initialize() {
-	sentinel := &grainPoolElement[P]{}
-	sentinel.next = sentinel
-	sentinel.prev = sentinel
-	gp.sentinel = sentinel
-}
-
-func (gp *grainPool[P]) Pop() *grainPoolElement[P] {
-	first := gp.sentinel.next
-
-	if first == gp.sentinel {
-		return nil
-	}
-
-	first.Unlink()
-
-	return first
-}
-
-func (gp *grainPool[P]) Push(e *grainPoolElement[P]) {
-	e.next = gp.sentinel.next
-	e.prev = gp.sentinel
-	gp.sentinel.next.prev = e
-	gp.sentinel.next = e
-}
-
-type Granulator[P Parameter] struct {
+type Granulator struct {
 	*muse.BaseModule
-	freeGrains      grainPool[P]
-	activeGrains    grainPool[P]
-	activatedGrains grainPool[P]
-	sequence        Sequence[P]
-	nextStep        *Step[P]
-	timestamp       int64
+	freeGrains       pool.Pool[*grain]
+	activeGrains     pool.Pool[*grain]
+	activatedGrains  pool.Pool[*grain]
+	parameterFactory ParameterFactory
+	nextParameter    Parameter
+	interOnset       int64
+	timestamp        int64
 }
 
-func (gl *Granulator[P]) Initialize(sf SourceFactory[P], grainPoolSize int, sequence Sequence[P], config *muse.Configuration, identifier string) {
+func NewGranulator(sf SourceFactory, grainPoolSize int, parameterFactory ParameterFactory, config *muse.Configuration, identifier string) *Granulator {
+	grl := &Granulator{}
+	grl.Initialize(sf, grainPoolSize, parameterFactory, config, identifier)
+	return grl
+}
+
+func (gl *Granulator) Initialize(sf SourceFactory, grainPoolSize int, parameterFactory ParameterFactory, config *muse.Configuration, identifier string) {
 	gl.BaseModule = muse.NewBaseModule(0, 2, config, identifier)
 
 	gl.freeGrains.Initialize()
 	gl.activeGrains.Initialize()
 	gl.activatedGrains.Initialize()
-	gl.sequence = sequence
+	gl.parameterFactory = parameterFactory
 
 	for i := 0; i < grainPoolSize; i++ {
-		g := &grain[P]{}
+		g := &grain{}
 		g.source = sf.NewSource()
-		e := &grainPoolElement[P]{grain: g}
+		e := &pool.Element[*grain]{Value: g}
 		gl.freeGrains.Push(e)
 	}
 
-	gl.nextStep = sequence.NextStep(0, config)
+	gl.nextParameter, gl.interOnset = parameterFactory.NextParameter(0, config)
 }
 
-func (gl *Granulator[P]) synthesizePool(p *grainPool[P], out [][]float64) {
-	e := p.sentinel.next
+func (gl *Granulator) synthesizePool(p *pool.Pool[*grain], out [][]float64) {
+	e := p.First()
+	end := p.End()
 
-	for e != p.sentinel {
-		g := e.grain
+	for e != end {
+		g := e.Value
 		g.synthesize(out)
 
 		prev := e
-		e = e.next
+		e = e.Next
 
 		if g.sampsToGo == 0 {
 			prev.Unlink()
@@ -173,30 +136,35 @@ func (gl *Granulator[P]) synthesizePool(p *grainPool[P], out [][]float64) {
 	}
 }
 
-func (gl *Granulator[P]) moveActivated() {
-	e := gl.activatedGrains.sentinel.next
-	for e != gl.activatedGrains.sentinel {
+func (gl *Granulator) moveActivated() {
+	e := gl.activatedGrains.First()
+	end := gl.activatedGrains.End()
+	for e != end {
 		prev := e
-		e = e.next
+		e = e.Next
 		prev.Unlink()
 		gl.activeGrains.Push(prev)
 	}
 }
 
-func (gl *Granulator[P]) Synthesize() bool {
+func (gl *Granulator) Synthesize() bool {
 	if !gl.BaseModule.Synthesize() {
 		return false
 	}
 
-	var out [][]float64
+	var out [2][]float64
+	var partialOut [2][]float64
 
-	if gl.NumOutputs() == 1 {
-		out = [][]float64{gl.OutputAtIndex(0).Buffer}
+	numOutputs := gl.NumOutputs()
+
+	if numOutputs == 1 {
+		out[0] = gl.OutputAtIndex(0).Buffer
 		for i := 0; i < gl.Config.BufferSize; i++ {
 			out[0][i] = 0.0
 		}
 	} else {
-		out = [][]float64{gl.OutputAtIndex(0).Buffer, gl.OutputAtIndex(1).Buffer}
+		out[0] = gl.OutputAtIndex(0).Buffer
+		out[1] = gl.OutputAtIndex(1).Buffer
 		for i := 0; i < gl.Config.BufferSize; i++ {
 			out[0][i] = 0.0
 			out[1][i] = 0.0
@@ -206,38 +174,36 @@ func (gl *Granulator[P]) Synthesize() bool {
 	outIndex := 0
 
 	// First run all currently active grains
-	gl.synthesizePool(&gl.activeGrains, out)
+	gl.synthesizePool(&gl.activeGrains, out[:numOutputs])
 
 	// Step through inter onsets in current cycle
 	done := false
 	for !done {
-		sampsToGenerate := gl.nextStep.InterOnset
-		sampsLeft := gl.Config.BufferSize - outIndex
+		sampsToGenerate := gl.interOnset
+		sampsLeft := int64(gl.Config.BufferSize - outIndex)
 
 		if sampsToGenerate > sampsLeft {
 			sampsToGenerate = sampsLeft
 			done = true
 		}
 
-		partialOut := make([][]float64, gl.NumOutputs())
-
 		for bufIndex, buf := range out {
-			partialOut[bufIndex] = buf[outIndex : outIndex+sampsToGenerate]
+			partialOut[bufIndex] = buf[outIndex : outIndex+int(sampsToGenerate)]
 		}
 
-		gl.synthesizePool(&gl.activatedGrains, partialOut)
+		gl.synthesizePool(&gl.activatedGrains, partialOut[:numOutputs])
 
-		gl.nextStep.InterOnset -= sampsToGenerate
-		outIndex += sampsToGenerate
+		gl.interOnset -= sampsToGenerate
+		outIndex += int(sampsToGenerate)
 
-		if gl.nextStep.InterOnset == 0 {
+		for gl.interOnset == 0 {
 			e := gl.freeGrains.Pop()
 			if e != nil {
 				gl.activatedGrains.Push(e)
-				e.grain.activate(gl.nextStep.Parameter, gl.Config)
+				e.Value.activate(gl.nextParameter, gl.Config)
 			}
 
-			gl.nextStep = gl.sequence.NextStep(gl.timestamp, gl.Config)
+			gl.nextParameter, gl.interOnset = gl.parameterFactory.NextParameter(gl.timestamp, gl.Config)
 		}
 	}
 
