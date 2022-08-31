@@ -17,15 +17,11 @@ type Pool[T any] struct {
 
 func NewPool[T any]() *Pool[T] {
 	p := &Pool[T]{}
-	p.Initialize()
-	return p
-}
-
-func (p *Pool[T]) Initialize() {
 	sentinel := &Element[T]{}
 	sentinel.Next = sentinel
 	sentinel.Prev = sentinel
 	p.sentinel = sentinel
+	return p
 }
 
 func (p *Pool[T]) End() *Element[T] {

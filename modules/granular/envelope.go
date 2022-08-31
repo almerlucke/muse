@@ -66,6 +66,52 @@ func (e *Envelope) Activate(config EnvelopeConfiguration) {
 	}
 }
 
+func (e *Envelope) SynthesizeBuffer(buf []float64, bufSize int) {
+	for i := 0; i < bufSize; i++ {
+		var out float64
+
+		if e.envType == Parabolic {
+			out = e.currentAmp
+			e.currentAmp = e.currentAmp + e.slope
+			e.slope = e.slope + e.curve
+		} else {
+			if e.stage == Attack {
+				if e.envType == RaisedCosineBell {
+					out = (1.0 + math.Cos(math.Pi+math.Pi*e.phase)) * (e.maxAmplitude / 2.0)
+				} else {
+					out = e.phase * e.maxAmplitude
+				}
+			} else if e.stage == Sustain {
+				out = e.maxAmplitude
+			} else {
+				if e.envType == RaisedCosineBell {
+					out = (1.0 + math.Cos(math.Pi*e.phase)) * (e.maxAmplitude / 2.0)
+				} else {
+					out = (1.0 - e.phase) * e.maxAmplitude
+				}
+			}
+
+			e.phase += e.increment
+			e.cnt++
+
+			if e.cnt >= e.stageDuration {
+				e.cnt = 0
+				e.phase = 0
+				if e.stage == Attack {
+					e.stage = Sustain
+					e.stageDuration = e.sustainDuration
+				} else if e.stage == Sustain {
+					e.stage = Release
+					e.stageDuration = e.releaseDuration
+					e.increment = 1.0 / float64(e.releaseDuration)
+				}
+			}
+		}
+
+		buf[i] = out
+	}
+}
+
 func (e *Envelope) Synthesize() float64 {
 	var out float64
 

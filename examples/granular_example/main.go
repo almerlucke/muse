@@ -113,38 +113,44 @@ type SFSource struct {
 	delta  float64
 }
 
-func (s *SFSource) Synthesize() float64 {
-	offset := s.offset + s.phase
+func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
 
-	for offset >= 1.0 {
-		offset -= 1.0
+	for i := 0; i < bufSize; i++ {
+		offset := s.offset + s.phase
+
+		for offset >= 1.0 {
+			offset -= 1.0
+		}
+
+		for offset < 0.0 {
+			offset += 1.0
+		}
+
+		offset = offset * float64(s.buffer.NumFrames)
+		lookup1 := int64(offset)
+		fraction := offset - float64(lookup1)
+		lookup2 := lookup1 + 1
+
+		if lookup2 >= s.buffer.NumFrames {
+			lookup2 = 0
+		}
+
+		s.phase += s.delta
+
+		for s.phase >= 1.0 {
+			s.phase -= 1.0
+		}
+
+		for s.phase < 0.0 {
+			s.phase += 1.0
+		}
+
+		for outIndex, outBuf := range outBuffers {
+			out := s.buffer.Channels[outIndex][lookup1]
+
+			outBuf[i] = out + (s.buffer.Channels[outIndex][lookup2]-out)*fraction
+		}
 	}
-
-	for offset < 0.0 {
-		offset += 1.0
-	}
-
-	offset = offset * float64(s.buffer.NumFrames)
-	lookup1 := int64(offset)
-	fraction := offset - float64(lookup1)
-	lookup2 := lookup1 + 1
-
-	if lookup2 >= s.buffer.NumFrames {
-		lookup2 = 0
-	}
-
-	s.phase += s.delta
-
-	for s.phase >= 1.0 {
-		s.phase -= 1.0
-	}
-
-	for s.phase < 0.0 {
-		s.phase += 1.0
-	}
-
-	out := s.buffer.Channels[0][lookup1]
-	return out + (s.buffer.Channels[0][lookup2]-out)*fraction
 }
 
 func (s *SFSource) Activate(p granular.Parameter, c *muse.Configuration) {
@@ -218,11 +224,11 @@ func (f *SFParameterFactory) NextParameter(timestamp int64, config *muse.Configu
 
 	interOnset := int64(randBetween(0.00003, 0.0012) * config.SampleRate)
 
-	f.parameter.duration = randBetween(4.0, 380.0)
+	f.parameter.duration = randBetween(4.0, 180.0)
 	f.parameter.amplitude = randBetween(0.2, 1.0)
 	f.parameter.panning = randBetween(0.0, 1.0)
 	f.parameter.speed = randBetween(1.0-0.1*offset, 1.0+0.1*offset)
-	f.parameter.offset = randBetween(offset*0.97-0.03*offset, offset*0.97+0.03*offset)
+	f.parameter.offset = randBetween(offset*0.9-0.10*offset, offset*0.9+0.1*offset)
 
 	return &f.parameter, interOnset
 }
@@ -267,20 +273,20 @@ func (f *SFParameterFactory) NextParameter(timestamp int64, config *muse.Configu
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 3*44100, 1024)
-
 	sfb, err := io.NewSoundFileBuffer("/Users/almerlucke/Downloads/mixkit-laughing-children-indoors-427.wav")
 	if err != nil {
 		log.Fatalf("fatal err: %v", err)
 	}
 
-	gr := &granular.Granulator{}
-	gr.Initialize(&SFSourceFactory{Samples: sfb}, 400, &SFParameterFactory{}, env.Config, "granulator")
+	numChannels := len(sfb.Channels)
 
-	env.AddModule(gr)
+	env := muse.NewEnvironment(numChannels, 3*44100, 1024)
 
-	muse.Connect(gr, 0, env, 0)
-	muse.Connect(gr, 1, env, 1)
+	gr := env.AddModule(granular.NewGranulator(numChannels, &SFSourceFactory{Samples: sfb}, 400, &SFParameterFactory{}, env.Config, "granulator"))
+
+	for i := 0; i < numChannels; i++ {
+		muse.Connect(gr, i, env, i)
+	}
 
 	env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 32.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
 }

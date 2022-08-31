@@ -10,8 +10,8 @@ type Voice interface {
 
 type VoicePlayer struct {
 	*BaseModule
-	freePool   pool.Pool[Voice]
-	activePool pool.Pool[Voice]
+	freePool   *pool.Pool[Voice]
+	activePool *pool.Pool[Voice]
 }
 
 func NewVoicePlayer(numChannels int, voices []Voice, config *Configuration, identifier string) *VoicePlayer {
@@ -19,8 +19,8 @@ func NewVoicePlayer(numChannels int, voices []Voice, config *Configuration, iden
 		BaseModule: NewBaseModule(1, numChannels, config, identifier),
 	}
 
-	player.freePool.Initialize()
-	player.activePool.Initialize()
+	player.freePool = pool.NewPool[Voice]()
+	player.activePool = pool.NewPool[Voice]()
 
 	for _, voice := range voices {
 		player.freePool.Push(&pool.Element[Voice]{Value: voice})
