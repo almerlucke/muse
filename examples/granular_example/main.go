@@ -110,6 +110,10 @@ func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
 }
 
 func (s *SFSource) Activate(p granular.Parameter, c *muse.Configuration) {
+	// pan := p.Panning()
+	// g.panLeft = math.Cos(pan * math.Pi / 2.0)
+	// g.panRight = math.Sin(pan * math.Pi / 2.0)
+
 	sfp := p.(*SFParam)
 	s.phase = 0.0
 	s.offset = sfp.offset
@@ -143,11 +147,11 @@ func (f *SFParameterGenerator) Next(timestamp int64, config *muse.Configuration)
 
 	interOnset := int64(randBetween(0.00003, 0.0012) * config.SampleRate)
 
-	f.parameter.duration = randBetween(4.0, 180.0)
+	f.parameter.duration = randBetween(4.0, 400.0)
 	f.parameter.amplitude = randBetween(0.2, 1.0)
 	f.parameter.panning = randBetween(0.0, 1.0)
-	f.parameter.speed = randBetween(1.0-0.1*offset, 1.0+0.1*offset)
-	f.parameter.offset = randBetween(offset*0.9-0.10*offset, offset*0.9+0.1*offset)
+	f.parameter.speed = randBetween(1.0-0.2*offset, 1.0+0.2*offset)
+	f.parameter.offset = randBetween(offset*0.8-0.20*offset, offset*0.8+0.2*offset)
 
 	return &f.parameter, interOnset
 }
@@ -155,7 +159,7 @@ func (f *SFParameterGenerator) Next(timestamp int64, config *muse.Configuration)
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	sfb, err := io.NewSoundFileBuffer("/Users/almerlucke/Downloads/mixkit-laughing-children-indoors-427.wav")
+	sfb, err := io.NewSoundFileBuffer("/Users/almerlucke/Downloads/mixkit-movie-trailer-synth-impact-649.wav")
 	if err != nil {
 		log.Fatalf("fatal err: %v", err)
 	}
@@ -170,5 +174,5 @@ func main() {
 		muse.Connect(gr, i, env, i)
 	}
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 64.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/granular.aiff", 64.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
 }

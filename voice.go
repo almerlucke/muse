@@ -4,6 +4,8 @@ import "github.com/almerlucke/muse/utils/pool"
 
 type Voice interface {
 	Module
+	NoteOn(amplitude float64, message any, config *Configuration)
+	NoteOff()
 	Activate(duration float64, amplitude float64, message any, config *Configuration)
 	IsActive() bool
 }
@@ -29,17 +31,37 @@ func NewVoicePlayer(numChannels int, voices []Voice, config *Configuration, iden
 	return player
 }
 
+func (vp *VoicePlayer) noteOff(identifier string) {
+	elem := vp.activePool.First()
+	end := vp.activePool.End()
+	for elem != end {
+		if elem.Value.Identifier() == identifier {
+			elem.Value.NoteOff()
+			break
+		}
+		elem = elem.Next
+	}
+}
+
 // ReceiveMessage is used to activate voices
 func (vp *VoicePlayer) ReceiveMessage(msg any) []*Message {
 	content := msg.(map[string]any)
 
-	duration := content["duration"].(float64)
-	amplitude := content["amplitude"].(float64)
-	voiceMsg := content["message"]
-
 	elem := vp.freePool.Pop()
 	if elem != nil {
-		elem.Value.Activate(duration, amplitude, voiceMsg, vp.Config)
+		if noteOffIdentifier, ok := content["noteOff"]; ok {
+			vp.noteOff(noteOffIdentifier.(string))
+		} else if noteOnIdentifier, ok := content["noteOn"]; ok {
+			amplitude := content["amplitude"].(float64)
+			voiceMsg := content["message"]
+			elem.Value.SetIdentifier(noteOnIdentifier.(string))
+			elem.Value.NoteOn(amplitude, voiceMsg, vp.Config)
+		} else if duration, ok := content["duration"]; ok {
+			amplitude := content["amplitude"].(float64)
+			voiceMsg := content["message"]
+			elem.Value.Activate(duration.(float64), amplitude, voiceMsg, vp.Config)
+		}
+
 		vp.activePool.Push(elem)
 	}
 
@@ -66,9 +88,7 @@ func (vp *VoicePlayer) Synthesize() bool {
 
 	// Run active voices
 	elem = vp.activePool.First()
-	cnt := 0
 	for elem != end {
-		cnt++
 		prev := elem
 		elem = elem.Next
 

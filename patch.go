@@ -7,13 +7,15 @@ import (
 
 type Patch interface {
 	Module
-	AddMessenger(msgr Messenger) Messenger
-	AddModule(m Module) Module
-	Contains(m Module) bool
-	Lookup(address string) Receiver
+	AddMessenger(Messenger) Messenger
+	AddModule(Module) Module
+	Contains(Module) bool
+	Lookup(string) Receiver
 	InputModuleAtIndex(index int) Module
 	OutputModuleAtIndex(index int) Module
-	PostMessages()
+	SendMessage(*Message)
+	SendMessages([]*Message)
+	RunMessengers()
 }
 
 type BasePatch struct {
@@ -145,24 +147,28 @@ func (p *BasePatch) Synthesize() bool {
 	return true
 }
 
-func (p *BasePatch) sendMessages(msgs []*Message) {
-	for _, msg := range msgs {
-		rcvr := p.Lookup(msg.Address)
-		if rcvr != nil {
-			p.sendMessages(rcvr.ReceiveMessage(msg.Content))
-		}
+func (p *BasePatch) SendMessage(msg *Message) {
+	rcvr := p.Lookup(msg.Address)
+	if rcvr != nil {
+		p.SendMessages(rcvr.ReceiveMessage(msg.Content))
 	}
 }
 
-func (p *BasePatch) PostMessages() {
+func (p *BasePatch) SendMessages(msgs []*Message) {
+	for _, msg := range msgs {
+		p.SendMessage(msg)
+	}
+}
+
+func (p *BasePatch) RunMessengers() {
 	for _, msgr := range p.messengers {
-		p.sendMessages(msgr.Messages(p.timestamp, p.Config))
+		p.SendMessages(msgr.Messages(p.timestamp, p.Config))
 	}
 
 	for _, sub := range p.subModules {
 		subPatch, ok := sub.(Patch)
 		if ok {
-			subPatch.PostMessages()
+			subPatch.RunMessengers()
 		}
 	}
 }

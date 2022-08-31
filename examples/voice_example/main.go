@@ -84,6 +84,14 @@ func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, 
 	tv.phasor.ReceiveMessage(msg["osc"])
 }
 
+func (tv *TestVoice) NoteOn(amplitude float64, message any, config *muse.Configuration) {
+	// STUB
+}
+
+func (tv *TestVoice) NoteOff() {
+	// STUB
+}
+
 func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 

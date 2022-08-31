@@ -2,11 +2,6 @@ package granular
 
 import "math"
 
-type Envelope interface {
-	Synthesize([]float64, int)
-	Activate(float64, int64, Parameter)
-}
-
 type DefaultEnvelopeType int
 
 const (

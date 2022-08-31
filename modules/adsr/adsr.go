@@ -45,6 +45,10 @@ func (a *ADSR) IsActive() bool {
 	return !a.adsr.IsFinished()
 }
 
+func (a *ADSR) Release() {
+	a.adsr.Release()
+}
+
 func (a *ADSR) Synthesize() bool {
 	if !a.BaseModule.Synthesize() {
 		return false

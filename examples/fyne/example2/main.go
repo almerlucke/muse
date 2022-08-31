@@ -1,19 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"strconv"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -21,21 +16,12 @@ import (
 
 	"github.com/almerlucke/muse"
 
-	// Components
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shapingc "github.com/almerlucke/muse/components/shaping"
-	"github.com/almerlucke/muse/ui"
+	"github.com/almerlucke/muse/utils"
 
-	// Values
-	"github.com/almerlucke/muse/values"
-
-	// Messengers
-	"github.com/almerlucke/muse/messengers/generators/prototype"
-	"github.com/almerlucke/muse/messengers/triggers/stepper"
-	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
-
-	// Modules
 	"github.com/almerlucke/muse/modules/adsr"
+	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/shaper"
@@ -81,10 +67,18 @@ func (tv *TestVoice) IsActive() bool {
 }
 
 func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, config *muse.Configuration) {
+	// STUB
+}
+
+func (tv *TestVoice) NoteOn(amplitude float64, message any, config *muse.Configuration) {
 	msg := message.(map[string]any)
 
-	tv.adsrEnv.TriggerFull(duration, amplitude, tv.stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration)
+	tv.adsrEnv.TriggerFull(0, amplitude, tv.stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.NoteOff)
 	tv.phasor.ReceiveMessage(msg["osc"])
+}
+
+func (tv *TestVoice) NoteOff() {
+	tv.adsrEnv.Release()
 }
 
 type FixedWidthLayout struct {
@@ -249,7 +243,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	releaseDurationLabel.Alignment = fyne.TextAlignTrailing
 
 	ctrl.releaseDurationSliderBinding = binding.NewFloat()
-	ctrl.releaseDurationSliderBinding.Set(5.0)
+	ctrl.releaseDurationSliderBinding.Set(50.0)
 	ctrl.releaseDurationSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.releaseDurationSliderBinding.Get()
 		if err == nil {
@@ -257,7 +251,8 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[3].Duration = v
 		}
 	}))
-	releaseDurationSlider := widget.NewSliderWithData(5.0, 500.0, ctrl.releaseDurationSliderBinding)
+	releaseDurationSlider := widget.NewSliderWithData(50.0, 2500.0, ctrl.releaseDurationSliderBinding)
+	releaseDurationSlider.Step = 10.0
 
 	// Release Shape
 	ctrl.releaseShapeLabelBinding = binding.NewString()
@@ -355,343 +350,10 @@ func NewADSRControl() *ADSRControl {
 	return control
 }
 
-func parseFloatWithBounds(s string, min float64, max float64) float64 {
-	f, _ := strconv.ParseFloat(s, 64)
-	if f < min {
-		f = min
-	}
-	if f > max {
-		f = max
-	}
-	return f
-}
-
-type SwingStepControl struct {
-	step               *swing.Step
-	skipBinding        binding.Bool
-	shuffleBinding     binding.String
-	shuffleRandBinding binding.String
-	skipFactorBinding  binding.String
-	currentBinding     binding.Bool
-	index              int
-	isCurrent          bool
-}
-
-func NewSwingStepControl(step *swing.Step, index int, isCurrent bool) *SwingStepControl {
-	return &SwingStepControl{
-		step:      step,
-		index:     index,
-		isCurrent: isCurrent,
-	}
-}
-
-func (ssc *SwingStepControl) SetCurrent(c bool) {
-	ssc.isCurrent = c
-	ssc.currentBinding.Set(c)
-}
-
-func (ssc *SwingStepControl) UI() fyne.CanvasObject {
-	ssc.skipBinding = binding.NewBool()
-	ssc.skipBinding.Set(!ssc.step.Skip)
-	ssc.skipBinding.AddListener(binding.NewDataListener(func() {
-		v, err := ssc.skipBinding.Get()
-		if err == nil {
-			ssc.step.Skip = !v
-		}
-	}))
-	skipCheck := widget.NewCheckWithData("", ssc.skipBinding)
-
-	ssc.shuffleBinding = binding.NewString()
-	ssc.shuffleBinding.Set(fmt.Sprintf("%.2f", ssc.step.Shuffle))
-	ssc.shuffleBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
-		v, err := ssc.shuffleBinding.Get()
-		if err == nil {
-			ssc.step.Shuffle = parseFloatWithBounds(v, 0, 1)
-		}
-	}))
-	shuffleEntry := widget.NewEntryWithData(ssc.shuffleBinding)
-	shuffleEntry.OnSubmitted = func(v string) {
-		ssc.step.Shuffle = parseFloatWithBounds(v, 0, 1)
-	}
-	shuffleEntry.Validator = nil
-
-	ssc.shuffleRandBinding = binding.NewString()
-	ssc.shuffleRandBinding.Set(fmt.Sprintf("%.2f", ssc.step.ShuffleRand))
-	ssc.shuffleRandBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
-		v, err := ssc.shuffleRandBinding.Get()
-		if err == nil {
-			ssc.step.ShuffleRand = parseFloatWithBounds(v, 0, 1)
-		}
-	}))
-	shuffleRandEntry := widget.NewEntryWithData(ssc.shuffleRandBinding)
-	shuffleRandEntry.Validator = nil
-
-	ssc.skipFactorBinding = binding.NewString()
-	ssc.skipFactorBinding.Set(fmt.Sprintf("%.2f", ssc.step.SkipFactor))
-	ssc.skipFactorBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
-		v, err := ssc.skipFactorBinding.Get()
-		if err == nil {
-			ssc.step.SkipFactor = parseFloatWithBounds(v, 0, 1)
-		}
-	}))
-	skipFactorEntry := widget.NewEntryWithData(ssc.skipFactorBinding)
-	skipFactorEntry.Validator = nil
-
-	ssc.currentBinding = binding.NewBool()
-	ssc.currentBinding.Set(ssc.isCurrent)
-	currentCheck := widget.NewCheckWithData("", ssc.currentBinding)
-	currentCheck.Disable()
-
-	return widget.NewForm(
-		widget.NewFormItem(fmt.Sprintf("%d", ssc.index), skipCheck),
-		widget.NewFormItem("Swing", shuffleEntry),
-		widget.NewFormItem("Rand", shuffleRandEntry),
-		widget.NewFormItem("Skip", skipFactorEntry),
-		widget.NewFormItem("", currentCheck),
-	)
-}
-
-func (ssc *SwingStepControl) ChangeStep(step *swing.Step) {
-	ssc.step = step
-	ssc.skipBinding.Set(!step.Skip)
-	ssc.shuffleBinding.Set(fmt.Sprintf("%.2f", step.Shuffle))
-	ssc.shuffleRandBinding.Set(fmt.Sprintf("%.2f", step.ShuffleRand))
-	ssc.skipFactorBinding.Set(fmt.Sprintf("%.2f", step.SkipFactor))
-}
-
-type SwingControlBank struct {
-	Steps []*swing.Step
-	N     int
-}
-
-func NewSwingControlBank() *SwingControlBank {
-	b := &SwingControlBank{
-		Steps: make([]*swing.Step, 64),
-		N:     8,
-	}
-
-	for i := 0; i < 64; i++ {
-		b.Steps[i] = &swing.Step{}
-	}
-
-	b.Steps[1].Shuffle = 0.2
-	b.Steps[2].Skip = true
-	b.Steps[3].Shuffle = 0.4
-	b.Steps[3].ShuffleRand = 0.2
-	b.Steps[5].Shuffle = 0.3
-	b.Steps[6].Shuffle = 0.1
-	b.Steps[7].SkipFactor = 0.3
-
-	return b
-}
-
-func (b *SwingControlBank) SwingSteps() []*swing.Step {
-	return b.Steps[:b.N]
-}
-
-type SwingControl struct {
-	banks               []*SwingControlBank
-	stepSequence        *values.Sequence[*swing.Step]
-	stepControls        []*SwingStepControl
-	bpm                 *values.Const[float64]
-	noteDivision        *values.Const[float64]
-	bankIndex           int
-	prevStepIndex       int
-	nBinding            binding.String
-	bpmBinding          binding.String
-	noteDivisionBinding binding.String
-}
-
-func (sc *SwingControl) Listen(state map[string]any) {
-	if sc.stepControls != nil {
-		sc.stepControls[sc.prevStepIndex].SetCurrent(false)
-		i := state["steps"].(map[string]any)["index"].(int)
-		sc.stepControls[i].SetCurrent(true)
-		sc.prevStepIndex = i
-	}
-}
-
-func (sc *SwingControl) Swing() *swing.Swing {
-	return swing.New(sc.bpm, sc.noteDivision, sc.stepSequence)
-}
-
-func (sc *SwingControl) UI() fyne.CanvasObject {
-	stepCanvasObjects := []fyne.CanvasObject{}
-	sc.stepControls = make([]*SwingStepControl, 64)
-
-	for i := 0; i < 64; i++ {
-		sc.stepControls[i] = NewSwingStepControl(sc.banks[sc.bankIndex].Steps[i], i, i == 0)
-
-		stepCanvasObjects = append(stepCanvasObjects, sc.stepControls[i].UI())
-
-		if (i+1)%8 == 0 {
-			stepCanvasObjects = append(stepCanvasObjects, widget.NewSeparator())
-		}
-	}
-
-	sc.nBinding = binding.NewString()
-	sc.nBinding.Set("8")
-	sc.nBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
-		v, err := sc.nBinding.Get()
-		if err == nil {
-			n, _ := strconv.ParseInt(v, 10, 64)
-			if n > 0 && n < 65 {
-				log.Printf("n binding set")
-				sc.banks[sc.bankIndex].N = int(n)
-				sc.stepSequence.Set(sc.banks[sc.bankIndex].SwingSteps())
-			}
-		}
-	}))
-
-	nEntry := widget.NewEntryWithData(sc.nBinding)
-	nEntry.Validator = nil
-
-	sc.bpmBinding = binding.NewString()
-	sc.bpmBinding.Set("80")
-	sc.bpmBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
-		v, err := sc.bpmBinding.Get()
-		if err == nil {
-			bpm, _ := strconv.ParseInt(v, 10, 64)
-			if bpm > 0 && bpm < 400 {
-				sc.bpm.Set(float64(bpm))
-			}
-		}
-	}))
-
-	bpmEntry := widget.NewEntryWithData(sc.bpmBinding)
-	bpmEntry.Validator = nil
-
-	sc.noteDivisionBinding = binding.NewString()
-	sc.noteDivisionBinding.Set("4")
-	sc.noteDivisionBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
-		v, err := sc.noteDivisionBinding.Get()
-		if err == nil {
-			noteDivision, _ := strconv.ParseInt(v, 10, 64)
-			if noteDivision > 0 && noteDivision < 257 {
-				sc.noteDivision.Set(float64(noteDivision))
-			}
-		}
-	}))
-
-	noteDivisionEntry := widget.NewEntryWithData(sc.noteDivisionBinding)
-	noteDivisionEntry.Validator = nil
-
-	radioGroup := widget.NewRadioGroup([]string{"1", "2", "3", "4", "5", "6", "7", "8"}, func(option string) {
-		bankIndex, _ := strconv.ParseInt(option, 10, 64)
-		if sc.bankIndex != (int(bankIndex) - 1) {
-			sc.bankIndex = int(bankIndex) - 1
-
-			for i := 0; i < 64; i++ {
-				sc.stepControls[i].ChangeStep(sc.banks[sc.bankIndex].Steps[i])
-			}
-
-			sc.nBinding.Set(fmt.Sprintf("%d", sc.banks[sc.bankIndex].N))
-
-			sc.stepSequence.Set(sc.banks[sc.bankIndex].SwingSteps())
-		}
-	})
-	radioGroup.Horizontal = true
-	radioGroup.Selected = "1"
-
-	return widget.NewCard("Rhythm", "",
-		container.NewVBox(
-			container.NewHBox(
-				widget.NewCard("", "",
-					container.NewHBox(
-						widget.NewLabel("BPM"),
-						bpmEntry,
-						widget.NewLabel("Div"),
-						noteDivisionEntry,
-					),
-				),
-				layout.NewSpacer(),
-				widget.NewCard("", "",
-					container.NewHBox(
-						widget.NewLabel("Steps"),
-						nEntry,
-						widget.NewButton("-", func() {
-							if sc.banks[sc.bankIndex].N > 1 {
-								sc.nBinding.Set(fmt.Sprintf("%d", sc.banks[sc.bankIndex].N-1))
-							}
-						}),
-						widget.NewButton("+", func() {
-							if sc.banks[sc.bankIndex].N < 64 {
-								sc.nBinding.Set(fmt.Sprintf("%d", sc.banks[sc.bankIndex].N+1))
-							}
-						}),
-					),
-				),
-				widget.NewCard("", "",
-					container.NewHBox(
-						widget.NewLabel("Bank"),
-						radioGroup,
-					),
-				),
-			),
-			widget.NewCard("", "",
-				container.NewHScroll(
-					container.NewHBox(
-						stepCanvasObjects...,
-					),
-				),
-			),
-		))
-}
-
-func NewSwingControl(bpm float64, noteDivision float64) *SwingControl {
-	sc := &SwingControl{
-		banks:        make([]*SwingControlBank, 8),
-		bpm:          values.NewConst(bpm),
-		noteDivision: values.NewConst(noteDivision),
-	}
-
-	for i := 0; i < 8; i++ {
-		sc.banks[i] = NewSwingControlBank()
-	}
-
-	sc.stepSequence = values.NewSequence(sc.banks[0].SwingSteps(), true)
-
-	return sc
-}
-
 func main() {
-	env := muse.NewEnvironment(1, 44100, 512)
-
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"voicePlayer"}, values.MapPrototype{
-		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}, true),
-		"amplitude": values.NewConst[any](1.0),
-		"message": values.MapPrototype{
-			"osc": values.MapPrototype{
-				"frequency": values.NewSequence([]any{
-					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1320.0, 110.0,
-					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1100.0, 770.0, 550.0}, true),
-				"phase": values.NewConst[any](0.0),
-			},
-		},
-	}, "prototype1"))
-
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"voicePlayer"}, values.MapPrototype{
-		"duration":  values.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}, true),
-		"amplitude": values.NewConst[any](0.3),
-		"message": values.MapPrototype{
-			"osc": values.MapPrototype{
-				"frequency": values.NewSequence([]any{
-					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1540.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0,
-					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1110.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0}, true),
-				"phase": values.NewConst[any](0.0),
-			},
-		},
-	}, "prototype2"))
+	env := muse.NewEnvironment(2, 44100, 512)
 
 	adsrControl := NewADSRControl()
-	swingControl := NewSwingControl(80.0, 4.0)
-
-	env.AddMessenger(stepper.NewStepperWithListener(
-		swingControl.Swing(),
-		[]string{"prototype1", "prototype2"},
-		swingControl,
-		"",
-	))
 
 	voices := []muse.Voice{}
 	for i := 0; i < 20; i++ {
@@ -700,11 +362,11 @@ func main() {
 	}
 
 	voicePlayer := env.AddModule(muse.NewVoicePlayer(1, voices, env.Config, "voicePlayer"))
-	// allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.1, env.Config, "allpass"))
+	allpass := env.AddModule(allpass.NewAllpass(150, 150, 0.3, env.Config, "allpass"))
 
-	// muse.Connect(voicePlayer, 0, allpass, 0)
+	muse.Connect(voicePlayer, 0, allpass, 0)
 	muse.Connect(voicePlayer, 0, env, 0)
-	// muse.Connect(allpass, 0, env, 1)
+	muse.Connect(allpass, 0, env, 1)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()
@@ -727,6 +389,85 @@ func main() {
 		Height: 400,
 	})
 
+	keyMap := map[string]float64{}
+
+	keyMap["`"] = utils.Mtof(46)
+	keyMap["Z"] = utils.Mtof(47)
+	keyMap["X"] = utils.Mtof(48)
+	keyMap["C"] = utils.Mtof(49)
+	keyMap["V"] = utils.Mtof(50)
+	keyMap["B"] = utils.Mtof(51)
+	keyMap["N"] = utils.Mtof(52)
+	keyMap["M"] = utils.Mtof(53)
+	keyMap[","] = utils.Mtof(54)
+	keyMap["."] = utils.Mtof(55)
+	keyMap["/"] = utils.Mtof(56)
+
+	keyMap["A"] = utils.Mtof(57)
+	keyMap["S"] = utils.Mtof(58)
+	keyMap["D"] = utils.Mtof(59)
+	keyMap["F"] = utils.Mtof(60)
+	keyMap["G"] = utils.Mtof(61)
+	keyMap["H"] = utils.Mtof(62)
+	keyMap["J"] = utils.Mtof(63)
+	keyMap["K"] = utils.Mtof(64)
+	keyMap["L"] = utils.Mtof(65)
+	keyMap[";"] = utils.Mtof(66)
+	keyMap["'"] = utils.Mtof(67)
+	keyMap["\\"] = utils.Mtof(68)
+
+	keyMap["Q"] = utils.Mtof(69)
+	keyMap["W"] = utils.Mtof(70)
+	keyMap["E"] = utils.Mtof(71)
+	keyMap["R"] = utils.Mtof(72)
+	keyMap["T"] = utils.Mtof(73)
+	keyMap["Y"] = utils.Mtof(74)
+	keyMap["U"] = utils.Mtof(75)
+	keyMap["I"] = utils.Mtof(76)
+	keyMap["O"] = utils.Mtof(77)
+	keyMap["P"] = utils.Mtof(78)
+	keyMap["["] = utils.Mtof(79)
+	keyMap["]"] = utils.Mtof(80)
+
+	keyMap["1"] = utils.Mtof(81)
+	keyMap["2"] = utils.Mtof(82)
+	keyMap["3"] = utils.Mtof(83)
+	keyMap["4"] = utils.Mtof(84)
+	keyMap["5"] = utils.Mtof(85)
+	keyMap["6"] = utils.Mtof(86)
+	keyMap["7"] = utils.Mtof(87)
+	keyMap["8"] = utils.Mtof(88)
+	keyMap["9"] = utils.Mtof(89)
+	keyMap["0"] = utils.Mtof(90)
+	keyMap["-"] = utils.Mtof(91)
+	keyMap["="] = utils.Mtof(92)
+
+	if deskCanvas, ok := w.Canvas().(desktop.Canvas); ok {
+		deskCanvas.SetOnKeyDown(func(k *fyne.KeyEvent) {
+			if f, ok := keyMap[string(k.Name)]; ok {
+				log.Printf("key down: %v", k.Name)
+				voicePlayer.ReceiveMessage(map[string]any{
+					"noteOn":    string(k.Name),
+					"amplitude": 1.0,
+					"message": map[string]any{
+						"osc": map[string]any{
+							"frequency": f,
+						},
+					},
+				})
+			}
+		})
+
+		deskCanvas.SetOnKeyUp(func(k *fyne.KeyEvent) {
+			if _, ok := keyMap[string(k.Name)]; ok {
+				log.Printf("key up: %v", k.Name)
+				voicePlayer.ReceiveMessage(map[string]any{
+					"noteOff": string(k.Name),
+				})
+			}
+		})
+	}
+
 	w.SetContent(
 		container.NewVBox(
 			container.NewHBox(
@@ -736,30 +477,8 @@ func main() {
 				widget.NewButton("Stop", func() {
 					stream.Stop()
 				}),
-				widget.NewButton("Save", func() {
-					d := dialog.NewFileSave(func(wc fyne.URIWriteCloser, err error) {
-						adsrState := adsrControl.GetState()
-						jsonData, _ := json.Marshal(adsrState)
-						wc.Write(jsonData)
-						wc.Close()
-					}, w)
-
-					d.Show()
-				}),
-				widget.NewButton("Load", func() {
-					d := dialog.NewFileOpen(func(rc fyne.URIReadCloser, err error) {
-						data, _ := ioutil.ReadAll(rc)
-						rc.Close()
-						var state map[string]any
-						json.Unmarshal(data, &state)
-						adsrControl.SetState(state)
-					}, w)
-
-					d.Show()
-				}),
 			),
 			adsrControl.UI(),
-			swingControl.UI(),
 		),
 	)
 
