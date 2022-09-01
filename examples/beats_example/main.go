@@ -6,7 +6,7 @@ import (
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/io"
-	"github.com/almerlucke/muse/messengers/generators/prototype"
+	"github.com/almerlucke/muse/messengers/banger/prototype"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/mkb218/gosndfile/sndfile"

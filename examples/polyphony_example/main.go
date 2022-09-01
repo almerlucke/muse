@@ -12,7 +12,7 @@ import (
 	"github.com/almerlucke/muse/values"
 
 	// Messengers
-	"github.com/almerlucke/muse/messengers/generators/prototype"
+	"github.com/almerlucke/muse/messengers/banger/prototype"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 
@@ -23,6 +23,7 @@ import (
 	"github.com/almerlucke/muse/modules/freeverb"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
+	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/shaper"
 	"github.com/almerlucke/muse/modules/vartri"
 )
@@ -95,7 +96,7 @@ func (tv *TestVoice) NoteOff() {
 func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"voicePlayer"}, values.MapPrototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
 		"duration":  values.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}, true),
 		"amplitude": values.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}, true),
 		"message": values.MapPrototype{
@@ -122,7 +123,7 @@ func main() {
 	superSawDrive := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.84 + 0.15 }, env.Config, ""))
 	filterCutOff := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*3200.0 + 40.0 }, env.Config, ""))
 
-	voices := []muse.Voice{}
+	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
 		voice := NewTestVoice(env.Config)
 		voices = append(voices, voice)
@@ -131,7 +132,7 @@ func main() {
 		muse.Connect(filterCutOff, 0, voice.Filter, 1)
 	}
 
-	voicePlayer := env.AddModule(muse.NewVoicePlayer(1, voices, env.Config, "voicePlayer"))
+	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
 	allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config, "allpass"))
 	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config, ""))
 	reverb := env.AddModule(freeverb.NewFreeVerb(env.Config, "freeverb"))
@@ -144,14 +145,14 @@ func main() {
 
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
-	muse.Connect(superSawDrive, 0, voicePlayer, 0)
-	muse.Connect(filterCutOff, 0, voicePlayer, 0)
+	muse.Connect(superSawDrive, 0, poly, 0)
+	muse.Connect(filterCutOff, 0, poly, 0)
 
 	muse.Connect(paramVarTri1, 0, superSawDrive, 0)
 	muse.Connect(paramVarTri2, 0, filterCutOff, 0)
-	muse.Connect(voicePlayer, 0, allpass, 0)
+	muse.Connect(poly, 0, allpass, 0)
 	muse.Connect(allpass, 0, allpassAmp, 0)
-	muse.Connect(voicePlayer, 0, reverb, 0)
+	muse.Connect(poly, 0, reverb, 0)
 	muse.Connect(allpassAmp, 0, reverb, 1)
 	muse.Connect(reverb, 0, env, 0)
 	muse.Connect(reverb, 1, env, 1)

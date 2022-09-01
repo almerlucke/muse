@@ -2,7 +2,7 @@ package prototype
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/messengers"
+	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/values"
 )
 
@@ -18,8 +18,8 @@ func NewPrototype(addresses []string, proto values.MapPrototype) *Prototype {
 	}
 }
 
-func NewPrototypeGenerator(addresses []string, proto values.MapPrototype, identifier string) *messengers.Generator {
-	return messengers.NewGenerator(NewPrototype(addresses, proto), identifier)
+func NewPrototypeGenerator(addresses []string, proto values.MapPrototype, identifier string) *banger.Generator {
+	return banger.NewGenerator(NewPrototype(addresses, proto), identifier)
 }
 
 func (p *Prototype) Bang() []*muse.Message {

@@ -30,7 +30,7 @@ import (
 	"github.com/almerlucke/muse/values"
 
 	// Messengers
-	"github.com/almerlucke/muse/messengers/generators/prototype"
+	"github.com/almerlucke/muse/messengers/banger/prototype"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 
@@ -38,6 +38,7 @@ import (
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
+	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/shaper"
 )
 
@@ -663,7 +664,7 @@ func NewSwingControl(bpm float64, noteDivision float64) *SwingControl {
 func main() {
 	env := muse.NewEnvironment(1, 44100, 512)
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"voicePlayer"}, values.MapPrototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
 		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}, true),
 		"amplitude": values.NewConst[any](1.0),
 		"message": values.MapPrototype{
@@ -676,7 +677,7 @@ func main() {
 		},
 	}, "prototype1"))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"voicePlayer"}, values.MapPrototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
 		"duration":  values.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}, true),
 		"amplitude": values.NewConst[any](0.3),
 		"message": values.MapPrototype{
@@ -699,17 +700,17 @@ func main() {
 		"",
 	))
 
-	voices := []muse.Voice{}
+	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
 		voice := NewTestVoice(env.Config, adsrControl)
 		voices = append(voices, voice)
 	}
 
-	voicePlayer := env.AddModule(muse.NewVoicePlayer(1, voices, env.Config, "voicePlayer"))
+	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
 	// allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.1, env.Config, "allpass"))
 
 	// muse.Connect(voicePlayer, 0, allpass, 0)
-	muse.Connect(voicePlayer, 0, env, 0)
+	muse.Connect(poly, 0, env, 0)
 	// muse.Connect(allpass, 0, env, 1)
 
 	portaudio.Initialize()

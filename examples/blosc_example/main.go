@@ -4,12 +4,11 @@ import (
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
+	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/values"
 
-	"github.com/almerlucke/muse/messengers"
-	"github.com/almerlucke/muse/messengers/generators/sequencer"
+	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
-	"github.com/almerlucke/muse/messengers/triggers/stepper/sequence"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/blosc"
 	"github.com/almerlucke/muse/modules/filters/moog/stilson"
@@ -21,18 +20,18 @@ import (
 func main() {
 	env := muse.NewEnvironment(2, 44100, 128)
 
-	sequencer1, _ := sequencer.NewSequencerWithFile("examples/blosc_example/sequence1.json")
-	sequencer2, _ := sequencer.NewSequencerWithFile("examples/blosc_example/sequence2.json")
+	sequence1 := values.NewSequence(utils.ReadJSONObjectNullable[[][]*muse.Message]("examples/blosc_example/sequence1.json"), true)
+	sequence2 := values.NewSequence(utils.ReadJSONObjectNullable[[][]*muse.Message]("examples/blosc_example/sequence2.json"), true)
 
-	env.AddMessenger(messengers.NewGenerator(sequencer1, "sequencer1"))
-	env.AddMessenger(messengers.NewGenerator(sequencer2, "sequencer2"))
+	env.AddMessenger(banger.NewValueGenerator(sequence1, "sequencer1"))
+	env.AddMessenger(banger.NewValueGenerator(sequence2, "sequencer2"))
 
 	env.AddMessenger(stepper.NewStepper(
-		sequence.New(values.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250}, true)),
+		stepper.NewValueStepper(values.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250}, true)),
 		[]string{"sequencer1", "adsr1"}, "",
 	))
 	env.AddMessenger(stepper.NewStepper(
-		sequence.New(values.NewSequence([]float64{-125, 125, 125, 125, -125, 250, -125}, true)),
+		stepper.NewValueStepper(values.NewSequence([]float64{-125, 125, 125, 125, -125, 250, -125}, true)),
 		[]string{"sequencer2", "adsr2"}, "",
 	))
 

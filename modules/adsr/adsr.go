@@ -2,7 +2,7 @@ package adsr
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/messengers"
+	"github.com/almerlucke/muse/messengers/banger"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 )
@@ -26,7 +26,7 @@ func NewADSR(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode ad
 }
 
 func (a *ADSR) ReceiveMessage(msg any) []*muse.Message {
-	if messengers.IsBang(msg) {
+	if banger.IsBang(msg) {
 		a.adsr.Trigger(a.maxLevel)
 	}
 

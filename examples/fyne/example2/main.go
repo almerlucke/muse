@@ -24,6 +24,7 @@ import (
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
+	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/shaper"
 )
 
@@ -355,17 +356,17 @@ func main() {
 
 	adsrControl := NewADSRControl()
 
-	voices := []muse.Voice{}
+	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
 		voice := NewTestVoice(env.Config, adsrControl)
 		voices = append(voices, voice)
 	}
 
-	voicePlayer := env.AddModule(muse.NewVoicePlayer(1, voices, env.Config, "voicePlayer"))
+	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
 	allpass := env.AddModule(allpass.NewAllpass(150, 150, 0.3, env.Config, "allpass"))
 
-	muse.Connect(voicePlayer, 0, allpass, 0)
-	muse.Connect(voicePlayer, 0, env, 0)
+	muse.Connect(poly, 0, allpass, 0)
+	muse.Connect(poly, 0, env, 0)
 	muse.Connect(allpass, 0, env, 1)
 
 	portaudio.Initialize()
@@ -446,7 +447,7 @@ func main() {
 		deskCanvas.SetOnKeyDown(func(k *fyne.KeyEvent) {
 			if f, ok := keyMap[string(k.Name)]; ok {
 				log.Printf("key down: %v", k.Name)
-				voicePlayer.ReceiveMessage(map[string]any{
+				poly.ReceiveMessage(map[string]any{
 					"noteOn":    string(k.Name),
 					"amplitude": 1.0,
 					"message": map[string]any{
@@ -461,7 +462,7 @@ func main() {
 		deskCanvas.SetOnKeyUp(func(k *fyne.KeyEvent) {
 			if _, ok := keyMap[string(k.Name)]; ok {
 				log.Printf("key up: %v", k.Name)
-				voicePlayer.ReceiveMessage(map[string]any{
+				poly.ReceiveMessage(map[string]any{
 					"noteOff": string(k.Name),
 				})
 			}

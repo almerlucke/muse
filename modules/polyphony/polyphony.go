@@ -1,24 +1,27 @@
-package muse
+package polyphony
 
-import "github.com/almerlucke/muse/utils/pool"
+import (
+	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/utils/pool"
+)
 
 type Voice interface {
-	Module
-	NoteOn(amplitude float64, message any, config *Configuration)
+	muse.Module
+	NoteOn(amplitude float64, message any, config *muse.Configuration)
 	NoteOff()
-	Activate(duration float64, amplitude float64, message any, config *Configuration)
+	Activate(duration float64, amplitude float64, message any, config *muse.Configuration)
 	IsActive() bool
 }
 
-type VoicePlayer struct {
-	*BaseModule
+type Polyphony struct {
+	*muse.BaseModule
 	freePool   *pool.Pool[Voice]
 	activePool *pool.Pool[Voice]
 }
 
-func NewVoicePlayer(numChannels int, voices []Voice, config *Configuration, identifier string) *VoicePlayer {
-	player := &VoicePlayer{
-		BaseModule: NewBaseModule(1, numChannels, config, identifier),
+func NewPolyphony(numChannels int, voices []Voice, config *muse.Configuration, identifier string) *Polyphony {
+	player := &Polyphony{
+		BaseModule: muse.NewBaseModule(1, numChannels, config, identifier),
 	}
 
 	player.freePool = pool.NewPool[Voice]()
@@ -31,9 +34,9 @@ func NewVoicePlayer(numChannels int, voices []Voice, config *Configuration, iden
 	return player
 }
 
-func (vp *VoicePlayer) noteOff(identifier string) {
-	elem := vp.activePool.First()
-	end := vp.activePool.End()
+func (p *Polyphony) noteOff(identifier string) {
+	elem := p.activePool.First()
+	end := p.activePool.End()
 	for elem != end {
 		if elem.Value.Identifier() == identifier {
 			elem.Value.NoteOff()
@@ -44,50 +47,50 @@ func (vp *VoicePlayer) noteOff(identifier string) {
 }
 
 // ReceiveMessage is used to activate voices
-func (vp *VoicePlayer) ReceiveMessage(msg any) []*Message {
+func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
-	elem := vp.freePool.Pop()
+	elem := p.freePool.Pop()
 	if elem != nil {
 		if noteOffIdentifier, ok := content["noteOff"]; ok {
-			vp.noteOff(noteOffIdentifier.(string))
+			p.noteOff(noteOffIdentifier.(string))
 		} else if noteOnIdentifier, ok := content["noteOn"]; ok {
 			amplitude := content["amplitude"].(float64)
 			voiceMsg := content["message"]
 			elem.Value.SetIdentifier(noteOnIdentifier.(string))
-			elem.Value.NoteOn(amplitude, voiceMsg, vp.Config)
+			elem.Value.NoteOn(amplitude, voiceMsg, p.Config)
 		} else if duration, ok := content["duration"]; ok {
 			amplitude := content["amplitude"].(float64)
 			voiceMsg := content["message"]
-			elem.Value.Activate(duration.(float64), amplitude, voiceMsg, vp.Config)
+			elem.Value.Activate(duration.(float64), amplitude, voiceMsg, p.Config)
 		}
 
-		vp.activePool.Push(elem)
+		p.activePool.Push(elem)
 	}
 
 	return nil
 }
 
-func (vp *VoicePlayer) Synthesize() bool {
-	if !vp.BaseModule.Synthesize() {
+func (p *Polyphony) Synthesize() bool {
+	if !p.BaseModule.Synthesize() {
 		return false
 	}
 
 	// Clear output buffers
-	for _, output := range vp.Outputs {
+	for _, output := range p.Outputs {
 		output.Buffer.Clear()
 	}
 
 	// First prepare all voices for synthesis
-	elem := vp.activePool.First()
-	end := vp.activePool.End()
+	elem := p.activePool.First()
+	end := p.activePool.End()
 	for elem != end {
 		elem.Value.PrepareSynthesis()
 		elem = elem.Next
 	}
 
 	// Run active voices
-	elem = vp.activePool.First()
+	elem = p.activePool.First()
 	for elem != end {
 		prev := elem
 		elem = elem.Next
@@ -96,15 +99,15 @@ func (vp *VoicePlayer) Synthesize() bool {
 			// Add voice output to buffer
 			prev.Value.Synthesize()
 
-			for outputIndex := 0; outputIndex < len(vp.Outputs); outputIndex++ {
+			for outputIndex := 0; outputIndex < len(p.Outputs); outputIndex++ {
 				socket := prev.Value.OutputAtIndex(outputIndex)
-				for sampIndex := 0; sampIndex < vp.Config.BufferSize; sampIndex++ {
-					vp.Outputs[outputIndex].Buffer[sampIndex] += socket.Buffer[sampIndex]
+				for sampIndex := 0; sampIndex < p.Config.BufferSize; sampIndex++ {
+					p.Outputs[outputIndex].Buffer[sampIndex] += socket.Buffer[sampIndex]
 				}
 			}
 		} else {
 			prev.Unlink()
-			vp.freePool.Push(prev)
+			p.freePool.Push(prev)
 		}
 	}
 

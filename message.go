@@ -1,10 +1,5 @@
 package muse
 
-import (
-	"encoding/json"
-	"os"
-)
-
 type Message struct {
 	Address string `json:"address"`
 	Content any    `json:"content"`
@@ -15,22 +10,6 @@ func NewMessage(address string, content any) *Message {
 		Address: address,
 		Content: content,
 	}
-}
-
-func ReadMessages(file string) ([]*Message, error) {
-	data, err := os.ReadFile(file)
-	if err != nil {
-		return nil, err
-	}
-
-	var messages []*Message
-
-	err = json.Unmarshal(data, &messages)
-	if err != nil {
-		return nil, err
-	}
-
-	return messages, nil
 }
 
 type Receiver interface {
