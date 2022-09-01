@@ -24,7 +24,7 @@ func NewPrototypeGenerator(addresses []string, proto values.MapPrototype, identi
 
 func (p *Prototype) Bang() []*muse.Message {
 	messages := make([]*muse.Message, len(p.addresses))
-	message := p.proto.MapRaw()
+	message := p.proto.Map(nil, nil)
 
 	for index, address := range p.addresses {
 		messages[index] = muse.NewMessage(address, message)

@@ -97,12 +97,13 @@ func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
+		"command":   "trigger",
 		"duration":  values.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}, true),
 		"amplitude": values.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}, true),
 		"message": values.MapPrototype{
 			"osc": values.MapPrototype{
 				"frequency": values.NewSequence([]any{50.0, 50.0, 25.0, 50.0, 150.0, 25.0, 150.0, 100.0, 100.0, 200.0, 50.0}, true),
-				"phase":     values.NewConst[any](0.0),
+				"phase":     0.0,
 			},
 		},
 	}, "prototype"))

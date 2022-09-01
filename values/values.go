@@ -479,31 +479,43 @@ func (t *Transform[T]) Finished() bool {
 	return t.value.Finished()
 }
 
+type Placeholder struct {
+	Name string
+}
+
+func NewPlaceholder(name string) *Placeholder {
+	return &Placeholder{Name: name}
+}
+
 type Map map[string]any
 type MapPrototype map[string]any
 
-func (p MapPrototype) Map() Map {
-	m := Map{}
-
-	for k, v := range p {
-		if sub, ok := v.(MapPrototype); ok {
-			m[k] = sub.Map()
-		} else {
-			m[k] = v.(Valuer[any]).Value()
-		}
-	}
-
-	return m
-}
-
-func (p MapPrototype) MapRaw() map[string]any {
+func (p MapPrototype) Map(placeholderNames []string, placeholderValues []any) map[string]any {
 	m := map[string]any{}
 
 	for k, v := range p {
-		if sub, ok := v.(MapPrototype); ok {
-			m[k] = sub.MapRaw()
-		} else {
-			m[k] = v.(Valuer[any]).Value()
+		switch vt := v.(type) {
+		case MapPrototype:
+			m[k] = vt.Map(placeholderNames, placeholderValues)
+		case Valuer[any]:
+			m[k] = vt.Value()
+		case *Placeholder:
+			for i, name := range placeholderNames {
+				if vt.Name == name {
+					m[k] = placeholderValues[i]
+					break
+				}
+			}
+
+		case Placeholder:
+			for i, name := range placeholderNames {
+				if vt.Name == name {
+					m[k] = placeholderValues[i]
+					break
+				}
+			}
+		default:
+			m[k] = v
 		}
 	}
 

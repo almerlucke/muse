@@ -39,9 +39,9 @@ func paramMapper(param int, value float64, shaper shapingc.Shaper) {
 func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 
-	// utils.ReadJSONObject[[][]*Message]("examples/shaping_example/sequence1.json")
+	sequence := values.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/shaping_example/sequence1.json"), true)
 
-	env.AddMessenger(banger.NewValueGenerator(values.NewSequence(utils.ReadJSONObjectNullable[[][]*muse.Message]("examples/shaping_example/sequence1.json"), true), "sequencer1"))
+	env.AddMessenger(banger.NewValueGenerator(sequence, "sequencer1"))
 
 	env.AddMessenger(stepper.NewStepper(
 		stepper.NewValueStepper(values.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250}, true)),

@@ -18,7 +18,9 @@ import (
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shapingc "github.com/almerlucke/muse/components/shaping"
+	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/utils"
+	"github.com/almerlucke/muse/values"
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
@@ -36,7 +38,7 @@ type TestVoice struct {
 	*muse.BasePatch
 	adsrEnv      *adsr.ADSR
 	phasor       *phasor.Phasor
-	Shaper       *shaper.Shaper
+	superSaw     *shapingc.Chain
 	stepProvider ADSRStepProvider
 }
 
@@ -44,12 +46,13 @@ func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *Te
 	testVoice := &TestVoice{
 		BasePatch:    muse.NewPatch(0, 1, config, ""),
 		stepProvider: stepProvider,
+		superSaw:     shapingc.NewSuperSaw(),
 	}
 
 	adsrEnv := testVoice.AddModule(adsr.NewADSR(stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	shape := testVoice.AddModule(shaper.NewShaper(shapingc.NewSineTable(512), 0, nil, nil, config, "shaper"))
+	shape := testVoice.AddModule(shaper.NewShaper(testVoice.superSaw, 0, nil, nil, config, "shaper"))
 
 	muse.Connect(osc, 0, shape, 0)
 	muse.Connect(shape, 0, multiplier, 0)
@@ -57,7 +60,6 @@ func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *Te
 	muse.Connect(multiplier, 0, testVoice, 0)
 
 	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
-	testVoice.Shaper = shape.(*shaper.Shaper)
 	testVoice.phasor = osc.(*phasor.Phasor)
 
 	return testVoice
@@ -80,6 +82,14 @@ func (tv *TestVoice) NoteOn(amplitude float64, message any, config *muse.Configu
 
 func (tv *TestVoice) NoteOff() {
 	tv.adsrEnv.Release()
+}
+
+func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
+	content := msg.(map[string]any)
+
+	tv.superSaw.SetSuperSawM1(content["superSawM1"].(float64))
+
+	return nil
 }
 
 type FixedWidthLayout struct {
@@ -363,7 +373,14 @@ func main() {
 	}
 
 	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
-	allpass := env.AddModule(allpass.NewAllpass(150, 150, 0.3, env.Config, "allpass"))
+	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config, "allpass"))
+
+	target := lfo.NewLFOTarget("polyphony", "superSawM1", values.MapPrototype{
+		"command":    "voice",
+		"superSawM1": values.NewPlaceholder("superSawM1"),
+	})
+
+	env.AddMessenger(lfo.NewLFO(0, 0.13, 0.15, 0.85, shapingc.NewNormalizedSineTable(512), []*lfo.LFOTarget{target}, env.Config, "lfo"))
 
 	muse.Connect(poly, 0, allpass, 0)
 	muse.Connect(poly, 0, env, 0)
@@ -448,6 +465,7 @@ func main() {
 			if f, ok := keyMap[string(k.Name)]; ok {
 				log.Printf("key down: %v", k.Name)
 				poly.ReceiveMessage(map[string]any{
+					"command":   "trigger",
 					"noteOn":    string(k.Name),
 					"amplitude": 1.0,
 					"message": map[string]any{
@@ -463,6 +481,7 @@ func main() {
 			if _, ok := keyMap[string(k.Name)]; ok {
 				log.Printf("key up: %v", k.Name)
 				poly.ReceiveMessage(map[string]any{
+					"command": "trigger",
 					"noteOff": string(k.Name),
 				})
 			}

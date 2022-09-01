@@ -50,22 +50,36 @@ func (p *Polyphony) noteOff(identifier string) {
 func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
-	elem := p.freePool.Pop()
-	if elem != nil {
-		if noteOffIdentifier, ok := content["noteOff"]; ok {
-			p.noteOff(noteOffIdentifier.(string))
-		} else if noteOnIdentifier, ok := content["noteOn"]; ok {
-			amplitude := content["amplitude"].(float64)
-			voiceMsg := content["message"]
-			elem.Value.SetIdentifier(noteOnIdentifier.(string))
-			elem.Value.NoteOn(amplitude, voiceMsg, p.Config)
-		} else if duration, ok := content["duration"]; ok {
-			amplitude := content["amplitude"].(float64)
-			voiceMsg := content["message"]
-			elem.Value.Activate(duration.(float64), amplitude, voiceMsg, p.Config)
-		}
+	command := content["command"].(string)
+	if command == "trigger" {
+		// Trigger a voice
+		elem := p.freePool.Pop()
+		if elem != nil {
+			if noteOffIdentifier, ok := content["noteOff"]; ok {
+				p.noteOff(noteOffIdentifier.(string))
+			} else if noteOnIdentifier, ok := content["noteOn"]; ok {
+				amplitude := content["amplitude"].(float64)
+				voiceMsg := content["message"]
+				elem.Value.SetIdentifier(noteOnIdentifier.(string))
+				elem.Value.NoteOn(amplitude, voiceMsg, p.Config)
+			} else if duration, ok := content["duration"]; ok {
+				amplitude := content["amplitude"].(float64)
+				voiceMsg := content["message"]
+				elem.Value.Activate(duration.(float64), amplitude, voiceMsg, p.Config)
+			}
 
-		p.activePool.Push(elem)
+			p.activePool.Push(elem)
+		}
+	} else if command == "voice" {
+		// Pass message to active voices
+		elem := p.activePool.First()
+		end := p.activePool.End()
+		for elem != end {
+			if elem.Value.IsActive() {
+				elem.Value.ReceiveMessage(msg)
+			}
+			elem = elem.Next
+		}
 	}
 
 	return nil

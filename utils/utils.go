@@ -14,7 +14,7 @@ func Mtof(midiNote int) float64 {
 	return math.Pow(2, float64(midiNote-69)/12.0) * 440.0
 }
 
-func ReadJSONObject[T any](file string) (T, error) {
+func ReadJSON[T any](file string) (T, error) {
 	var empty T
 
 	data, err := os.ReadFile(file)
@@ -32,7 +32,7 @@ func ReadJSONObject[T any](file string) (T, error) {
 	return object, nil
 }
 
-func ReadJSONObjectNullable[T any](file string) T {
+func ReadJSONNull[T any](file string) T {
 	var empty T
 
 	data, err := os.ReadFile(file)

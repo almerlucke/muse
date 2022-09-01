@@ -51,6 +51,19 @@ func NewSineTable(n int) LookupTable {
 	return table
 }
 
+func NewNormalizedSineTable(n int) LookupTable {
+	table := make(LookupTable, n)
+	phase := 0.0
+	inc := 2.0 * math.Pi / float64(n-1)
+
+	for i := 0; i < n; i++ {
+		table[i] = math.Sin(phase)*0.5 + 0.5
+		phase += inc
+	}
+
+	return table
+}
+
 type ParallelFunction func(float64, float64) float64
 
 type Parallel struct {

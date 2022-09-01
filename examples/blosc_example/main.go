@@ -20,8 +20,8 @@ import (
 func main() {
 	env := muse.NewEnvironment(2, 44100, 128)
 
-	sequence1 := values.NewSequence(utils.ReadJSONObjectNullable[[][]*muse.Message]("examples/blosc_example/sequence1.json"), true)
-	sequence2 := values.NewSequence(utils.ReadJSONObjectNullable[[][]*muse.Message]("examples/blosc_example/sequence2.json"), true)
+	sequence1 := values.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/blosc_example/sequence1.json"), true)
+	sequence2 := values.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/blosc_example/sequence2.json"), true)
 
 	env.AddMessenger(banger.NewValueGenerator(sequence1, "sequencer1"))
 	env.AddMessenger(banger.NewValueGenerator(sequence2, "sequencer2"))
