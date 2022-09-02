@@ -6,51 +6,36 @@ import (
 	"github.com/almerlucke/muse/values"
 )
 
-type LFOTarget struct {
-	Address         string
-	PlaceholderName string
-	ProtoMessage    values.MapPrototype
+type Target struct {
+	Address     string
+	Shaper      shaping.Shaper
+	Placeholder string
+	Proto       values.MapPrototype
 }
 
-func NewLFOTarget(address string, placeholderName string, protoMessage values.MapPrototype) *LFOTarget {
-	return &LFOTarget{PlaceholderName: placeholderName, ProtoMessage: protoMessage, Address: address}
+func NewTarget(address string, shaper shaping.Shaper, placeholder string, proto values.MapPrototype) *Target {
+	return &Target{Address: address, Shaper: shaper, Placeholder: placeholder, Proto: proto}
 }
 
 type LFO struct {
 	*muse.BaseMessenger
-	phase     float64
-	delta     float64
-	min       float64
-	max       float64
-	shaper    shaping.Shaper
-	paramName string
-	targets   []*LFOTarget
+	phase   float64
+	delta   float64
+	targets []*Target
 }
 
-func NewLFO(phase float64, frequency float64, min float64, max float64, shaper shaping.Shaper, targets []*LFOTarget, config *muse.Configuration, identifier string) *LFO {
+func NewLFO(frequency float64, targets []*Target, config *muse.Configuration, identifier string) *LFO {
 	sampleRate := config.SampleRate / float64(config.BufferSize)
 
 	return &LFO{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		delta:         frequency / sampleRate,
-		phase:         phase,
-		min:           min,
-		max:           max,
 		targets:       targets,
-		shaper:        shaper,
 	}
 }
 
 func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Message {
-	var out float64
-
-	if lfo.shaper != nil {
-		out = lfo.shaper.Shape(lfo.phase)
-	} else {
-		out = lfo.phase
-	}
-
-	out = lfo.min + (lfo.max-lfo.min)*out
+	out := lfo.phase
 
 	lfo.phase += lfo.delta
 	for lfo.phase >= 1.0 {
@@ -63,7 +48,8 @@ func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Me
 	msgs := make([]*muse.Message, len(lfo.targets))
 
 	for index, target := range lfo.targets {
-		msg := target.ProtoMessage.Map([]string{target.PlaceholderName}, []any{out})
+		targetOut := target.Shaper.Shape(out)
+		msg := target.Proto.Map([]string{target.Placeholder}, []any{targetOut})
 		msgs[index] = muse.NewMessage(target.Address, msg)
 	}
 

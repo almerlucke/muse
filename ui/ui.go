@@ -56,3 +56,31 @@ func NewDelayedListener(duration time.Duration, listener func()) binding.DataLis
 		})
 	})
 }
+
+type FixedWidthLayout struct {
+	Width float32
+}
+
+func NewFixedWidthLayout(w float32) *FixedWidthLayout {
+	return &FixedWidthLayout{Width: w}
+}
+
+func (fwl *FixedWidthLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
+	for _, object := range objects {
+		object.Resize(fyne.NewSize(fwl.Width, objects[0].MinSize().Height))
+		object.Move(fyne.NewPos(0, 0))
+	}
+}
+
+func (fwl *FixedWidthLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	maxH := float32(0.0)
+
+	for _, object := range objects {
+		childSize := object.MinSize()
+		if childSize.Height > maxH {
+			maxH = childSize.Height
+		}
+	}
+
+	return fyne.NewSize(fwl.Width, maxH)
+}

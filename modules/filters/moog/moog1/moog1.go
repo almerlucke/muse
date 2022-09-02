@@ -23,6 +23,48 @@ func NewMoog1(fc float64, res float64, saturation float64, config *muse.Configur
 	}
 }
 
+func (m *Moog1) SetFrequency(fc float64) {
+	m.fc = fc
+}
+
+func (m *Moog1) SetResonance(res float64) {
+	m.res = res
+}
+
+func (m *Moog1) SetSaturation(saturation float64) {
+	m.saturation = saturation
+}
+
+func (m *Moog1) Update() {
+	m.moog.Set(m.fc, m.res, m.saturation, m.Config.SampleRate)
+}
+
+func (m *Moog1) ReceiveMessage(msg any) []*muse.Message {
+	content := msg.(map[string]any)
+	needUpdate := false
+
+	if fc, ok := content["frequency"].(float64); ok {
+		m.fc = fc
+		needUpdate = true
+	}
+
+	if res, ok := content["resonance"].(float64); ok {
+		m.res = res
+		needUpdate = true
+	}
+
+	if saturation, ok := content["saturation"].(float64); ok {
+		m.saturation = saturation
+		needUpdate = true
+	}
+
+	if needUpdate {
+		m.moog.Set(m.fc, m.res, m.saturation, m.Config.SampleRate)
+	}
+
+	return nil
+}
+
 func (m *Moog1) Synthesize() bool {
 	if !m.BaseModule.Synthesize() {
 		return false
