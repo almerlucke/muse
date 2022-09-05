@@ -17,6 +17,7 @@ type ADSRStepProvider interface {
 }
 
 type ADSRControl struct {
+	title                        string
 	steps                        []adsrc.Step
 	attackDurationLabelBinding   binding.String
 	attackDurationSliderBinding  binding.Float
@@ -179,7 +180,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	releaseShapeSlider := widget.NewSliderWithData(-1.0, 1.0, ctrl.releaseShapeSliderBinding)
 	releaseShapeSlider.Step = 0.01
 
-	return widget.NewCard("ADSR Envelope", "",
+	return widget.NewCard(ctrl.title, "",
 		container.NewHBox(
 			container.New(ui.NewFixedWidthLayout(250),
 				widget.NewCard("Attack", "", container.NewVBox(
@@ -244,8 +245,9 @@ func (ctrl *ADSRControl) SetState(state map[string]any) {
 	ctrl.releaseShapeSliderBinding.Set(ctrl.steps[3].Shape)
 }
 
-func NewADSRControl() *ADSRControl {
+func NewADSRControl(title string) *ADSRControl {
 	control := &ADSRControl{
+		title: title,
 		steps: []adsrc.Step{
 			{Level: 1.0, Duration: 5, Shape: 0.0},
 			{Level: 0.3, Duration: 5, Shape: 0.0},

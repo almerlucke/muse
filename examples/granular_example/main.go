@@ -159,7 +159,7 @@ func (f *SFParameterGenerator) Next(timestamp int64, config *muse.Configuration)
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	sfb, err := io.NewSoundFileBuffer("/Users/almerlucke/Downloads/mixkit-movie-trailer-synth-impact-649.wav")
+	sfb, err := io.NewSoundFileBuffer("examples/granular_example/mixkit-movie-trailer-synth-impact-649.wav")
 	if err != nil {
 		log.Fatalf("fatal err: %v", err)
 	}
