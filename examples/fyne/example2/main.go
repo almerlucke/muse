@@ -7,7 +7,6 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/gordonklaus/portaudio"
@@ -18,6 +17,7 @@ import (
 	shapingc "github.com/almerlucke/muse/components/shaping"
 	"github.com/almerlucke/muse/messengers/lfo"
 	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
+	museTheme "github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/values"
 
@@ -119,8 +119,8 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 func main() {
 	env := muse.NewEnvironment(2, 44100, 512)
 
-	ampEnvControl := adsrctrl.NewADSRControl("Amplitude Envelope")
-	filterEnvControl := adsrctrl.NewADSRControl("Filter Envelope")
+	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
+	filterEnvControl := adsrctrl.NewADSRControl("Filter ADSR")
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
@@ -162,8 +162,13 @@ func main() {
 
 	a := app.New()
 
-	a.Settings().SetTheme(theme.LightTheme())
-	a.Settings().Scale()
+	// Theme
+
+	appTheme := &museTheme.Theme{}
+
+	// theme.LightTheme() appTheme
+
+	a.Settings().SetTheme(appTheme)
 
 	w := a.NewWindow("Muse")
 
