@@ -46,6 +46,15 @@ func (p *Polyphony) noteOff(identifier string) {
 	}
 }
 
+func (p *Polyphony) AllNotesOff() {
+	elem := p.activePool.First()
+	end := p.activePool.End()
+	for elem != end {
+		elem.Value.NoteOff()
+		elem = elem.Next
+	}
+}
+
 // ReceiveMessage is used to activate voices
 func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)

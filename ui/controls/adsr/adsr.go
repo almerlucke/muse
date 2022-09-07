@@ -245,6 +245,46 @@ func (ctrl *ADSRControl) SetState(state map[string]any) {
 	ctrl.releaseShapeSliderBinding.Set(ctrl.steps[3].Shape)
 }
 
+func (ctrl *ADSRControl) SetAttackDuration(ms float64) {
+	ctrl.steps[0].Duration = ms
+	ctrl.attackDurationSliderBinding.Set(ctrl.steps[0].Duration)
+}
+
+func (ctrl *ADSRControl) SetAttackLevel(level float64) {
+	ctrl.steps[0].Level = level
+	ctrl.attackLevelSliderBinding.Set(ctrl.steps[0].Level)
+}
+
+func (ctrl *ADSRControl) SetAttackShape(shape float64) {
+	ctrl.steps[0].Shape = shape
+	ctrl.attackShapeSliderBinding.Set(ctrl.steps[0].Shape)
+}
+
+func (ctrl *ADSRControl) SetDecayDuration(ms float64) {
+	ctrl.steps[1].Duration = ms
+	ctrl.decayDurationSliderBinding.Set(ctrl.steps[1].Duration)
+}
+
+func (ctrl *ADSRControl) SetDecayLevel(level float64) {
+	ctrl.steps[1].Level = level
+	ctrl.decayLevelSliderBinding.Set(ctrl.steps[1].Level)
+}
+
+func (ctrl *ADSRControl) SetDecayShape(shape float64) {
+	ctrl.steps[1].Shape = shape
+	ctrl.decayShapeSliderBinding.Set(ctrl.steps[1].Shape)
+}
+
+func (ctrl *ADSRControl) SetReleaseDuration(ms float64) {
+	ctrl.steps[3].Duration = ms
+	ctrl.releaseDurationSliderBinding.Set(ctrl.steps[3].Duration)
+}
+
+func (ctrl *ADSRControl) SetReleaseShape(shape float64) {
+	ctrl.steps[3].Shape = shape
+	ctrl.releaseShapeSliderBinding.Set(ctrl.steps[3].Shape)
+}
+
 func NewADSRControl(title string) *ADSRControl {
 	control := &ADSRControl{
 		title: title,

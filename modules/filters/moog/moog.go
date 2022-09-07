@@ -1,4 +1,4 @@
-package improved
+package moog
 
 import (
 	"math"
@@ -20,7 +20,7 @@ const (
 	VT = 0.312
 )
 
-type ImprovedMoog struct {
+type Moog struct {
 	*muse.BaseModule
 	v     [4]float64
 	dV    [4]float64
@@ -32,9 +32,9 @@ type ImprovedMoog struct {
 	drive float64
 }
 
-func NewImprovedMoog(fc float64, res float64, drive float64, config *muse.Configuration, identifier string) *ImprovedMoog {
+func NewMoog(fc float64, res float64, drive float64, config *muse.Configuration, identifier string) *Moog {
 
-	return &ImprovedMoog{
+	return &Moog{
 		BaseModule: muse.NewBaseModule(4, 1, config, identifier),
 		fc:         fc,
 		res:        res * 4.0,
@@ -42,21 +42,21 @@ func NewImprovedMoog(fc float64, res float64, drive float64, config *muse.Config
 	}
 }
 
-func (m *ImprovedMoog) SetResonance(res float64) {
+func (m *Moog) SetResonance(res float64) {
 	m.res = res * 4.0
 }
 
-func (m *ImprovedMoog) SetFrequency(fc float64) {
+func (m *Moog) SetFrequency(fc float64) {
 	m.fc = fc
 	m.x = (math.Pi * fc) / m.Config.SampleRate
 	m.g = 4.0 * math.Pi * VT * fc * (1.0 - m.x) / (1.0 + m.x)
 }
 
-func (m *ImprovedMoog) SetDrive(drive float64) {
+func (m *Moog) SetDrive(drive float64) {
 	m.drive = drive
 }
 
-func (m *ImprovedMoog) ReceiveMessage(msg any) []*muse.Message {
+func (m *Moog) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
 	if fc, ok := content["frequency"].(float64); ok {
@@ -74,7 +74,7 @@ func (m *ImprovedMoog) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (m *ImprovedMoog) Synthesize() bool {
+func (m *Moog) Synthesize() bool {
 	if !m.BaseModule.Synthesize() {
 		return false
 	}

@@ -48,7 +48,14 @@ func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Me
 	msgs := make([]*muse.Message, len(lfo.targets))
 
 	for index, target := range lfo.targets {
-		targetOut := target.Shaper.Shape(out)
+		var targetOut float64
+
+		if target.Shaper == nil {
+			targetOut = out
+		} else {
+			targetOut = target.Shaper.Shape(out)
+		}
+
 		msg := target.Proto.Map([]string{target.Placeholder}, []any{targetOut})
 		msgs[index] = muse.NewMessage(target.Address, msg)
 	}

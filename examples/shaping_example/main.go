@@ -12,7 +12,7 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
-	"github.com/almerlucke/muse/modules/filters/moog/moog1"
+	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/freeverb"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
@@ -67,7 +67,7 @@ func main() {
 	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config, ""))
 	// filter := env.AddModule(butterworth.NewButterworth(300.0, 0.4, env.Config, "filter"))
 	// filter := env.AddModule(rbj.NewRBJFilter(rbjc.Lowpass, 300.0, 10.0, env.Config, "filter"))
-	filter := env.AddModule(moog1.NewMoog1(300.0, 0.45, 1.75, env.Config, "filter"))
+	filter := env.AddModule(moog.NewMoog(300.0, 0.45, 1.0, env.Config, "filter"))
 	reverb := env.AddModule(freeverb.NewFreeVerb(env.Config, "freeverb"))
 
 	reverb.(*freeverb.FreeVerb).SetDamp(0.1)

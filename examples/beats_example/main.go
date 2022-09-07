@@ -38,7 +38,7 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 	env := muse.NewEnvironment(1, 44100.0, 512)
 
-	bpm := 120.0
+	bpm := 80.0
 
 	hihatSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/closed_hihat.wav")
 	kickSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/kick.wav")

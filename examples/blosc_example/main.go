@@ -11,7 +11,7 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/blosc"
-	"github.com/almerlucke/muse/modules/filters/moog/stilson"
+	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/functor"
 
 	"github.com/mkb218/gosndfile/sndfile"
@@ -48,8 +48,8 @@ func main() {
 	mult2 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config, ""))
 	osc1 := env.AddModule(blosc.NewBloscModule(100.0, 0.0, 1.0, env.Config, "blosc1"))
 	osc2 := env.AddModule(blosc.NewBloscModule(400.0, 0.0, 1.0, env.Config, "blosc2"))
-	filter1 := env.AddModule(stilson.NewStilsonMoog(600.0, 0.3, env.Config, "filter1"))
-	filter2 := env.AddModule(stilson.NewStilsonMoog(700.0, 0.3, env.Config, "filter2"))
+	filter1 := env.AddModule(moog.NewMoog(600.0, 0.3, 1.0, env.Config, "filter1"))
+	filter2 := env.AddModule(moog.NewMoog(700.0, 0.3, 1.0, env.Config, "filter2"))
 
 	muse.Connect(osc1, 2, mult1, 0)
 	muse.Connect(osc2, 2, mult2, 0)

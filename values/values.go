@@ -463,6 +463,13 @@ type Transform[T any] struct {
 	transformer Transformer[T]
 }
 
+func NewTransform[T any](v Valuer[T], t Transformer[T]) *Transform[T] {
+	return &Transform[T]{
+		value:       v,
+		transformer: t,
+	}
+}
+
 func (t *Transform[T]) Value() T {
 	return t.transformer.Transform(t.value.Value())
 }
@@ -477,6 +484,20 @@ func (t *Transform[T]) Reset() {
 
 func (t *Transform[T]) Finished() bool {
 	return t.value.Finished()
+}
+
+func (t *Transform[T]) GetState() map[string]any {
+	return t.value.GetState()
+}
+
+func (t *Transform[T]) SetState(state map[string]any) {
+	t.value.SetState(state)
+}
+
+type TFunc[T any] func(T) T
+
+func (f TFunc[T]) Transform(v T) T {
+	return f(v)
 }
 
 type Placeholder struct {

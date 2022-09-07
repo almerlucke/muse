@@ -23,7 +23,7 @@ import (
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
-	"github.com/almerlucke/muse/modules/filters/moog/improved"
+	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/polyphony"
@@ -35,7 +35,7 @@ type TestVoice struct {
 	ampEnv             *adsr.ADSR
 	filterEnv          *adsr.ADSR
 	phasor             *phasor.Phasor
-	filter             *improved.ImprovedMoog
+	filter             *moog.Moog
 	superSaw           *shapingc.Chain
 	ampStepProvider    adsrctrl.ADSRStepProvider
 	filterStepProvider adsrctrl.ADSRStepProvider
@@ -54,7 +54,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
 	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*5000.0 + 100.0 }, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	filter := testVoice.AddModule(improved.NewImprovedMoog(1400.0, 0.3, 1.0, config, "filter"))
+	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.7, 1.0, config, "filter"))
 	shape := testVoice.AddModule(shaper.NewShaper(testVoice.superSaw, 0, nil, nil, config, "shaper"))
 
 	muse.Connect(osc, 0, shape, 0)
@@ -68,7 +68,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	testVoice.ampEnv = ampEnv.(*adsr.ADSR)
 	testVoice.filterEnv = filterEnv.(*adsr.ADSR)
 	testVoice.phasor = osc.(*phasor.Phasor)
-	testVoice.filter = filter.(*improved.ImprovedMoog)
+	testVoice.filter = filter.(*moog.Moog)
 
 	return testVoice
 }
@@ -266,6 +266,9 @@ func main() {
 				}),
 				widget.NewButton("Stop", func() {
 					stream.Stop()
+				}),
+				widget.NewButton("Notes Off", func() {
+					poly.(*polyphony.Polyphony).AllNotesOff()
 				}),
 			),
 			container.NewHBox(

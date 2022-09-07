@@ -19,7 +19,7 @@ import (
 	// Modules
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
-	"github.com/almerlucke/muse/modules/filters/moog/moog1"
+	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/freeverb"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
@@ -33,7 +33,7 @@ type TestVoice struct {
 	adsrEnv *adsr.ADSR
 	phasor  *phasor.Phasor
 	Shaper  *shaper.Shaper
-	Filter  *moog1.Moog1
+	Filter  *moog.Moog
 }
 
 func paramMapper(param int, value float64, shaper shapingc.Shaper) {
@@ -58,7 +58,7 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	shape := testVoice.AddModule(shaper.NewShaper(shapingc.NewSuperSaw(), 1, paramMapper, nil, config, "shaper"))
-	filter := testVoice.AddModule(moog1.NewMoog1(1700.0, 0.48, 1.25, config, "filter"))
+	filter := testVoice.AddModule(moog.NewMoog(1700.0, 0.48, 1.0, config, "filter"))
 
 	muse.Connect(osc, 0, shape, 0)
 	muse.Connect(shape, 0, multiplier, 0)
@@ -68,7 +68,7 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 
 	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
 	testVoice.Shaper = shape.(*shaper.Shaper)
-	testVoice.Filter = filter.(*moog1.Moog1)
+	testVoice.Filter = filter.(*moog.Moog)
 	testVoice.phasor = osc.(*phasor.Phasor)
 
 	return testVoice
