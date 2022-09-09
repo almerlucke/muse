@@ -7,6 +7,8 @@ import (
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
+	"gonum.org/v1/plot/vg/draw"
+	"gonum.org/v1/plot/vg/vgimg"
 )
 
 func Plot() {
@@ -25,6 +27,11 @@ func Plot() {
 	if err != nil {
 		panic(err)
 	}
+
+	ic := vgimg.New(5*vg.Centimeter, 5*vg.Centimeter)
+	dc := draw.NewCanvas(ic, 1*vg.Centimeter, 1*vg.Centimeter)
+
+	p.Draw(dc)
 
 	// Save the plot to a PNG file.
 	if err := p.Save(4*vg.Inch, 4*vg.Inch, "points.png"); err != nil {

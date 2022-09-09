@@ -14,6 +14,7 @@ type Module interface {
 	DidSynthesize() bool
 	PrepareSynthesis()
 	Synthesize() bool
+	MustSynthesize() bool
 }
 
 type BaseModule struct {
@@ -115,6 +116,10 @@ func (m *BaseModule) Synthesize() bool {
 	}
 
 	return true
+}
+
+func (m *BaseModule) MustSynthesize() bool {
+	return false
 }
 
 func (m *BaseModule) ReceiveMessage(msg any) []*Message {

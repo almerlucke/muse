@@ -138,6 +138,12 @@ func (p *BasePatch) Synthesize() bool {
 		return false
 	}
 
+	for _, module := range p.subModules {
+		if module.MustSynthesize() {
+			module.Synthesize()
+		}
+	}
+
 	for _, output := range p.outputModules {
 		output.Synthesize()
 	}

@@ -84,3 +84,22 @@ func (fwl *FixedWidthLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 
 	return fyne.NewSize(fwl.Width, maxH)
 }
+
+type FixedSizeLayout struct {
+	size fyne.Size
+}
+
+func NewFixedSizeLayout(size fyne.Size) *FixedSizeLayout {
+	return &FixedSizeLayout{size: size}
+}
+
+func (fsl *FixedSizeLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
+	for _, object := range objects {
+		object.Resize(fsl.size)
+		object.Move(fyne.NewPos(0, 0))
+	}
+}
+
+func (fsl *FixedSizeLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	return fsl.size
+}
