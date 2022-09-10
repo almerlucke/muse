@@ -83,8 +83,12 @@ type Sequence[T any] struct {
 	continuous bool
 }
 
-func NewSequence[T any](values []T, continuous bool) *Sequence[T] {
-	return &Sequence[T]{values: values, continuous: continuous}
+func NewSequence[T any](values []T) *Sequence[T] {
+	return &Sequence[T]{values: values, continuous: true}
+}
+
+func NewSequenceNC[T any](values []T) *Sequence[T] {
+	return &Sequence[T]{values: values, continuous: false}
 }
 
 func (s *Sequence[T]) Get() []T {

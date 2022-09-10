@@ -248,13 +248,13 @@ func main() {
 
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
 		"command":   "trigger",
-		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}, true),
+		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}),
 		"amplitude": values.NewConst[any](1.0),
 		"message": values.MapPrototype{
 			"osc": values.MapPrototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
 					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1320.0, 110.0,
-					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1100.0, 770.0, 550.0}, true),
+					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1100.0, 770.0, 550.0}),
 					values.TFunc[any](func(v any) any { return v.(float64) / 4.0 })),
 				"phase": 0.0,
 			},
@@ -263,13 +263,13 @@ func main() {
 
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
 		"command":   "trigger",
-		"duration":  values.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}, true),
+		"duration":  values.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}),
 		"amplitude": values.NewConst[any](0.3),
 		"message": values.MapPrototype{
 			"osc": values.MapPrototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
 					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1540.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0,
-					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1110.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0}, true),
+					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1110.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0}),
 					values.TFunc[any](func(v any) any { return v.(float64) / 2.0 })),
 				"phase": 0.0,
 			},
@@ -277,9 +277,9 @@ func main() {
 	}, "prototype2"))
 
 	env.AddMessenger(stepper.NewStepper(
-		swing.New(values.NewConst(bpm), values.NewConst(4.0), values.NewSequence([]*swing.Step{
-			{}, {}, {}, {}, {}, {}, {}, {},
-		}, true)),
+		swing.New(values.NewConst(bpm), values.NewConst(4.0), values.NewSequence(
+			[]*swing.Step{{}, {}, {}, {}, {}, {}, {}, {}},
+		)),
 		[]string{"prototype1", "prototype2"}, "",
 	))
 

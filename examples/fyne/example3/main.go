@@ -192,26 +192,26 @@ func main() {
 	snareSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/snare.wav")
 
 	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 8.0, 0.875, 1.125, values.NewAnd([]values.Valuer[*swing.Step]{
-		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
 			{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
-		}, false), 2, 3),
-		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+		}), 2, 3),
+		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
 			{}, {Shuffle: 0.3}, {Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {SkipFactor: 0.4}, {SkipFactor: 0.4}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
-		}, false), 1, 2),
+		}), 1, 2),
 	}, true))
 
 	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4.0, 0.875, 1.125, values.NewAnd([]values.Valuer[*swing.Step]{
-		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
 			{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
-		}, false), 2, 3),
-		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+		}), 2, 3),
+		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
 			{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {SkipFactor: 0.4}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {Skip: true},
-		}, false), 1, 2),
+		}), 1, 2),
 	}, true))
 
 	snarePlayer := addDrumTrack(env, "snare", snareSound, bpm, 2.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.1, ShuffleRand: 0.1},
-	}, true))
+	}))
 
 	mult := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.3 }, env.Config, ""))
 	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
@@ -234,13 +234,13 @@ func main() {
 
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
 		"command":   "trigger",
-		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}, true),
+		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}),
 		"amplitude": values.NewConst[any](1.0),
 		"message": values.MapPrototype{
 			"osc": values.MapPrototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
 					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1320.0, 110.0,
-					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1100.0, 770.0, 550.0}, true),
+					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1100.0, 770.0, 550.0}),
 					values.TFunc[any](func(v any) any { return v.(float64) / 4.0 })),
 				"phase": 0.0,
 			},
@@ -249,13 +249,13 @@ func main() {
 
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
 		"command":   "trigger",
-		"duration":  values.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}, true),
+		"duration":  values.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}),
 		"amplitude": values.NewConst[any](0.3),
 		"message": values.MapPrototype{
 			"osc": values.MapPrototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
 					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1540.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0,
-					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1110.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0}, true),
+					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1110.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0}),
 					values.TFunc[any](func(v any) any { return v.(float64) / 2.0 })),
 				"phase": 0.0,
 			},
@@ -265,7 +265,7 @@ func main() {
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(values.NewConst(80.0), values.NewConst(4.0), values.NewSequence([]*swing.Step{
 			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipFactor: 0.3},
-		}, true)),
+		})),
 		[]string{"prototype1", "prototype2"}, "",
 	))
 

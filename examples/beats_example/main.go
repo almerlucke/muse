@@ -45,26 +45,26 @@ func main() {
 	snareSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/snare.wav")
 
 	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 4.0, 0.875, 1.125, values.NewAnd([]values.Valuer[*swing.Step]{
-		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
 			{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
-		}, false), 2, 3),
-		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+		}), 2, 3),
+		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
 			{}, {Shuffle: 0.3}, {Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {SkipFactor: 0.4}, {SkipFactor: 0.4}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
-		}, false), 1, 2),
+		}), 1, 2),
 	}, true))
 
 	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4.0, 0.875, 1.125, values.NewAnd([]values.Valuer[*swing.Step]{
-		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
 			{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
-		}, false), 2, 3),
-		values.NewRepeat[*swing.Step](values.NewSequence([]*swing.Step{
+		}), 2, 3),
+		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
 			{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {SkipFactor: 0.4}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {Skip: true},
-		}, false), 1, 2),
+		}), 1, 2),
 	}, true))
 
 	snarePlayer := addDrumTrack(env, "snare", snareSound, bpm, 2.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.1, ShuffleRand: 0.1},
-	}, true))
+	}))
 
 	muse.Connect(kickPlayer, 0, env, 0)
 	muse.Connect(hihatPlayer, 0, env, 0)
