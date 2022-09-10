@@ -143,7 +143,7 @@ type SFParameterGenerator struct {
 }
 
 func (f *SFParameterGenerator) Next(timestamp int64, config *muse.Configuration) (granular.Parameter, int64) {
-	offset := math.Mod(float64(timestamp)/config.SampleRate, 64.0) / 64.0
+	offset := math.Mod(float64(timestamp)/config.SampleRate, 34.0) / 34.0
 
 	interOnset := int64(randBetween(0.00003, 0.0012) * config.SampleRate)
 
@@ -159,7 +159,7 @@ func (f *SFParameterGenerator) Next(timestamp int64, config *muse.Configuration)
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	sfb, err := io.NewSoundFileBuffer("examples/granular_example/mixkit-movie-trailer-synth-impact-649.wav")
+	sfb, err := io.NewSoundFileBuffer("resources/sounds/John_1-1.wav")
 	if err != nil {
 		log.Fatalf("fatal err: %v", err)
 	}
@@ -174,5 +174,5 @@ func main() {
 		muse.Connect(gr, i, env, i)
 	}
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/granular.aiff", 64.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/john.aiff", 34.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
 }

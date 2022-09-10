@@ -166,7 +166,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 	}, identifier))
 
-	return env.AddModule(player.NewPlayer(soundBuffer, 1.0, true, env.Config, moduleName))
+	return env.AddModule(player.NewPlayer(soundBuffer, 1.0, 1.0, true, env.Config, moduleName))
 }
 
 func main() {
@@ -187,9 +187,9 @@ func main() {
 
 	milliPerBeat := 60000.0 / bpm
 
-	hihatSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/closed_hihat.wav")
-	kickSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/kick.wav")
-	snareSound, _ := io.NewSoundFileBuffer("examples/beats_example/drumkit1/snare.wav")
+	hihatSound, _ := io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
+	kickSound, _ := io.NewSoundFileBuffer("resources/drums/kick/Cymatics - Humble Friday Kick - E.wav")
+	snareSound, _ := io.NewSoundFileBuffer("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
 
 	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 8.0, 0.875, 1.125, values.NewAnd([]values.Valuer[*swing.Step]{
 		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{

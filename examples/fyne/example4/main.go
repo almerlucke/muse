@@ -7,18 +7,17 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/fogleman/gg"
-
 	"github.com/gordonklaus/portaudio"
+	"github.com/mkb218/gosndfile/sndfile"
 
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shapingc "github.com/almerlucke/muse/components/shaping"
+	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/banger/prototype"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -33,59 +32,12 @@ import (
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/functor"
+	"github.com/almerlucke/muse/modules/monitor"
 	"github.com/almerlucke/muse/modules/phasor"
+	"github.com/almerlucke/muse/modules/player"
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/shaper"
 )
-
-type Monitor struct {
-	*muse.BaseModule
-	context *gg.Context
-	Raster  *canvas.Raster
-}
-
-func NewMonitor(config *muse.Configuration) *Monitor {
-	ctx := gg.NewContext(200, 100)
-
-	raster := canvas.NewRasterFromImage(ctx.Image())
-	raster.ScaleMode = canvas.ImageScaleFastest
-
-	return &Monitor{
-		BaseModule: muse.NewBaseModule(1, 0, config, ""),
-		context:    ctx,
-		Raster:     raster,
-	}
-}
-
-func (m *Monitor) MustSynthesize() bool {
-	return true
-}
-
-func (m *Monitor) Synthesize() bool {
-	if !m.BaseModule.Synthesize() {
-		return false
-	}
-
-	m.context.SetRGB(1, 1, 1)
-	m.context.Clear()
-	m.context.SetRGB(0, 0, 0)
-	m.context.SetLineWidth(1.0)
-
-	xStep := 200.0 / float64(m.Config.BufferSize)
-	// y :=
-	for i := 0; i < m.Config.BufferSize; i++ {
-		if i == 0 {
-			m.context.MoveTo(float64(i)*xStep, 50.0+m.Inputs[0].Buffer[i]*50.0)
-		} else {
-			m.context.LineTo(float64(i)*xStep, 50.0+m.Inputs[0].Buffer[i]*50.0)
-		}
-	}
-
-	m.context.Stroke()
-	m.Raster.Refresh()
-
-	return true
-}
 
 type TestVoice struct {
 	*muse.BasePatch
@@ -109,9 +61,9 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampAdsr"))
 	filterEnv := testVoice.AddModule(adsr.NewADSR(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "filterAdsr"))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
-	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*8000.0 + 30.0 }, config, ""))
+	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*8000.0 + 100.0 }, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.7, 1.25, config, "filter"))
+	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.5, 1, config, "filter"))
 	shape := testVoice.AddModule(shaper.NewShaper(testVoice.shaper, 0, nil, nil, config, "shaper"))
 
 	muse.Connect(osc, 0, shape, 0)
@@ -209,14 +161,38 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
+func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo float64, division float64, lowSpeed float64, highSpeed float64, amp float64, steps values.Valuer[*swing.Step]) muse.Module {
+	identifier := moduleName + "Speed"
+
+	env.AddMessenger(stepper.NewStepper(swing.New(values.NewConst(tempo), values.NewConst(division), steps), []string{identifier}, ""))
+
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, values.Prototype{
+		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
+	}, identifier))
+
+	return env.AddModule(player.NewPlayer(soundBuffer, 1.0, amp, true, env.Config, moduleName))
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100, 512)
+	env := muse.NewEnvironment(2, 3*44100, 1024)
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 	filterEnvControl := adsrctrl.NewADSRControl("Filter ADSR")
-	monitor := NewMonitor(env.Config)
+
+	ampEnvControl.SetAttackDuration(5)
+	ampEnvControl.SetDecayDuration(37)
+	ampEnvControl.SetDecayLevel(0.2)
+	ampEnvControl.SetReleaseDuration(1630)
+	ampEnvControl.SetReleaseShape(-0.35)
+
+	filterEnvControl.SetAttackDuration(5)
+	filterEnvControl.SetAttackLevel(0.43)
+	filterEnvControl.SetDecayDuration(50.0)
+	filterEnvControl.SetReleaseDuration(1700)
+
+	monitor := monitor.NewMonitor(200, 100, env.Config)
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
@@ -234,12 +210,12 @@ func main() {
 
 	sineTable := shapingc.NewNormalizedSineTable(512)
 
-	targetShaper := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(1.75, 1.02)), "shaper", values.Prototype{
+	targetShaper := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.75, 1.02)), "shaper", values.Prototype{
 		"command": "voice",
 		"shaper":  values.NewPlaceholder("shaper"),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.4, 0.1)), "adsrDecayLevel", values.Prototype{
+	targetFilter := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.1, 0.05)), "adsrDecayLevel", values.Prototype{
 		"command":        "voice",
 		"adsrDecayLevel": values.NewPlaceholder("adsrDecayLevel"),
 	})
@@ -250,14 +226,14 @@ func main() {
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
 		"command":   "trigger",
 		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}),
-		"amplitude": values.NewConst[any](1.0),
+		"amplitude": values.NewSequence([]any{0.6, 0.3, 0.6, 0.5, 0.4, 0.3, 0.4, 0.5, 0.6, 0.4, 0.2}),
 		"message": values.Prototype{
 			"osc": values.Prototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
 					utils.Mtof(60), utils.Mtof(67), utils.Mtof(62), utils.Mtof(69), utils.Mtof(64), utils.Mtof(71),
 					utils.Mtof(66), utils.Mtof(61), utils.Mtof(68), utils.Mtof(63), utils.Mtof(70), utils.Mtof(65),
 				}),
-					values.TFunc[any](func(v any) any { return v.(float64) / 1.0 })),
+					values.TFunc[any](func(v any) any { return v.(float64) / 2.0 })),
 				"phase": 0.0,
 			},
 		},
@@ -266,7 +242,7 @@ func main() {
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
 		"command":   "trigger",
 		"duration":  values.NewSequence([]any{375.0, 500.0, 375.0, 1000.0, 375.0, 250.0}),
-		"amplitude": values.NewConst[any](0.3),
+		"amplitude": values.NewSequence([]any{1.0, 1.0, 0.6, 0.6, 1.0, 1.0, 0.6, 1.0}),
 		"message": values.Prototype{
 			"osc": values.Prototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
@@ -281,21 +257,78 @@ func main() {
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(values.NewConst(bpm), values.NewConst(4.0), values.NewSequence(
-			[]*swing.Step{{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {}, {Skip: true}, {Shuffle: 0.2}, {SkipFactor: 0.3}},
+			[]*swing.Step{{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {}, {Skip: true}, {Shuffle: 0.2, ShuffleRand: 0.1}, {SkipFactor: 0.3},
+				{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Shuffle: 0.2}, {SkipFactor: 0.3}, {SkipFactor: 0.3}},
 		)),
 		[]string{"prototype1"}, "",
 	))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(values.NewConst(bpm), values.NewConst(2.0), values.NewSequence(
-			[]*swing.Step{{Skip: true}, {}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {}, {Shuffle: 0.2}, {SkipFactor: 0.3}},
+			[]*swing.Step{{Skip: true}, {}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {}, {Shuffle: 0.2, ShuffleRand: 0.1}, {SkipFactor: 0.3}},
 		)),
 		[]string{"prototype2"}, "",
 	))
 
+	hihatSound, _ := io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
+	kickSound, _ := io.NewSoundFileBuffer("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
+	snareSound, _ := io.NewSoundFileBuffer("resources/drums/clap/Cymatics - Humble Stars Clap.wav")
+	bassSound, _ := io.NewSoundFileBuffer("resources/drums/808/Cymatics - Humble 808 5 - G.wav")
+	rideSound, _ := io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Open Hihat 2.wav")
+	waterSound, _ := io.NewSoundFileBuffer("resources/sounds/Cymatics - Orchid Live Recording - Waves.wav")
+	swirlSound, _ := io.NewSoundFileBuffer("resources/sounds/Cymatics - Orchid KEYS Swirl (C).wav")
+	vocalSound, _ := io.NewSoundFileBuffer("resources/sounds/Cymatics - Blurry Vocal - 80 BPM F Min.wav")
+
+	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 8.0, 1.875, 2.125, 0.5, values.NewSequence([]*swing.Step{
+		{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
+	}),
+	)
+
+	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4.0, 0.875, 1.125, 1.0, values.NewSequence([]*swing.Step{
+		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
+	}),
+	)
+
+	snarePlayer := addDrumTrack(env, "snare", snareSound, bpm, 2.0, 0.875, 1.125, 1.0, values.NewSequence([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.1, ShuffleRand: 0.1}, {Skip: true}, {Skip: true}, {Skip: true}, {},
+	}))
+
+	bassPlayer := addDrumTrack(env, "bass", bassSound, bpm, 1.0, 0.875, 1.125, 1.0, values.NewSequence([]*swing.Step{
+		{Shuffle: 0.2, ShuffleRand: 0.2}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	}))
+
+	ridePlayer := addDrumTrack(env, "ride", rideSound, bpm, 2.0, 0.875, 1.25, 0.3, values.NewSequence([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Shuffle: 0.2, ShuffleRand: 0.2}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	}))
+
+	waterPlayer := addDrumTrack(env, "water", waterSound, bpm*0.125, 2.0, 0.875, 1.25, 0.5, values.NewSequence([]*swing.Step{
+		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	}))
+
+	swirlPlayer := addDrumTrack(env, "swirl", swirlSound, bpm*0.5, 1.0, 0.875, 1.25, 0.2, values.NewSequence([]*swing.Step{
+		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	}))
+
+	vocalPlayer := addDrumTrack(env, "vocal", vocalSound, bpm*0.125, 1.0, 0.975, 1.025, 0.4, values.NewSequence([]*swing.Step{
+		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	}))
+
+	mult := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config, ""))
+
+	muse.Connect(kickPlayer, 0, mult, 0)
+	muse.Connect(hihatPlayer, 0, mult, 0)
+	muse.Connect(snarePlayer, 0, mult, 0)
+	muse.Connect(bassPlayer, 0, mult, 0)
+	muse.Connect(ridePlayer, 0, mult, 0)
+	muse.Connect(waterPlayer, 0, mult, 0)
+	muse.Connect(swirlPlayer, 0, mult, 0)
+	muse.Connect(vocalPlayer, 0, mult, 0)
+
 	muse.Connect(poly, 0, allpass, 0)
 	muse.Connect(poly, 0, monitor, 0)
 	muse.Connect(poly, 0, env, 0)
+	muse.Connect(mult, 0, env, 0)
+	muse.Connect(mult, 0, env, 1)
 	muse.Connect(allpass, 0, env, 1)
 
 	portaudio.Initialize()
@@ -410,6 +443,7 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
+					env.SynthesizeToFile("/Users/almerlucke/Desktop/waterFlow.aiff", 240.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
 					stream.Start()
 				}),
 				widget.NewButton("Stop", func() {
@@ -420,7 +454,7 @@ func main() {
 				// }),
 			),
 			container.NewHBox(
-				widget.NewCard("Monitor", "", fyne.NewContainerWithLayout(ui.NewFixedSizeLayout(fyne.NewSize(200, 100)), monitor.Raster)),
+				widget.NewCard("Monitor", "", fyne.NewContainerWithLayout(ui.NewFixedSizeLayout(fyne.NewSize(200, 100)), monitor.UI())),
 			),
 			container.NewHBox(
 				ampEnvControl.UI(),

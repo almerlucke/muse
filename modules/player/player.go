@@ -12,11 +12,12 @@ type Player struct {
 	buffer  *io.SoundFileBuffer
 	phase   float64
 	inc     float64
+	amp     float64
 	oneShot bool
 	done    bool
 }
 
-func NewPlayer(buffer *io.SoundFileBuffer, speed float64, oneShot bool, config *muse.Configuration, identifier string) *Player {
+func NewPlayer(buffer *io.SoundFileBuffer, speed float64, amp float64, oneShot bool, config *muse.Configuration, identifier string) *Player {
 	inc := (speed * buffer.SampleRate / config.SampleRate) / float64(buffer.NumFrames)
 	if oneShot && inc < 0 {
 		inc = math.Abs(inc)
@@ -28,6 +29,7 @@ func NewPlayer(buffer *io.SoundFileBuffer, speed float64, oneShot bool, config *
 		oneShot:    oneShot,
 		done:       oneShot,
 		buffer:     buffer,
+		amp:        amp,
 	}
 }
 
@@ -77,7 +79,7 @@ func (p *Player) Synthesize() bool {
 
 		for outIndex, out := range p.Outputs {
 			xi1v := p.buffer.Channels[outIndex][xi1]
-			out.Buffer[i] = xi1v + (p.buffer.Channels[outIndex][xi2]-xi1v)*xf
+			out.Buffer[i] = p.amp * (xi1v + (p.buffer.Channels[outIndex][xi2]-xi1v)*xf)
 		}
 
 		p.phase += p.inc
