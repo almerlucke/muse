@@ -17,8 +17,16 @@ func NewTarget(address string, shaper shaping.Shaper, placeholder string, proto 
 	return &Target{Address: address, Shaper: shaper, Placeholder: placeholder, Proto: proto}
 }
 
-func (t *Target) Replacements(value any) []*val.Replacement {
-	return []*val.Replacement{val.NewReplacement(t.Placeholder, value)}
+func (t *Target) replacements(value float64) []*val.Replacement {
+	if t.Shaper == nil {
+		return []*val.Replacement{val.NewReplacement(t.Placeholder, value)}
+	}
+
+	return []*val.Replacement{val.NewReplacement(t.Placeholder, t.Shaper.Shape(value))}
+}
+
+func (t *Target) Message(value float64) *muse.Message {
+	return muse.NewMessage(t.Address, t.Proto.Map(t.replacements(value)))
 }
 
 type LFO struct {
@@ -42,6 +50,7 @@ func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Me
 	out := lfo.phase
 
 	lfo.phase += lfo.delta
+
 	for lfo.phase >= 1.0 {
 		lfo.phase -= 1.0
 	}
@@ -52,16 +61,7 @@ func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Me
 	msgs := make([]*muse.Message, len(lfo.targets))
 
 	for index, target := range lfo.targets {
-		var targetOut float64
-
-		if target.Shaper == nil {
-			targetOut = out
-		} else {
-			targetOut = target.Shaper.Shape(out)
-		}
-
-		msg := target.Proto.Map(target.Replacements(targetOut))
-		msgs[index] = muse.NewMessage(target.Address, msg)
+		msgs[index] = target.Message(out)
 	}
 
 	return msgs

@@ -26,6 +26,7 @@ import (
 	"github.com/almerlucke/muse/ui"
 	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
 	museTheme "github.com/almerlucke/muse/ui/theme"
+	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/values"
 
 	"github.com/almerlucke/muse/modules/adsr"
@@ -92,7 +93,7 @@ type TestVoice struct {
 	filterEnv          *adsr.ADSR
 	phasor             *phasor.Phasor
 	filter             *moog.Moog
-	superSaw           *shapingc.Chain
+	shaper             *shapingc.Chain
 	ampStepProvider    adsrctrl.ADSRStepProvider
 	filterStepProvider adsrctrl.ADSRStepProvider
 }
@@ -102,7 +103,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 		BasePatch:          muse.NewPatch(0, 1, config, ""),
 		ampStepProvider:    ampStepProvider,
 		filterStepProvider: filterStepProvider,
-		superSaw:           shapingc.NewSuperSaw(),
+		shaper:             shapingc.NewSoftSyncTriangle(),
 	}
 
 	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampAdsr"))
@@ -111,7 +112,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*8000.0 + 30.0 }, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.7, 1.25, config, "filter"))
-	shape := testVoice.AddModule(shaper.NewShaper(testVoice.superSaw, 0, nil, nil, config, "shaper"))
+	shape := testVoice.AddModule(shaper.NewShaper(testVoice.shaper, 0, nil, nil, config, "shaper"))
 
 	muse.Connect(osc, 0, shape, 0)
 	muse.Connect(shape, 0, multiplier, 0)
@@ -157,8 +158,8 @@ func (tv *TestVoice) NoteOff() {
 func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
-	if superSawM1, ok := content["superSawM1"].(float64); ok {
-		tv.superSaw.SetSuperSawM1(superSawM1)
+	if shaper, ok := content["shaper"].(float64); ok {
+		tv.shaper.SetSoftSyncA1(shaper)
 	}
 
 	if adsrAttackDuration, ok := content["adsrAttackDuration"].(float64); ok {
@@ -233,9 +234,9 @@ func main() {
 
 	sineTable := shapingc.NewNormalizedSineTable(512)
 
-	targetSuperSaw := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.15, 0.1)), "superSawM1", values.Prototype{
-		"command":    "voice",
-		"superSawM1": values.NewPlaceholder("superSawM1"),
+	targetShaper := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(1.75, 1.02)), "shaper", values.Prototype{
+		"command": "voice",
+		"shaper":  values.NewPlaceholder("shaper"),
 	})
 
 	targetFilter := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.4, 0.1)), "adsrDecayLevel", values.Prototype{
@@ -243,7 +244,7 @@ func main() {
 		"adsrDecayLevel": values.NewPlaceholder("adsrDecayLevel"),
 	})
 
-	env.AddMessenger(lfo.NewLFO(0.23, []*lfo.Target{targetSuperSaw}, env.Config, "lfo1"))
+	env.AddMessenger(lfo.NewLFO(0.03, []*lfo.Target{targetShaper}, env.Config, "lfo1"))
 	env.AddMessenger(lfo.NewLFO(0.13, []*lfo.Target{targetFilter}, env.Config, "lfo2"))
 
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
@@ -253,9 +254,10 @@ func main() {
 		"message": values.Prototype{
 			"osc": values.Prototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
-					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1320.0, 110.0,
-					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1100.0, 770.0, 550.0}),
-					values.TFunc[any](func(v any) any { return v.(float64) / 4.0 })),
+					utils.Mtof(60), utils.Mtof(67), utils.Mtof(62), utils.Mtof(69), utils.Mtof(64), utils.Mtof(71),
+					utils.Mtof(66), utils.Mtof(61), utils.Mtof(68), utils.Mtof(63), utils.Mtof(70), utils.Mtof(65),
+				}),
+					values.TFunc[any](func(v any) any { return v.(float64) / 1.0 })),
 				"phase": 0.0,
 			},
 		},
@@ -263,24 +265,32 @@ func main() {
 
 	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
 		"command":   "trigger",
-		"duration":  values.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}),
+		"duration":  values.NewSequence([]any{375.0, 500.0, 375.0, 1000.0, 375.0, 250.0}),
 		"amplitude": values.NewConst[any](0.3),
 		"message": values.Prototype{
 			"osc": values.Prototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
-					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1540.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0,
-					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1110.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0}),
-					values.TFunc[any](func(v any) any { return v.(float64) / 2.0 })),
-				"phase": 0.0,
+					utils.Mtof(67), utils.Mtof(62), utils.Mtof(69), utils.Mtof(64), utils.Mtof(71), utils.Mtof(66),
+					utils.Mtof(61), utils.Mtof(68), utils.Mtof(63), utils.Mtof(70), utils.Mtof(65), utils.Mtof(72),
+				}),
+					values.TFunc[any](func(v any) any { return v.(float64) / 4.0 })),
+				"phase": 0.375,
 			},
 		},
 	}, "prototype2"))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(values.NewConst(bpm), values.NewConst(4.0), values.NewSequence(
-			[]*swing.Step{{}, {}, {}, {}, {}, {}, {}, {}},
+			[]*swing.Step{{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {}, {Skip: true}, {Shuffle: 0.2}, {SkipFactor: 0.3}},
 		)),
-		[]string{"prototype1", "prototype2"}, "",
+		[]string{"prototype1"}, "",
+	))
+
+	env.AddMessenger(stepper.NewStepper(
+		swing.New(values.NewConst(bpm), values.NewConst(2.0), values.NewSequence(
+			[]*swing.Step{{Skip: true}, {}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {}, {Shuffle: 0.2}, {SkipFactor: 0.3}},
+		)),
+		[]string{"prototype2"}, "",
 	))
 
 	muse.Connect(poly, 0, allpass, 0)
