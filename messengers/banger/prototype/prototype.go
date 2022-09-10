@@ -8,23 +8,23 @@ import (
 
 type Prototype struct {
 	addresses []string
-	proto     values.MapPrototype
+	proto     values.Prototype
 }
 
-func NewPrototype(addresses []string, proto values.MapPrototype) *Prototype {
+func NewPrototype(addresses []string, proto values.Prototype) *Prototype {
 	return &Prototype{
 		addresses: addresses,
 		proto:     proto,
 	}
 }
 
-func NewPrototypeGenerator(addresses []string, proto values.MapPrototype, identifier string) *banger.Generator {
+func NewPrototypeGenerator(addresses []string, proto values.Prototype, identifier string) *banger.Generator {
 	return banger.NewGenerator(NewPrototype(addresses, proto), identifier)
 }
 
 func (p *Prototype) Bang() []*muse.Message {
 	messages := make([]*muse.Message, len(p.addresses))
-	message := p.proto.Map(nil, nil)
+	message := p.proto.Map(nil)
 
 	for index, address := range p.addresses {
 		messages[index] = muse.NewMessage(address, message)

@@ -133,12 +133,12 @@ func main() {
 
 	sineTable := shapingc.NewNormalizedSineTable(512)
 
-	targetSuperSaw := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.15, 0.1)), "superSawM1", values.MapPrototype{
+	targetSuperSaw := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.15, 0.1)), "superSawM1", values.Prototype{
 		"command":    "voice",
 		"superSawM1": values.NewPlaceholder("superSawM1"),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(6000.0, 800.0)), "frequency", values.MapPrototype{
+	targetFilter := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(6000.0, 800.0)), "frequency", values.Prototype{
 		"command":         "voice",
 		"filterFrequency": values.NewPlaceholder("frequency"),
 	})

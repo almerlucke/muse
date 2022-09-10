@@ -96,12 +96,12 @@ func (tv *TestVoice) NoteOff() {
 func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
 		"command":   "trigger",
 		"duration":  values.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}),
 		"amplitude": values.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}),
-		"message": values.MapPrototype{
-			"osc": values.MapPrototype{
+		"message": values.Prototype{
+			"osc": values.Prototype{
 				"frequency": values.NewSequence([]any{50.0, 50.0, 25.0, 50.0, 150.0, 25.0, 150.0, 100.0, 100.0, 200.0, 50.0}),
 				"phase":     0.0,
 			},

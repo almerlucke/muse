@@ -504,37 +504,47 @@ func (f TFunc[T]) Transform(v T) T {
 	return f(v)
 }
 
+// Prototype is a prototype of a map. When Map() is called, a deep copy of the prototype is made with all Valuer values
+// in the prototype replaced with the Value() from that Valuer. In the deep copy all placeholder values are replaced with the matching replacements
+type Prototype map[string]any
+
 type Placeholder struct {
 	Name string
+}
+
+type Replacement struct {
+	Name  string
+	Value any
 }
 
 func NewPlaceholder(name string) *Placeholder {
 	return &Placeholder{Name: name}
 }
 
-type Map map[string]any
-type MapPrototype map[string]any
+func NewReplacement(name string, value any) *Replacement {
+	return &Replacement{Name: name, Value: value}
+}
 
-func (p MapPrototype) Map(placeholderNames []string, placeholderValues []any) map[string]any {
+func (p Prototype) Map(replacements []*Replacement) map[string]any {
 	m := map[string]any{}
 
 	for k, v := range p {
 		switch vt := v.(type) {
-		case MapPrototype:
-			m[k] = vt.Map(placeholderNames, placeholderValues)
+		case Prototype:
+			m[k] = vt.Map(replacements)
 		case Valuer[any]:
 			m[k] = vt.Value()
 		case *Placeholder:
-			for i, name := range placeholderNames {
-				if vt.Name == name {
-					m[k] = placeholderValues[i]
+			for _, replacement := range replacements {
+				if vt.Name == replacement.Name {
+					m[k] = replacement.Value
 					break
 				}
 			}
 		case Placeholder:
-			for i, name := range placeholderNames {
-				if vt.Name == name {
-					m[k] = placeholderValues[i]
+			for _, replacement := range replacements {
+				if vt.Name == replacement.Name {
+					m[k] = replacement.Value
 					break
 				}
 			}
@@ -544,44 +554,4 @@ func (p MapPrototype) Map(placeholderNames []string, placeholderValues []any) ma
 	}
 
 	return m
-}
-
-func (m Map) MR(key string) map[string]any {
-	if sub, ok := m[key].(map[string]any); ok {
-		return sub
-	}
-
-	return nil
-}
-
-func (m Map) M(key string) Map {
-	if sub, ok := m[key].(Map); ok {
-		return sub
-	}
-
-	return nil
-}
-
-func (m Map) S(key string) string {
-	if value, ok := m[key].(string); ok {
-		return value
-	}
-
-	return ""
-}
-
-func (m Map) F(key string) float64 {
-	if value, ok := m[key].(float64); ok {
-		return value
-	}
-
-	return 0
-}
-
-func (m Map) I(key string) int64 {
-	if value, ok := m[key].(int64); ok {
-		return value
-	}
-
-	return 0
 }

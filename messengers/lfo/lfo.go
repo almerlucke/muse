@@ -3,18 +3,22 @@ package lfo
 import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/shaping"
-	"github.com/almerlucke/muse/values"
+	val "github.com/almerlucke/muse/values"
 )
 
 type Target struct {
 	Address     string
 	Shaper      shaping.Shaper
 	Placeholder string
-	Proto       values.MapPrototype
+	Proto       val.Prototype
 }
 
-func NewTarget(address string, shaper shaping.Shaper, placeholder string, proto values.MapPrototype) *Target {
+func NewTarget(address string, shaper shaping.Shaper, placeholder string, proto val.Prototype) *Target {
 	return &Target{Address: address, Shaper: shaper, Placeholder: placeholder, Proto: proto}
+}
+
+func (t *Target) Replacements(value any) []*val.Replacement {
+	return []*val.Replacement{val.NewReplacement(t.Placeholder, value)}
 }
 
 type LFO struct {
@@ -56,7 +60,7 @@ func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Me
 			targetOut = target.Shaper.Shape(out)
 		}
 
-		msg := target.Proto.Map([]string{target.Placeholder}, []any{targetOut})
+		msg := target.Proto.Map(target.Replacements(targetOut))
 		msgs[index] = muse.NewMessage(target.Address, msg)
 	}
 

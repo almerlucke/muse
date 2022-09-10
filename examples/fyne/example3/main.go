@@ -162,7 +162,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 
 	env.AddMessenger(stepper.NewStepper(swing.New(values.NewConst(tempo), values.NewConst(division), steps), []string{identifier}, ""))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, values.MapPrototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, values.Prototype{
 		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 	}, identifier))
 
@@ -219,12 +219,12 @@ func main() {
 
 	sineTable := shapingc.NewNormalizedSineTable(512)
 
-	targetSuperSaw := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.15, 0.1)), "superSawM1", values.MapPrototype{
+	targetSuperSaw := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.15, 0.1)), "superSawM1", values.Prototype{
 		"command":    "voice",
 		"superSawM1": values.NewPlaceholder("superSawM1"),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.4, 0.1)), "adsrDecayLevel", values.MapPrototype{
+	targetFilter := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.4, 0.1)), "adsrDecayLevel", values.Prototype{
 		"command":        "voice",
 		"adsrDecayLevel": values.NewPlaceholder("adsrDecayLevel"),
 	})
@@ -232,12 +232,12 @@ func main() {
 	env.AddMessenger(lfo.NewLFO(0.23, []*lfo.Target{targetSuperSaw}, env.Config, "lfo1"))
 	env.AddMessenger(lfo.NewLFO(0.13, []*lfo.Target{targetFilter}, env.Config, "lfo2"))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
 		"command":   "trigger",
 		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}),
 		"amplitude": values.NewConst[any](1.0),
-		"message": values.MapPrototype{
-			"osc": values.MapPrototype{
+		"message": values.Prototype{
+			"osc": values.Prototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
 					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1320.0, 110.0,
 					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1100.0, 770.0, 550.0}),
@@ -247,12 +247,12 @@ func main() {
 		},
 	}, "prototype1"))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.MapPrototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
 		"command":   "trigger",
 		"duration":  values.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}),
 		"amplitude": values.NewConst[any](0.3),
-		"message": values.MapPrototype{
-			"osc": values.MapPrototype{
+		"message": values.Prototype{
+			"osc": values.Prototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
 					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1540.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0,
 					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1110.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0}),
