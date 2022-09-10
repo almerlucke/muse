@@ -7,7 +7,7 @@ import (
 type Timer struct {
 	*muse.BaseMessenger
 	addresses    []string
-	interval     int64
+	interval     float64
 	lastMultiple int64
 }
 
@@ -15,7 +15,7 @@ func NewTimer(intervalMilli float64, addresses []string, config *muse.Configurat
 	return &Timer{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		addresses:     addresses,
-		interval:      int64(intervalMilli * 0.001 * config.SampleRate),
+		interval:      intervalMilli * 0.001 * config.SampleRate,
 	}
 }
 
@@ -24,7 +24,7 @@ func (t *Timer) Messages(timestamp int64, config *muse.Configuration) []*muse.Me
 
 	bang := false
 
-	multiple := timestamp / t.interval
+	multiple := int64(float64(timestamp) / t.interval)
 
 	if timestamp == 0 || multiple != t.lastMultiple {
 		bang = true

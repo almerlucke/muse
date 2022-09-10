@@ -14,7 +14,7 @@ type StepProvider interface {
 type Stepper struct {
 	*muse.BaseMessenger
 	addresses []string
-	accum     int64
+	accum     float64
 	provider  StepProvider
 	listener  ui.Listener
 }
@@ -37,7 +37,7 @@ func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.
 	bang := false
 
 	for true {
-		if timestamp < s.accum {
+		if float64(timestamp) < s.accum {
 			break
 		}
 
@@ -45,7 +45,7 @@ func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.
 			s.listener.Listen(s.provider.GetState())
 		}
 
-		wait := int64(s.provider.NextStep() * 0.001 * config.SampleRate)
+		wait := s.provider.NextStep() * 0.001 * config.SampleRate
 		if wait > 0 {
 			bang = true
 			s.accum += wait

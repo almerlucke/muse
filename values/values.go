@@ -527,7 +527,6 @@ func (p MapPrototype) Map(placeholderNames []string, placeholderValues []any) ma
 					break
 				}
 			}
-
 		case Placeholder:
 			for i, name := range placeholderNames {
 				if vt.Name == name {

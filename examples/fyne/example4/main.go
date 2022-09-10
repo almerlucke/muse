@@ -225,11 +225,11 @@ func main() {
 
 	bpm := 80.0
 
-	milliPerBeat := 60000.0 / bpm
+	// milliPerBeat := 60000.0 / bpm
 
 	env.AddModule(monitor)
 	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
-	allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.3, env.Config, "allpass"))
+	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config, "allpass"))
 
 	sineTable := shapingc.NewNormalizedSineTable(512)
 
@@ -278,7 +278,7 @@ func main() {
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(values.NewConst(bpm), values.NewConst(4.0), values.NewSequence([]*swing.Step{
-			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipFactor: 0.3},
+			{}, {}, {}, {}, {}, {}, {}, {},
 		}, true)),
 		[]string{"prototype1", "prototype2"}, "",
 	))

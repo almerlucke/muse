@@ -53,7 +53,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[0].Duration = v
 		}
 	}))
-	attackDurationSlider := widget.NewSliderWithData(5.0, 500.0, ctrl.attackDurationSliderBinding)
+	attackDurationSlider := widget.NewSliderWithData(1.0, 500.0, ctrl.attackDurationSliderBinding)
 
 	// Attack Level
 	ctrl.attackLevelLabelBinding = binding.NewString()
@@ -106,7 +106,7 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 			ctrl.steps[1].Duration = v
 		}
 	}))
-	decayDurationSlider := widget.NewSliderWithData(5.0, 500.0, ctrl.decayDurationSliderBinding)
+	decayDurationSlider := widget.NewSliderWithData(1.0, 500.0, ctrl.decayDurationSliderBinding)
 
 	// Decay Level
 	ctrl.decayLevelLabelBinding = binding.NewString()
