@@ -11,7 +11,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/gordonklaus/portaudio"
-	"github.com/mkb218/gosndfile/sndfile"
 
 	"github.com/almerlucke/muse"
 
@@ -443,7 +442,7 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					env.SynthesizeToFile("/Users/almerlucke/Desktop/waterFlow.aiff", 240.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
+					// env.SynthesizeToFile("/Users/almerlucke/Desktop/waterFlow.aiff", 240.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
 					stream.Start()
 				}),
 				widget.NewButton("Stop", func() {

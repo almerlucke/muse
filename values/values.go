@@ -505,7 +505,8 @@ func (f TFunc[T]) Transform(v T) T {
 }
 
 // Prototype is a prototype of a map. When Map() is called, a deep copy of the prototype is made with all Valuer values
-// in the prototype replaced with the Value() from that Valuer. In the deep copy all placeholder values are replaced with the matching replacements
+// in the prototype replaced with the Value() from that Valuer. In the deep copy all placeholder values are replaced
+// with the matching replacement values
 type Prototype map[string]any
 
 type Placeholder struct {
