@@ -1,4 +1,4 @@
-package shaping
+package waveshaping
 
 import (
 	"math"
@@ -26,6 +26,17 @@ func NewChain(shapers ...Shaper) *Chain {
 	return &Chain{
 		Shapers: shapers,
 	}
+}
+
+type Thru struct {
+}
+
+func (t *Thru) Shape(x float64) float64 {
+	return x
+}
+
+func NewThru() *Thru {
+	return &Thru{}
 }
 
 type LookupTable []float64
@@ -69,10 +80,11 @@ type ParallelFunction func(float64, float64) float64
 type Parallel struct {
 	Shapers  []Shaper
 	Function ParallelFunction
+	Start    float64
 }
 
 func (p *Parallel) Shape(x float64) float64 {
-	v := 0.0
+	v := p.Start
 
 	for _, shaper := range p.Shapers {
 		v = p.Function(shaper.Shape(x), v)
@@ -85,6 +97,14 @@ func NewParallel(shapers ...Shaper) *Parallel {
 	return &Parallel{
 		Shapers:  shapers,
 		Function: func(x float64, v float64) float64 { return x + v },
+	}
+}
+
+func NewParallelF(start float64, function ParallelFunction, shapers ...Shaper) *Parallel {
+	return &Parallel{
+		Start:    start,
+		Shapers:  shapers,
+		Function: function,
 	}
 }
 
@@ -132,6 +152,10 @@ func NewAbs() *Any {
 	return &Any{F: math.Abs}
 }
 
+func NewSin() *Any {
+	return &Any{F: func(signal float64) float64 { return math.Sin(signal * 2.0 * math.Pi) }}
+}
+
 func NewTri() *Any {
 	return &Any{F: func(x float64) float64 {
 		if x < 0.5 {
@@ -164,6 +188,18 @@ func (m *Mult) Shape(x float64) float64 {
 
 func NewMult(m float64) *Mult {
 	return &Mult{M: m}
+}
+
+type Add struct {
+	A float64
+}
+
+func (a *Add) Shape(x float64) float64 {
+	return x + a.A
+}
+
+func NewAdd(a float64) *Add {
+	return &Add{A: a}
 }
 
 type Pulse struct {
@@ -242,6 +278,10 @@ func NewJP8000triMod() *Chain {
 	)
 }
 
+func (c *Chain) SetJP8000Mod(m float64) {
+	c.Shapers[4].(*Mult).M = m
+}
+
 func NewPulseWidthMod() *Chain {
 	return NewChain(
 		NewLinear(1.25, 0.0),
@@ -260,14 +300,12 @@ func (c *Chain) SetPulseWidthW(w float64) {
 }
 
 func NewSuperSaw() *Chain {
-	c := NewChain(
+	return NewChain(
 		NewLinear(1.5, 0.0),
 		NewParallel(NewMod(0.25), NewMod(0.88)),
 		NewAny(math.Sin),
 		NewBipolar(),
 	)
-
-	return c
 }
 
 func (c *Chain) SetSuperSawA1(a1 float64) {
@@ -280,4 +318,18 @@ func (c *Chain) SetSuperSawM1(m1 float64) {
 
 func (c *Chain) SetSuperSawM2(m2 float64) {
 	c.Shapers[1].(*Parallel).Shapers[1].(*Mod).M = m2
+}
+
+// sin(2.0 * PI * x(n){1 + g pulse [x(n) – 1, w]})
+func NewVarSlopeSin() *Chain {
+	return NewChain(
+		NewAdd(-1.0),
+		NewPulse(0.5),
+		NewAdd(1.0),
+		NewSin(),
+	)
+}
+
+func (c *Chain) SetVarSlopeSinW(w float64) {
+	c.Shapers[1].(*Pulse).W = w
 }

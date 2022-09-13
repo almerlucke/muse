@@ -23,7 +23,7 @@ import (
 
 	// Components
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	shapingc "github.com/almerlucke/muse/components/shaping"
+	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/ui"
 
 	// Values
@@ -39,7 +39,7 @@ import (
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/polyphony"
-	"github.com/almerlucke/muse/modules/shaper"
+	"github.com/almerlucke/muse/modules/waveshaper"
 )
 
 type ADSRStepProvider interface {
@@ -50,7 +50,7 @@ type TestVoice struct {
 	*muse.BasePatch
 	adsrEnv      *adsr.ADSR
 	phasor       *phasor.Phasor
-	Shaper       *shaper.Shaper
+	Shaper       *waveshaper.WaveShaper
 	stepProvider ADSRStepProvider
 }
 
@@ -63,7 +63,7 @@ func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *Te
 	adsrEnv := testVoice.AddModule(adsr.NewADSR(stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	shape := testVoice.AddModule(shaper.NewShaper(shapingc.NewSineTable(512), 0, nil, nil, config, "shaper"))
+	shape := testVoice.AddModule(waveshaper.NewWaveShaper(shaping.NewSineTable(512), 0, nil, nil, config, "shaper"))
 
 	muse.Connect(osc, 0, shape, 0)
 	muse.Connect(shape, 0, multiplier, 0)
@@ -71,7 +71,7 @@ func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *Te
 	muse.Connect(multiplier, 0, testVoice, 0)
 
 	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
-	testVoice.Shaper = shape.(*shaper.Shaper)
+	testVoice.Shaper = shape.(*waveshaper.WaveShaper)
 	testVoice.phasor = osc.(*phasor.Phasor)
 
 	return testVoice
@@ -81,7 +81,7 @@ func (tv *TestVoice) IsActive() bool {
 	return tv.adsrEnv.IsActive()
 }
 
-func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, config *muse.Configuration) {
+func (tv *TestVoice) Note(duration float64, amplitude float64, message any, config *muse.Configuration) {
 	msg := message.(map[string]any)
 
 	tv.adsrEnv.TriggerFull(duration, amplitude, tv.stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration)

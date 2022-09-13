@@ -14,7 +14,7 @@ import (
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	shapingc "github.com/almerlucke/muse/components/shaping"
+	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/lfo"
 	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
 	museTheme "github.com/almerlucke/muse/ui/theme"
@@ -27,7 +27,7 @@ import (
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/polyphony"
-	"github.com/almerlucke/muse/modules/shaper"
+	"github.com/almerlucke/muse/modules/waveshaper"
 )
 
 type TestVoice struct {
@@ -36,7 +36,7 @@ type TestVoice struct {
 	filterEnv          *adsr.ADSR
 	phasor             *phasor.Phasor
 	filter             *moog.Moog
-	superSaw           *shapingc.Chain
+	superSaw           *shaping.Chain
 	ampStepProvider    adsrctrl.ADSRStepProvider
 	filterStepProvider adsrctrl.ADSRStepProvider
 }
@@ -46,7 +46,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 		BasePatch:          muse.NewPatch(0, 1, config, ""),
 		ampStepProvider:    ampStepProvider,
 		filterStepProvider: filterStepProvider,
-		superSaw:           shapingc.NewSuperSaw(),
+		superSaw:           shaping.NewSuperSaw(),
 	}
 
 	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampAdsr"))
@@ -55,7 +55,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*5000.0 + 100.0 }, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.7, 1.0, config, "filter"))
-	shape := testVoice.AddModule(shaper.NewShaper(testVoice.superSaw, 0, nil, nil, config, "shaper"))
+	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.superSaw, 0, nil, nil, config, "shaper"))
 
 	muse.Connect(osc, 0, shape, 0)
 	muse.Connect(shape, 0, multiplier, 0)
@@ -77,7 +77,7 @@ func (tv *TestVoice) IsActive() bool {
 	return tv.ampEnv.IsActive()
 }
 
-func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, config *muse.Configuration) {
+func (tv *TestVoice) Note(duration float64, amplitude float64, message any, config *muse.Configuration) {
 	// STUB
 }
 
@@ -131,14 +131,14 @@ func main() {
 	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
 	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config, "allpass"))
 
-	sineTable := shapingc.NewNormalizedSineTable(512)
+	sineTable := shaping.NewNormalizedSineTable(512)
 
-	targetSuperSaw := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.15, 0.1)), "superSawM1", values.Prototype{
+	targetSuperSaw := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.15, 0.1)), "superSawM1", values.Prototype{
 		"command":    "voice",
 		"superSawM1": values.NewPlaceholder("superSawM1"),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(6000.0, 800.0)), "frequency", values.Prototype{
+	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(6000.0, 800.0)), "frequency", values.Prototype{
 		"command":         "voice",
 		"filterFrequency": values.NewPlaceholder("frequency"),
 	})

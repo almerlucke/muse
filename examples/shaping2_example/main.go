@@ -2,30 +2,36 @@ package main
 
 import (
 	"log"
-
-	"github.com/almerlucke/muse/components/shaping"
-	val "github.com/almerlucke/muse/values"
 )
 
-func main() {
-	table := shaping.NewSineTable(128)
-	phase := 0.0
-	inc := 1.0 / 200.0
-
-	for i := 0; i < 1000; i++ {
-		v := table.Shape(phase)
-		log.Printf("v: %v", v)
-		phase += inc
-		for phase >= 1.0 {
-			phase -= 1.0
-		}
-		for phase < 0.0 {
-			phase += 1.0
-		}
+func clip(x float64) float64 {
+	for x >= 1.0 {
+		x -= 1.0
+	}
+	for x < 0.0 {
+		x += 1.0
 	}
 
-	placeholder := val.NewPlaceholder("testHolder")
-	m := val.Prototype{"hola": val.Prototype{"test1": 2, "test": placeholder}, "hola2": placeholder}
+	return x
+}
 
-	log.Printf("m: %v", m.Map([]*val.Replacement{val.NewReplacement("testHolder", 13.0)}))
+func main() {
+	// slope := shaping.NewParallelF(1.0, func(v1 float64, v2 float64) float64 { return v1 * v2 }, shaping.NewChain(
+	// 	shaping.NewAdd(),
+	// 	shaping.NewPulse(0.5),
+	// ), shaping.NewThru(),
+	// )
+
+	inc1 := 1.0 / 200.0
+	w := 0.35
+	phase1 := 0.0
+	phase2 := w
+
+	for i := 0; i < 1000; i++ {
+		p2 := clip(phase2 + w)
+		log.Printf("p1 %f - p2 %f - v %f", phase1, phase2, phase1-p2+w)
+
+		phase1 = clip(phase1 + inc1)
+		phase2 = clip(phase2 + inc1)
+	}
 }

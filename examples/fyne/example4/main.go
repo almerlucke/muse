@@ -15,7 +15,7 @@ import (
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	shapingc "github.com/almerlucke/muse/components/shaping"
+	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/banger/prototype"
 	"github.com/almerlucke/muse/messengers/lfo"
@@ -35,7 +35,7 @@ import (
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/player"
 	"github.com/almerlucke/muse/modules/polyphony"
-	"github.com/almerlucke/muse/modules/shaper"
+	"github.com/almerlucke/muse/modules/waveshaper"
 )
 
 type TestVoice struct {
@@ -44,7 +44,7 @@ type TestVoice struct {
 	filterEnv          *adsr.ADSR
 	phasor             *phasor.Phasor
 	filter             *moog.Moog
-	shaper             *shapingc.Chain
+	shaper             *shaping.Chain
 	ampStepProvider    adsrctrl.ADSRStepProvider
 	filterStepProvider adsrctrl.ADSRStepProvider
 }
@@ -54,7 +54,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 		BasePatch:          muse.NewPatch(0, 1, config, ""),
 		ampStepProvider:    ampStepProvider,
 		filterStepProvider: filterStepProvider,
-		shaper:             shapingc.NewSoftSyncTriangle(),
+		shaper:             shaping.NewSoftSyncTriangle(),
 	}
 
 	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampAdsr"))
@@ -63,7 +63,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*8000.0 + 100.0 }, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.5, 1, config, "filter"))
-	shape := testVoice.AddModule(shaper.NewShaper(testVoice.shaper, 0, nil, nil, config, "shaper"))
+	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config, "shaper"))
 
 	muse.Connect(osc, 0, shape, 0)
 	muse.Connect(shape, 0, multiplier, 0)
@@ -85,7 +85,7 @@ func (tv *TestVoice) IsActive() bool {
 	return tv.ampEnv.IsActive()
 }
 
-func (tv *TestVoice) Activate(duration float64, amplitude float64, message any, config *muse.Configuration) {
+func (tv *TestVoice) Note(duration float64, amplitude float64, message any, config *muse.Configuration) {
 	msg := message.(map[string]any)
 
 	tv.ampEnv.TriggerFull(duration, amplitude, tv.ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration)
@@ -207,14 +207,14 @@ func main() {
 	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
 	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config, "allpass"))
 
-	sineTable := shapingc.NewNormalizedSineTable(512)
+	sineTable := shaping.NewNormalizedSineTable(512)
 
-	targetShaper := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.75, 1.02)), "shaper", values.Prototype{
+	targetShaper := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.7, 1.0)), "shaper", values.Prototype{
 		"command": "voice",
 		"shaper":  values.NewPlaceholder("shaper"),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shapingc.NewChain(sineTable, shapingc.NewLinear(0.1, 0.05)), "adsrDecayLevel", values.Prototype{
+	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.1, 0.05)), "adsrDecayLevel", values.Prototype{
 		"command":        "voice",
 		"adsrDecayLevel": values.NewPlaceholder("adsrDecayLevel"),
 	})
@@ -308,7 +308,7 @@ func main() {
 		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 	}))
 
-	vocalPlayer := addDrumTrack(env, "vocal", vocalSound, bpm*0.125, 1.0, 0.975, 1.025, 0.4, values.NewSequence([]*swing.Step{
+	vocalPlayer := addDrumTrack(env, "vocal", vocalSound, bpm*0.125, 1.0, 0.975, 1.025, 0.2, values.NewSequence([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 	}))
 

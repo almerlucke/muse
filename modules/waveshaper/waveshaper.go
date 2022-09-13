@@ -1,23 +1,23 @@
-package shaper
+package waveshaper
 
 import (
 	"github.com/almerlucke/muse"
-	shapingc "github.com/almerlucke/muse/components/shaping"
+	shaping "github.com/almerlucke/muse/components/waveshaping"
 )
 
-type ParamMapFunction func(int, float64, shapingc.Shaper)
+type ParamMapFunction func(int, float64, shaping.Shaper)
 
-type MessageMapFunction func(any, shapingc.Shaper)
+type MessageMapFunction func(any, shaping.Shaper)
 
-type Shaper struct {
+type WaveShaper struct {
 	*muse.BaseModule
-	shaper      shapingc.Shaper
+	shaper      shaping.Shaper
 	paramMapper ParamMapFunction
 	msgMapper   MessageMapFunction
 }
 
-func NewShaper(shaper shapingc.Shaper, numParams int, paramMapper ParamMapFunction, msgMapper MessageMapFunction, config *muse.Configuration, identifier string) *Shaper {
-	return &Shaper{
+func NewWaveShaper(shaper shaping.Shaper, numParams int, paramMapper ParamMapFunction, msgMapper MessageMapFunction, config *muse.Configuration, identifier string) *WaveShaper {
+	return &WaveShaper{
 		BaseModule:  muse.NewBaseModule(numParams+1, 1, config, identifier),
 		shaper:      shaper,
 		paramMapper: paramMapper,
@@ -25,7 +25,7 @@ func NewShaper(shaper shapingc.Shaper, numParams int, paramMapper ParamMapFuncti
 	}
 }
 
-func (s *Shaper) ReceiveMessage(msg any) []*muse.Message {
+func (s *WaveShaper) ReceiveMessage(msg any) []*muse.Message {
 	if s.msgMapper != nil {
 		s.msgMapper(msg, s.shaper)
 	}
@@ -33,7 +33,7 @@ func (s *Shaper) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (s *Shaper) Synthesize() bool {
+func (s *WaveShaper) Synthesize() bool {
 	if !s.BaseModule.Synthesize() {
 		return false
 	}

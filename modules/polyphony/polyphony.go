@@ -5,11 +5,16 @@ import (
 	"github.com/almerlucke/muse/utils/pool"
 )
 
+type Note struct {
+	Duration  float64
+	Amplitude float64
+}
+
 type Voice interface {
 	muse.Module
 	NoteOn(amplitude float64, message any, config *muse.Configuration)
 	NoteOff()
-	Activate(duration float64, amplitude float64, message any, config *muse.Configuration)
+	Note(duration float64, amplitude float64, message any, config *muse.Configuration)
 	IsActive() bool
 }
 
@@ -74,7 +79,7 @@ func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 			} else if duration, ok := content["duration"]; ok {
 				amplitude := content["amplitude"].(float64)
 				voiceMsg := content["message"]
-				elem.Value.Activate(duration.(float64), amplitude, voiceMsg, p.Config)
+				elem.Value.Note(duration.(float64), amplitude, voiceMsg, p.Config)
 			}
 
 			p.activePool.Push(elem)

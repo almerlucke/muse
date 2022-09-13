@@ -4,7 +4,7 @@ import (
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	shapingc "github.com/almerlucke/muse/components/shaping"
+	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/values"
 
@@ -21,7 +21,7 @@ import (
 	"github.com/mkb218/gosndfile/sndfile"
 )
 
-func msgMapper(msg any, shaper shapingc.Shaper) {
+func msgMapper(msg any, shaper shaping.Shaper) {
 	// params, ok := msg.(map[string]any)
 	// if ok {
 	// 	s, ok := params["sync"]
@@ -30,9 +30,9 @@ func msgMapper(msg any, shaper shapingc.Shaper) {
 	// }
 }
 
-func paramMapper(param int, value float64, shaper shapingc.Shaper) {
+func paramMapper(param int, value float64, shaper shaping.Shaper) {
 	if param == 0 {
-		shaper.(*shapingc.Chain).SetSuperSawM1(value)
+		shaper.(*shaping.Chain).SetSuperSawM1(value)
 	}
 }
 
@@ -62,7 +62,7 @@ func main() {
 	mult1 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config, ""))
 	filterParam := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*2200.0 + 40.0 }, env.Config, ""))
 	osc1 := env.AddModule(phasor.NewPhasor(140.0, 0.0, env.Config, "osc1"))
-	shaper1 := env.AddModule(shaper.NewShaper(shapingc.NewSuperSaw(), 1, paramMapper, nil, env.Config, "shaper1"))
+	shaper1 := env.AddModule(shaper.NewShaper(shaping.NewSuperSaw(), 1, paramMapper, nil, env.Config, "shaper1"))
 	allpass := env.AddModule(allpass.NewAllpass(375.0, 375.0, 0.3, env.Config, "allpass"))
 	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config, ""))
 	// filter := env.AddModule(butterworth.NewButterworth(300.0, 0.4, env.Config, "filter"))

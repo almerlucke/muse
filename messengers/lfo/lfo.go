@@ -2,7 +2,7 @@ package lfo
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/shaping"
+	shaping "github.com/almerlucke/muse/components/waveshaping"
 	val "github.com/almerlucke/muse/values"
 )
 
