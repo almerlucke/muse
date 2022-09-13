@@ -26,7 +26,9 @@ func (t *Target) replacements(value float64) []*prototype.Replacement {
 }
 
 func (t *Target) Messages(value float64) []*muse.Message {
-	raw := t.Proto.Map(t.replacements(value))
+	t.Proto.Replace(t.replacements(value))
+
+	raw := t.Proto.Value()
 	msgs := make([]*muse.Message, len(raw))
 
 	for i, msg := range raw {

@@ -25,7 +25,7 @@ func NewPrototypeGenerator(addresses []string, proto proto.Prototype, identifier
 
 func (p *Prototype) Bang() []*muse.Message {
 	allMessages := []*muse.Message{}
-	protoMessages := p.proto.Map(nil)
+	protoMessages := p.proto.Value()
 
 	for _, address := range p.addresses {
 		for _, message := range protoMessages {
