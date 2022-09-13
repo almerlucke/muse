@@ -3,30 +3,37 @@ package lfo
 import (
 	"github.com/almerlucke/muse"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
-	val "github.com/almerlucke/muse/values"
+	"github.com/almerlucke/muse/values/prototype"
 )
 
 type Target struct {
 	Address     string
 	Shaper      shaping.Shaper
 	Placeholder string
-	Proto       val.Prototype
+	Proto       prototype.Prototype
 }
 
-func NewTarget(address string, shaper shaping.Shaper, placeholder string, proto val.Prototype) *Target {
+func NewTarget(address string, shaper shaping.Shaper, placeholder string, proto prototype.Prototype) *Target {
 	return &Target{Address: address, Shaper: shaper, Placeholder: placeholder, Proto: proto}
 }
 
-func (t *Target) replacements(value float64) []*val.Replacement {
+func (t *Target) replacements(value float64) []*prototype.Replacement {
 	if t.Shaper == nil {
-		return []*val.Replacement{val.NewReplacement(t.Placeholder, value)}
+		return []*prototype.Replacement{prototype.NewReplacement(t.Placeholder, value)}
 	}
 
-	return []*val.Replacement{val.NewReplacement(t.Placeholder, t.Shaper.Shape(value))}
+	return []*prototype.Replacement{prototype.NewReplacement(t.Placeholder, t.Shaper.Shape(value))}
 }
 
-func (t *Target) Message(value float64) *muse.Message {
-	return muse.NewMessage(t.Address, t.Proto.Map(t.replacements(value)))
+func (t *Target) Messages(value float64) []*muse.Message {
+	raw := t.Proto.Map(t.replacements(value))
+	msgs := make([]*muse.Message, len(raw))
+
+	for i, msg := range raw {
+		msgs[i] = muse.NewMessage(t.Address, msg)
+	}
+
+	return msgs
 }
 
 type LFO struct {
@@ -58,10 +65,11 @@ func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Me
 		lfo.phase += 1.0
 	}
 
-	msgs := make([]*muse.Message, len(lfo.targets))
+	msgs := []*muse.Message{}
 
-	for index, target := range lfo.targets {
-		msgs[index] = target.Message(out)
+	for _, target := range lfo.targets {
+		targetMsgs := target.Messages(out)
+		msgs = append(msgs, targetMsgs...)
 	}
 
 	return msgs

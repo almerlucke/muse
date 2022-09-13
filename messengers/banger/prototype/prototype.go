@@ -3,32 +3,35 @@ package prototype
 import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/messengers/banger"
-	"github.com/almerlucke/muse/values"
+
+	proto "github.com/almerlucke/muse/values/prototype"
 )
 
 type Prototype struct {
 	addresses []string
-	proto     values.Prototype
+	proto     proto.Prototype
 }
 
-func NewPrototype(addresses []string, proto values.Prototype) *Prototype {
+func NewPrototype(addresses []string, proto proto.Prototype) *Prototype {
 	return &Prototype{
 		addresses: addresses,
 		proto:     proto,
 	}
 }
 
-func NewPrototypeGenerator(addresses []string, proto values.Prototype, identifier string) *banger.Generator {
+func NewPrototypeGenerator(addresses []string, proto proto.Prototype, identifier string) *banger.Generator {
 	return banger.NewGenerator(NewPrototype(addresses, proto), identifier)
 }
 
 func (p *Prototype) Bang() []*muse.Message {
-	messages := make([]*muse.Message, len(p.addresses))
-	message := p.proto.Map(nil)
+	allMessages := []*muse.Message{}
+	protoMessages := p.proto.Map(nil)
 
-	for index, address := range p.addresses {
-		messages[index] = muse.NewMessage(address, message)
+	for _, address := range p.addresses {
+		for _, message := range protoMessages {
+			allMessages = append(allMessages, muse.NewMessage(address, message))
+		}
 	}
 
-	return messages
+	return allMessages
 }

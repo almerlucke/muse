@@ -23,7 +23,10 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
 	museTheme "github.com/almerlucke/muse/ui/theme"
+	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/values"
+
+	proto "github.com/almerlucke/muse/values/prototype"
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
@@ -41,7 +44,7 @@ type TestVoice struct {
 	filterEnv          *adsr.ADSR
 	phasor             *phasor.Phasor
 	filter             *moog.Moog
-	superSaw           *shaping.Chain
+	shaper             *shaping.Chain
 	ampStepProvider    adsrctrl.ADSRStepProvider
 	filterStepProvider adsrctrl.ADSRStepProvider
 }
@@ -51,16 +54,16 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 		BasePatch:          muse.NewPatch(0, 1, config, ""),
 		ampStepProvider:    ampStepProvider,
 		filterStepProvider: filterStepProvider,
-		superSaw:           shaping.NewSuperSaw(),
+		shaper:             shaping.NewPulseWidthMod(),
 	}
 
 	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampAdsr"))
 	filterEnv := testVoice.AddModule(adsr.NewADSR(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "filterAdsr"))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
-	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*8000.0 + 30.0 }, config, ""))
+	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*5000.0 + 30.0 }, config, ""))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.7, 1.25, config, "filter"))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.superSaw, 0, nil, nil, config, "shaper"))
+	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.8, 1.5, config, "filter"))
+	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config, "shaper"))
 
 	muse.Connect(osc, 0, shape, 0)
 	muse.Connect(shape, 0, multiplier, 0)
@@ -106,8 +109,8 @@ func (tv *TestVoice) NoteOff() {
 func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
-	if superSawM1, ok := content["superSawM1"].(float64); ok {
-		tv.superSaw.SetSuperSawM1(superSawM1)
+	if shaper, ok := content["shaper"].(float64); ok {
+		tv.shaper.SetPulseWidthW(shaper)
 	}
 
 	if adsrAttackDuration, ok := content["adsrAttackDuration"].(float64); ok {
@@ -162,12 +165,14 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 
 	env.AddMessenger(stepper.NewStepper(swing.New(values.NewConst(tempo), values.NewConst(division), steps), []string{identifier}, ""))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, values.Prototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, proto.Prototype{
 		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 	}, identifier))
 
 	return env.AddModule(player.NewPlayer(soundBuffer, 1.0, 1.0, true, env.Config, moduleName))
 }
+
+type Nums []float64
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -178,7 +183,7 @@ func main() {
 	filterEnvControl := adsrctrl.NewADSRControl("Filter ADSR")
 
 	voices := []polyphony.Voice{}
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 40; i++ {
 		voice := NewTestVoice(env.Config, ampEnvControl, filterEnvControl)
 		voices = append(voices, voice)
 	}
@@ -219,54 +224,39 @@ func main() {
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
-	targetSuperSaw := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.15, 0.1)), "superSawM1", values.Prototype{
-		"command":    "voice",
-		"superSawM1": values.NewPlaceholder("superSawM1"),
+	targetShaper := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.8, 0.1)), "shaper", proto.Prototype{
+		"command": "voice",
+		"shaper":  proto.NewPlaceholder("shaper"),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.4, 0.1)), "adsrDecayLevel", values.Prototype{
+	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.4, 0.1)), "adsrDecayLevel", proto.Prototype{
 		"command":        "voice",
-		"adsrDecayLevel": values.NewPlaceholder("adsrDecayLevel"),
+		"adsrDecayLevel": proto.NewPlaceholder("adsrDecayLevel"),
 	})
 
-	env.AddMessenger(lfo.NewLFO(0.23, []*lfo.Target{targetSuperSaw}, env.Config, "lfo1"))
-	env.AddMessenger(lfo.NewLFO(0.13, []*lfo.Target{targetFilter}, env.Config, "lfo2"))
+	env.AddMessenger(lfo.NewLFO(0.05, []*lfo.Target{targetShaper}, env.Config, "lfo1"))
+	env.AddMessenger(lfo.NewLFO(0.1, []*lfo.Target{targetFilter}, env.Config, "lfo2"))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, proto.Prototype{
 		"command":   "trigger",
-		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}),
+		"duration":  values.NewSequence([]any{Nums{125.0, 300.0}, Nums{125.0, 400.0}, Nums{125.0, 500.0}, Nums{250.0, 300.0}, Nums{250.0, 400.0}}),
 		"amplitude": values.NewConst[any](1.0),
-		"message": values.Prototype{
-			"osc": values.Prototype{
-				"frequency": values.NewTransform[any](values.NewSequence([]any{
-					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1320.0, 110.0,
-					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1100.0, 770.0, 550.0}),
-					values.TFunc[any](func(v any) any { return v.(float64) / 4.0 })),
+		"message": proto.Prototype{
+			"osc": proto.Prototype{
+				"frequency": values.NewSequence([]any{
+					utils.Chord(60, 48), utils.Chord(67, 53), utils.Chord(65, 60), utils.Chord(64, 48), utils.Chord(60, 48), utils.Chord(67, 53), utils.Chord(62, 60), utils.Chord(62, 48),
+					utils.Chord(64, 48), utils.Chord(65, 53), utils.Chord(69, 60), utils.Chord(72, 48),
+				}),
 				"phase": 0.0,
 			},
 		},
 	}, "prototype1"))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
-		"command":   "trigger",
-		"duration":  values.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}),
-		"amplitude": values.NewConst[any](0.3),
-		"message": values.Prototype{
-			"osc": values.Prototype{
-				"frequency": values.NewTransform[any](values.NewSequence([]any{
-					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1540.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0,
-					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1110.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0}),
-					values.TFunc[any](func(v any) any { return v.(float64) / 2.0 })),
-				"phase": 0.0,
-			},
-		},
-	}, "prototype2"))
-
 	env.AddMessenger(stepper.NewStepper(
-		swing.New(values.NewConst(80.0), values.NewConst(4.0), values.NewSequence([]*swing.Step{
-			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipFactor: 0.3},
+		swing.New(values.NewConst(40.0), values.NewConst(2.0), values.NewSequence([]*swing.Step{
+			{}, {}, {}, {},
 		})),
-		[]string{"prototype1", "prototype2"}, "",
+		[]string{"prototype1"}, "",
 	))
 
 	muse.Connect(kickPlayer, 0, mult, 0)

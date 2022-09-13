@@ -11,6 +11,9 @@ import (
 	// Values
 	"github.com/almerlucke/muse/values"
 
+	// Prototype
+	proto "github.com/almerlucke/muse/values/prototype"
+
 	// Messengers
 	"github.com/almerlucke/muse/messengers/banger/prototype"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -96,12 +99,12 @@ func (tv *TestVoice) NoteOff() {
 func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, proto.Prototype{
 		"command":   "trigger",
 		"duration":  values.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}),
 		"amplitude": values.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}),
-		"message": values.Prototype{
-			"osc": values.Prototype{
+		"message": proto.Prototype{
+			"osc": proto.Prototype{
 				"frequency": values.NewSequence([]any{50.0, 50.0, 25.0, 50.0, 150.0, 25.0, 150.0, 100.0, 100.0, 200.0, 50.0}),
 				"phase":     0.0,
 			},

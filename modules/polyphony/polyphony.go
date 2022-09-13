@@ -5,11 +5,6 @@ import (
 	"github.com/almerlucke/muse/utils/pool"
 )
 
-type Note struct {
-	Duration  float64
-	Amplitude float64
-}
-
 type Voice interface {
 	muse.Module
 	NoteOn(amplitude float64, message any, config *muse.Configuration)

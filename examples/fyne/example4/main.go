@@ -27,6 +27,8 @@ import (
 	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/values"
 
+	proto "github.com/almerlucke/muse/values/prototype"
+
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/filters/moog"
@@ -165,7 +167,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 
 	env.AddMessenger(stepper.NewStepper(swing.New(values.NewConst(tempo), values.NewConst(division), steps), []string{identifier}, ""))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, values.Prototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, proto.Prototype{
 		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 	}, identifier))
 
@@ -209,25 +211,25 @@ func main() {
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
-	targetShaper := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.7, 1.0)), "shaper", values.Prototype{
+	targetShaper := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.7, 1.0)), "shaper", proto.Prototype{
 		"command": "voice",
-		"shaper":  values.NewPlaceholder("shaper"),
+		"shaper":  proto.NewPlaceholder("shaper"),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.1, 0.05)), "adsrDecayLevel", values.Prototype{
+	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.1, 0.05)), "adsrDecayLevel", proto.Prototype{
 		"command":        "voice",
-		"adsrDecayLevel": values.NewPlaceholder("adsrDecayLevel"),
+		"adsrDecayLevel": proto.NewPlaceholder("adsrDecayLevel"),
 	})
 
 	env.AddMessenger(lfo.NewLFO(0.03, []*lfo.Target{targetShaper}, env.Config, "lfo1"))
 	env.AddMessenger(lfo.NewLFO(0.13, []*lfo.Target{targetFilter}, env.Config, "lfo2"))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, proto.Prototype{
 		"command":   "trigger",
 		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}),
 		"amplitude": values.NewSequence([]any{0.6, 0.3, 0.6, 0.5, 0.4, 0.3, 0.4, 0.5, 0.6, 0.4, 0.2}),
-		"message": values.Prototype{
-			"osc": values.Prototype{
+		"message": proto.Prototype{
+			"osc": proto.Prototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
 					utils.Mtof(60), utils.Mtof(67), utils.Mtof(62), utils.Mtof(69), utils.Mtof(64), utils.Mtof(71),
 					utils.Mtof(66), utils.Mtof(61), utils.Mtof(68), utils.Mtof(63), utils.Mtof(70), utils.Mtof(65),
@@ -238,12 +240,12 @@ func main() {
 		},
 	}, "prototype1"))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, values.Prototype{
+	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, proto.Prototype{
 		"command":   "trigger",
 		"duration":  values.NewSequence([]any{375.0, 500.0, 375.0, 1000.0, 375.0, 250.0}),
 		"amplitude": values.NewSequence([]any{1.0, 1.0, 0.6, 0.6, 1.0, 1.0, 0.6, 1.0}),
-		"message": values.Prototype{
-			"osc": values.Prototype{
+		"message": proto.Prototype{
+			"osc": proto.Prototype{
 				"frequency": values.NewTransform[any](values.NewSequence([]any{
 					utils.Mtof(67), utils.Mtof(62), utils.Mtof(69), utils.Mtof(64), utils.Mtof(71), utils.Mtof(66),
 					utils.Mtof(61), utils.Mtof(68), utils.Mtof(63), utils.Mtof(70), utils.Mtof(65), utils.Mtof(72),

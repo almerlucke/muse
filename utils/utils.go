@@ -14,6 +14,16 @@ func Mtof(midiNote int) float64 {
 	return math.Pow(2, float64(midiNote-69)/12.0) * 440.0
 }
 
+func Chord(notes ...int) []float64 {
+	chord := make([]float64, len(notes))
+
+	for i, n := range notes {
+		chord[i] = Mtof(n)
+	}
+
+	return chord
+}
+
 func ReadJSON[T any](file string) (T, error) {
 	var empty T
 
