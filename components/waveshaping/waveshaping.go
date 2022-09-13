@@ -320,16 +320,16 @@ func (c *Chain) SetSuperSawM2(m2 float64) {
 	c.Shapers[1].(*Parallel).Shapers[1].(*Mod).M = m2
 }
 
-// sin(2.0 * PI * x(n){1 + g pulse [x(n) – 1, w]})
-func NewVarSlopeSin() *Chain {
-	return NewChain(
-		NewAdd(-1.0),
-		NewPulse(0.5),
-		NewAdd(1.0),
-		NewSin(),
-	)
-}
+// // sin(2.0 * PI * x(n){1 + g pulse [x(n) – 1, w]})
+// func NewVarSlopeSin() *Chain {
+// 	return NewChain(
+// 		NewAdd(-1.0),
+// 		NewPulse(0.5),
+// 		NewAdd(1.0),
+// 		NewSin(),
+// 	)
+// }
 
-func (c *Chain) SetVarSlopeSinW(w float64) {
-	c.Shapers[1].(*Pulse).W = w
-}
+// func (c *Chain) SetVarSlopeSinW(w float64) {
+// 	c.Shapers[1].(*Pulse).W = w
+// }
