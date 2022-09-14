@@ -2,8 +2,8 @@ package banger
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/values"
-	"github.com/almerlucke/muse/values/template"
+	"github.com/almerlucke/muse/value"
+	"github.com/almerlucke/muse/value/template"
 )
 
 func IsBang(msg any) bool {
@@ -37,17 +37,17 @@ func (g *Generator) ReceiveMessage(msg any) []*muse.Message {
 }
 
 type ValueBang struct {
-	value values.Valuer[[]*muse.Message]
+	value value.Valuer[[]*muse.Message]
 }
 
-func NewValueBang(value values.Valuer[[]*muse.Message]) *ValueBang {
+func NewValueBang(val value.Valuer[[]*muse.Message]) *ValueBang {
 	return &ValueBang{
-		value: value,
+		value: val,
 	}
 }
 
-func NewValueGenerator(value values.Valuer[[]*muse.Message], identifier string) *Generator {
-	return NewGenerator(NewValueBang(value), identifier)
+func NewValueGenerator(val value.Valuer[[]*muse.Message], identifier string) *Generator {
+	return NewGenerator(NewValueBang(val), identifier)
 }
 
 func (vb *ValueBang) Bang() []*muse.Message {

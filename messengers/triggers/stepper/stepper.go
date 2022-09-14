@@ -3,7 +3,7 @@ package stepper
 import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/ui"
-	"github.com/almerlucke/muse/values"
+	"github.com/almerlucke/muse/value"
 )
 
 type StepProvider interface {
@@ -67,12 +67,12 @@ func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.
 }
 
 type ValueStepper struct {
-	value values.Valuer[float64]
+	value value.Valuer[float64]
 }
 
-func NewValueStepper(value values.Valuer[float64]) *ValueStepper {
+func NewValueStepper(val value.Valuer[float64]) *ValueStepper {
 	return &ValueStepper{
-		value: value,
+		value: val,
 	}
 }
 

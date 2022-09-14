@@ -5,7 +5,7 @@ import (
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	"github.com/almerlucke/muse/utils"
-	"github.com/almerlucke/muse/values"
+	"github.com/almerlucke/muse/value"
 
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -20,18 +20,18 @@ import (
 func main() {
 	env := muse.NewEnvironment(2, 44100, 128)
 
-	sequence1 := values.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/blosc_example/sequence1.json"))
-	sequence2 := values.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/blosc_example/sequence2.json"))
+	sequence1 := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/blosc_example/sequence1.json"))
+	sequence2 := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/blosc_example/sequence2.json"))
 
 	env.AddMessenger(banger.NewValueGenerator(sequence1, "sequencer1"))
 	env.AddMessenger(banger.NewValueGenerator(sequence2, "sequencer2"))
 
 	env.AddMessenger(stepper.NewStepper(
-		stepper.NewValueStepper(values.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
+		stepper.NewValueStepper(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
 		[]string{"sequencer1", "adsr1"}, "",
 	))
 	env.AddMessenger(stepper.NewStepper(
-		stepper.NewValueStepper(values.NewSequence([]float64{-125, 125, 125, 125, -125, 250, -125})),
+		stepper.NewValueStepper(value.NewSequence([]float64{-125, 125, 125, 125, -125, 250, -125})),
 		[]string{"sequencer2", "adsr2"}, "",
 	))
 

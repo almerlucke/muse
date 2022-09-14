@@ -27,8 +27,8 @@ import (
 	"github.com/almerlucke/muse/ui"
 
 	// Values
-	"github.com/almerlucke/muse/values"
-	"github.com/almerlucke/muse/values/template"
+	"github.com/almerlucke/muse/value"
+	"github.com/almerlucke/muse/value/template"
 
 	// Messengers
 	"github.com/almerlucke/muse/messengers/banger"
@@ -499,10 +499,10 @@ func (b *SwingControlBank) SwingSteps() []*swing.Step {
 
 type SwingControl struct {
 	banks               []*SwingControlBank
-	stepSequence        *values.Sequence[*swing.Step]
+	stepSequence        *value.Sequence[*swing.Step]
 	stepControls        []*SwingStepControl
-	bpm                 *values.Const[float64]
-	noteDivision        *values.Const[float64]
+	bpm                 *value.Const[float64]
+	noteDivision        *value.Const[float64]
 	bankIndex           int
 	prevStepIndex       int
 	nBinding            binding.String
@@ -649,15 +649,15 @@ func (sc *SwingControl) UI() fyne.CanvasObject {
 func NewSwingControl(bpm float64, noteDivision float64) *SwingControl {
 	sc := &SwingControl{
 		banks:        make([]*SwingControlBank, 8),
-		bpm:          values.NewConst(bpm),
-		noteDivision: values.NewConst(noteDivision),
+		bpm:          value.NewConst(bpm),
+		noteDivision: value.NewConst(noteDivision),
 	}
 
 	for i := 0; i < 8; i++ {
 		sc.banks[i] = NewSwingControlBank()
 	}
 
-	sc.stepSequence = values.NewSequence(sc.banks[0].SwingSteps())
+	sc.stepSequence = value.NewSequence(sc.banks[0].SwingSteps())
 
 	return sc
 }
@@ -667,11 +667,11 @@ func main() {
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
-		"duration":  values.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}),
-		"amplitude": values.NewConst[any](1.0),
+		"duration":  value.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}),
+		"amplitude": value.NewConst[any](1.0),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": values.NewSequence([]any{
+				"frequency": value.NewSequence([]any{
 					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1320.0, 110.0,
 					440.0, 220.0, 110.0, 220.0, 660.0, 440.0, 880.0, 330.0, 880.0, 1100.0, 770.0, 550.0}),
 				"phase": 0.0,
@@ -681,11 +681,11 @@ func main() {
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
-		"duration":  values.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}),
-		"amplitude": values.NewConst[any](0.3),
+		"duration":  value.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}),
+		"amplitude": value.NewConst[any](0.3),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": values.NewSequence([]any{
+				"frequency": value.NewSequence([]any{
 					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1540.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0,
 					110.0, 220.0, 660.0, 110.0, 220.0, 440.0, 1110.0, 110.0, 220.0, 660.0, 550.0, 220.0, 440.0, 380.0}),
 				"phase": 0.0,

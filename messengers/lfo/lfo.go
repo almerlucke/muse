@@ -3,7 +3,7 @@ package lfo
 import (
 	"github.com/almerlucke/muse"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
-	"github.com/almerlucke/muse/values/template"
+	"github.com/almerlucke/muse/value/template"
 )
 
 type Target struct {

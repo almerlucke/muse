@@ -8,11 +8,11 @@ import (
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
 
-	// Values
-	"github.com/almerlucke/muse/values"
+	// Value
+	"github.com/almerlucke/muse/value"
 
 	// Template
-	"github.com/almerlucke/muse/values/template"
+	"github.com/almerlucke/muse/value/template"
 
 	// Messengers
 	"github.com/almerlucke/muse/messengers/banger"
@@ -101,11 +101,11 @@ func main() {
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
-		"duration":  values.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}),
-		"amplitude": values.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}),
+		"duration":  value.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}),
+		"amplitude": value.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": values.NewSequence([]any{50.0, 50.0, 25.0, 50.0, 150.0, 25.0, 150.0, 100.0, 100.0, 200.0, 50.0}),
+				"frequency": value.NewSequence([]any{50.0, 50.0, 25.0, 50.0, 150.0, 25.0, 150.0, 100.0, 100.0, 200.0, 50.0}),
 				"phase":     0.0,
 			},
 		},
@@ -114,7 +114,7 @@ func main() {
 	bpm := 120.0
 
 	env.AddMessenger(stepper.NewStepper(
-		swing.New(values.NewConst(bpm), values.NewConst(4.0), values.NewSequence([]*swing.Step{
+		swing.New(value.NewConst(bpm), value.NewConst(4.0), value.NewSequence([]*swing.Step{
 			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipFactor: 0.3},
 		})),
 		[]string{"prototype"}, "",

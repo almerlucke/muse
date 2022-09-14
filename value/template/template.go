@@ -3,7 +3,7 @@ package template
 import (
 	"reflect"
 
-	"github.com/almerlucke/muse/values"
+	"github.com/almerlucke/muse/value"
 )
 
 // Template is a template of a map. When Value() is called, a deep copy of the template is made with all Valuer values
@@ -17,8 +17,8 @@ type Parameter struct {
 	Value any
 }
 
-func NewParameter(name string, value any) *Parameter {
-	return &Parameter{Name: name, Value: value}
+func NewParameter(name string, val any) *Parameter {
+	return &Parameter{Name: name, Value: val}
 }
 
 // intermediateValue is created in prototype to check if prototype needs to split if value is an array or slice
@@ -65,7 +65,7 @@ func (t Template) intermediate() Template {
 		switch vt := v.(type) {
 		case Template:
 			tc[k] = vt.intermediate()
-		case values.Valuer[any]:
+		case value.Valuer[any]:
 			tc[k] = newIntermediateValue(vt.Value())
 		case *Parameter:
 			tc[k] = newIntermediateValue(vt.Value)
@@ -118,8 +118,8 @@ func (t Template) mapAtIndex(i int) map[string]any {
 	return m
 }
 
-func (t Template) SetParameter(name string, value any) {
-	t.SetParameters([]*Parameter{NewParameter(name, value)})
+func (t Template) SetParameter(name string, val any) {
+	t.SetParameters([]*Parameter{NewParameter(name, val)})
 }
 
 func (t Template) SetParameters(parameters []*Parameter) {
@@ -155,7 +155,7 @@ func (t Template) SetState(m map[string]any) {
 		switch vt := t[k].(type) {
 		case Template:
 			vt.SetState(v.(map[string]any))
-		case values.Valuer[any]:
+		case value.Valuer[any]:
 			vt.SetState(v.(map[string]any))
 		case *Parameter:
 			vt.Value = v
@@ -174,7 +174,7 @@ func (t Template) GetState() map[string]any {
 		switch vt := v.(type) {
 		case Template:
 			m[k] = vt.GetState()
-		case values.Valuer[any]:
+		case value.Valuer[any]:
 			m[k] = vt.GetState()
 		case *Parameter:
 			m[k] = vt.Value
@@ -209,7 +209,7 @@ func (t Template) Reset() {
 		switch vt := v.(type) {
 		case Template:
 			vt.Reset()
-		case values.Valuer[any]:
+		case value.Valuer[any]:
 			vt.Reset()
 		default:
 			break

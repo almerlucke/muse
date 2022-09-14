@@ -6,7 +6,7 @@ import (
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/utils"
-	"github.com/almerlucke/muse/values"
+	"github.com/almerlucke/muse/value"
 
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -39,12 +39,12 @@ func paramMapper(param int, value float64, shaper shaping.Shaper) {
 func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 
-	sequence := values.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/shaping_example/sequence1.json"))
+	sequence := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/shaping_example/sequence1.json"))
 
 	env.AddMessenger(banger.NewValueGenerator(sequence, "sequencer1"))
 
 	env.AddMessenger(stepper.NewStepper(
-		stepper.NewValueStepper(values.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
+		stepper.NewValueStepper(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
 		[]string{"sequencer1", "adsr1"}, "",
 	))
 

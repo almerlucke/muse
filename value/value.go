@@ -1,14 +1,10 @@
-package values
+package value
 
 import (
 	"math/rand"
 
 	"github.com/almerlucke/muse"
 )
-
-type Transformer[T any] interface {
-	Transform(T) T
-}
 
 type Valuer[T any] interface {
 	muse.Stater
@@ -18,13 +14,17 @@ type Valuer[T any] interface {
 	Finished() bool
 }
 
-func Generate[T any](value Valuer[T], n int) []T {
+type Transformer[T any] interface {
+	Transform(T) T
+}
+
+func Generate[T any](val Valuer[T], n int) []T {
 	sequence := []T{}
 
 	for i := 0; i < n; i++ {
-		sequence = append(sequence, value.Value())
-		if value.Finished() {
-			value.Reset()
+		sequence = append(sequence, val.Value())
+		if val.Finished() {
+			val.Reset()
 		}
 	}
 
@@ -352,8 +352,8 @@ func (a *And[T]) Finished() bool {
 
 func (a *And[T]) GetState() map[string]any {
 	states := []map[string]any{}
-	for index, value := range a.values {
-		states[index] = value.GetState()
+	for index, val := range a.values {
+		states[index] = val.GetState()
 	}
 
 	return map[string]any{"values": states, "isCurrentSet": a.current != nil, "index": a.index, "continuous": a.continuous}
@@ -440,8 +440,8 @@ func (o *Or[T]) Finished() bool {
 
 func (o *Or[T]) GetState() map[string]any {
 	states := []map[string]any{}
-	for index, value := range o.values {
-		states[index] = value.GetState()
+	for index, val := range o.values {
+		states[index] = val.GetState()
 	}
 
 	return map[string]any{"values": states, "isCurrentSet": o.current != nil, "index": o.index, "continuous": o.continuous, "finished": o.finished}

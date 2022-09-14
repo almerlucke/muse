@@ -20,7 +20,7 @@ import (
 	museTheme "github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils"
 
-	"github.com/almerlucke/muse/values/template"
+	"github.com/almerlucke/muse/value/template"
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"

@@ -27,8 +27,8 @@ import (
 	"github.com/almerlucke/muse/ui/theme"
 
 	"github.com/almerlucke/muse/utils"
-	"github.com/almerlucke/muse/values"
-	"github.com/almerlucke/muse/values/template"
+	"github.com/almerlucke/muse/value"
+	"github.com/almerlucke/muse/value/template"
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
@@ -162,13 +162,13 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo float64, division float64, lowSpeed float64, highSpeed float64, steps values.Valuer[*swing.Step]) muse.Module {
+func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo float64, division float64, lowSpeed float64, highSpeed float64, steps value.Valuer[*swing.Step]) muse.Module {
 	identifier := moduleName + "Speed"
 
-	env.AddMessenger(stepper.NewStepper(swing.New(values.NewConst(tempo), values.NewConst(division), steps), []string{identifier}, ""))
+	env.AddMessenger(stepper.NewStepper(swing.New(value.NewConst(tempo), value.NewConst(division), steps), []string{identifier}, ""))
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{moduleName}, template.Template{
-		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
+		"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 	}, identifier))
 
 	return env.AddModule(player.NewPlayer(soundBuffer, 1.0, 1.0, true, env.Config, moduleName))
@@ -198,25 +198,25 @@ func main() {
 	kickSound, _ := io.NewSoundFileBuffer("resources/drums/kick/Cymatics - Humble Friday Kick - E.wav")
 	snareSound, _ := io.NewSoundFileBuffer("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
 
-	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 8.0, 0.875, 1.125, values.NewAnd([]values.Valuer[*swing.Step]{
-		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
+	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 8.0, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
+		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
 			{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
 		}), 2, 3),
-		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
+		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
 			{}, {Shuffle: 0.3}, {Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {SkipFactor: 0.4}, {SkipFactor: 0.4}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
 		}), 1, 2),
 	}, true))
 
-	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4.0, 0.875, 1.125, values.NewAnd([]values.Valuer[*swing.Step]{
-		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
+	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4.0, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
+		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
 			{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
 		}), 2, 3),
-		values.NewRepeat[*swing.Step](values.NewSequenceNC([]*swing.Step{
+		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
 			{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {SkipFactor: 0.4}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {Skip: true},
 		}), 1, 2),
 	}, true))
 
-	snarePlayer := addDrumTrack(env, "snare", snareSound, bpm, 2.0, 0.875, 1.125, values.NewSequence([]*swing.Step{
+	snarePlayer := addDrumTrack(env, "snare", snareSound, bpm, 2.0, 0.875, 1.125, value.NewSequence([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.1, ShuffleRand: 0.1},
 	}))
 
@@ -241,11 +241,11 @@ func main() {
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
-		"duration":  values.NewSequence([]any{Nums{125.0, 300.0}, Nums{125.0, 400.0}, Nums{125.0, 500.0}, Nums{250.0, 300.0}, Nums{250.0, 400.0}}),
-		"amplitude": values.NewConst[any](1.0),
+		"duration":  value.NewSequence([]any{Nums{125.0, 300.0}, Nums{125.0, 400.0}, Nums{125.0, 500.0}, Nums{250.0, 300.0}, Nums{250.0, 400.0}}),
+		"amplitude": value.NewConst[any](1.0),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": values.NewSequence([]any{
+				"frequency": value.NewSequence([]any{
 					utils.Chord(60, 48), utils.Chord(67, 53), utils.Chord(65, 60), utils.Chord(64, 48), utils.Chord(60, 48), utils.Chord(67, 53), utils.Chord(62, 60), utils.Chord(62, 48),
 					utils.Chord(64, 48), utils.Chord(65, 53), utils.Chord(69, 60), utils.Chord(72, 48),
 				}),
@@ -255,7 +255,7 @@ func main() {
 	}, "prototype1"))
 
 	env.AddMessenger(stepper.NewStepper(
-		swing.New(values.NewConst(40.0), values.NewConst(2.0), values.NewSequence([]*swing.Step{
+		swing.New(value.NewConst(40.0), value.NewConst(2.0), value.NewSequence([]*swing.Step{
 			{}, {}, {}, {},
 		})),
 		[]string{"prototype1"}, "",

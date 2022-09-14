@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/almerlucke/muse/values"
+	"github.com/almerlucke/muse/value"
 )
 
 type Test struct {
@@ -24,9 +24,9 @@ func (t *Test) SetState(s map[string]any) {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	c1 := values.NewConst(&Test{V: 1.2})
+	c1 := value.NewConst(&Test{V: 1.2})
 
-	c2 := values.NewConst(&Test{V: 1.0})
+	c2 := value.NewConst(&Test{V: 1.0})
 
 	b1, err := json.Marshal(c1.GetState())
 	if err != nil {

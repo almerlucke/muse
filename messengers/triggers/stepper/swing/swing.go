@@ -3,7 +3,7 @@ package swing
 import (
 	"math/rand"
 
-	"github.com/almerlucke/muse/values"
+	"github.com/almerlucke/muse/value"
 )
 
 type Step struct {
@@ -28,13 +28,13 @@ func (s *Step) shuffleNote(milliPerNote float64) float64 {
 }
 
 type Swing struct {
-	steps        values.Valuer[*Step]
-	bpm          values.Valuer[float64]
-	noteDivision values.Valuer[float64]
+	steps        value.Valuer[*Step]
+	bpm          value.Valuer[float64]
+	noteDivision value.Valuer[float64]
 	delay        float64
 }
 
-func New(bpm values.Valuer[float64], noteDivision values.Valuer[float64], steps values.Valuer[*Step]) *Swing {
+func New(bpm value.Valuer[float64], noteDivision value.Valuer[float64], steps value.Valuer[*Step]) *Swing {
 	return &Swing{
 		steps:        steps,
 		noteDivision: noteDivision,
