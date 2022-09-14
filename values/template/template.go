@@ -1,4 +1,4 @@
-package prototype
+package template
 
 import (
 	"reflect"
@@ -6,28 +6,19 @@ import (
 	"github.com/almerlucke/muse/values"
 )
 
-// Prototype is a prototype of a map. When Map() is called, a deep copy of the prototype is made with all Valuer values
-// in the prototype replaced with the Value() from that Valuer. In the deep copy all placeholder values are replaced
-// with the matching replacement values. If the value from a Valuer is a slice/array, the prototype is split into multiple
+// Template is a template of a map. When Value() is called, a deep copy of the template is made with all Valuer values
+// in the template replaced with the Value() from that Valuer. In the deep copy all parameter entries are replaced
+// with the matching replacement values. If the value from a Valuer is a slice/array, the output of the template is split into multiple
 // maps based on the longest slice/array value found
-type Prototype map[string]any
+type Template map[string]any
 
-type Placeholder struct {
+type Parameter struct {
 	Name  string
 	Value any
 }
 
-type Replacement struct {
-	Name  string
-	Value any
-}
-
-func NewPlaceholder(name string) *Placeholder {
-	return &Placeholder{Name: name, Value: nil}
-}
-
-func NewReplacement(name string, value any) *Replacement {
-	return &Replacement{Name: name, Value: value}
+func NewParameter(name string, value any) *Parameter {
+	return &Parameter{Name: name, Value: value}
 }
 
 // intermediateValue is created in prototype to check if prototype needs to split if value is an array or slice
@@ -67,33 +58,33 @@ func (iv *intermediateValue) index(i int) any {
 	return iv.reflectValue.Index(i).Interface()
 }
 
-func (p Prototype) intermediate() Prototype {
-	pc := Prototype{}
+func (t Template) intermediate() Template {
+	tc := Template{}
 
-	for k, v := range p {
+	for k, v := range t {
 		switch vt := v.(type) {
-		case Prototype:
-			pc[k] = vt.intermediate()
+		case Template:
+			tc[k] = vt.intermediate()
 		case values.Valuer[any]:
-			pc[k] = newIntermediateValue(vt.Value())
-		case *Placeholder:
-			pc[k] = newIntermediateValue(vt.Value)
-		case Placeholder:
-			pc[k] = newIntermediateValue(vt.Value)
+			tc[k] = newIntermediateValue(vt.Value())
+		case *Parameter:
+			tc[k] = newIntermediateValue(vt.Value)
+		case Parameter:
+			tc[k] = newIntermediateValue(vt.Value)
 		default:
-			pc[k] = v
+			tc[k] = v
 		}
 	}
 
-	return pc
+	return tc
 }
 
-func (p Prototype) length() int {
+func (t Template) length() int {
 	max := 0
 
-	for _, v := range p {
+	for _, v := range t {
 		switch vt := v.(type) {
-		case Prototype:
+		case Template:
 			pmax := vt.length()
 			if pmax > max {
 				max = pmax
@@ -110,12 +101,12 @@ func (p Prototype) length() int {
 	return max
 }
 
-func (p Prototype) mapAtIndex(i int) map[string]any {
+func (t Template) mapAtIndex(i int) map[string]any {
 	m := map[string]any{}
 
-	for k, v := range p {
+	for k, v := range t {
 		switch vt := v.(type) {
-		case Prototype:
+		case Template:
 			m[k] = vt.mapAtIndex(i)
 		case *intermediateValue:
 			m[k] = vt.index(i)
@@ -127,22 +118,26 @@ func (p Prototype) mapAtIndex(i int) map[string]any {
 	return m
 }
 
-func (p Prototype) Replace(replacements []*Replacement) {
-	for _, v := range p {
+func (t Template) SetParameter(name string, value any) {
+	t.SetParameters([]*Parameter{NewParameter(name, value)})
+}
+
+func (t Template) SetParameters(parameters []*Parameter) {
+	for _, v := range t {
 		switch vt := v.(type) {
-		case Prototype:
-			vt.Replace(replacements)
-		case *Placeholder:
-			for _, replacement := range replacements {
-				if vt.Name == replacement.Name {
-					vt.Value = replacement.Value
+		case Template:
+			vt.SetParameters(parameters)
+		case *Parameter:
+			for _, parameter := range parameters {
+				if vt.Name == parameter.Name {
+					vt.Value = parameter.Value
 					break
 				}
 			}
-		case Placeholder:
-			for _, replacement := range replacements {
-				if vt.Name == replacement.Name {
-					vt.Value = replacement.Value
+		case Parameter:
+			for _, parameter := range parameters {
+				if vt.Name == parameter.Name {
+					vt.Value = parameter.Value
 					break
 				}
 			}
@@ -155,35 +150,35 @@ func (p Prototype) Replace(replacements []*Replacement) {
 /*
 	Valuer interface methods
 */
-func (p Prototype) SetState(m map[string]any) {
-	for k, v := range m {
-		switch vt := p[k].(type) {
-		case Prototype:
+func (t Template) SetState(m map[string]any) {
+	for k, v := range t {
+		switch vt := t[k].(type) {
+		case Template:
 			vt.SetState(v.(map[string]any))
 		case values.Valuer[any]:
 			vt.SetState(v.(map[string]any))
-		case *Placeholder:
+		case *Parameter:
 			vt.Value = v
-		case Placeholder:
+		case Parameter:
 			vt.Value = v
 		default:
-			p[k] = v
+			t[k] = v
 		}
 	}
 }
 
-func (p Prototype) GetState() map[string]any {
+func (t Template) GetState() map[string]any {
 	m := map[string]any{}
 
-	for k, v := range p {
+	for k, v := range t {
 		switch vt := v.(type) {
-		case Prototype:
+		case Template:
 			m[k] = vt.GetState()
 		case values.Valuer[any]:
 			m[k] = vt.GetState()
-		case *Placeholder:
+		case *Parameter:
 			m[k] = vt.Value
-		case Placeholder:
+		case Parameter:
 			m[k] = vt.Value
 		default:
 			m[k] = v
@@ -193,8 +188,8 @@ func (p Prototype) GetState() map[string]any {
 	return m
 }
 
-func (p Prototype) Value() []map[string]any {
-	intermediate := p.intermediate()
+func (t Template) Value() []map[string]any {
+	intermediate := t.intermediate()
 	length := intermediate.length()
 	maps := make([]map[string]any, length)
 
@@ -205,14 +200,14 @@ func (p Prototype) Value() []map[string]any {
 	return maps
 }
 
-func (p Prototype) Continuous() bool {
+func (t Template) Continuous() bool {
 	return true
 }
 
-func (p Prototype) Reset() {
-	for _, v := range p {
+func (t Template) Reset() {
+	for _, v := range t {
 		switch vt := v.(type) {
-		case Prototype:
+		case Template:
 			vt.Reset()
 		case values.Valuer[any]:
 			vt.Reset()
@@ -222,6 +217,6 @@ func (p Prototype) Reset() {
 	}
 }
 
-func (p Prototype) Finished() bool {
+func (t Template) Finished() bool {
 	return false
 }

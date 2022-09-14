@@ -3,6 +3,7 @@ package banger
 import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/values"
+	"github.com/almerlucke/muse/values/template"
 )
 
 func IsBang(msg any) bool {
@@ -57,4 +58,33 @@ func (vb *ValueBang) Bang() []*muse.Message {
 	}
 
 	return msgs
+}
+
+type templateDestination struct {
+	addresses []string
+	template  template.Template
+}
+
+func newTemplateDestination(addresses []string, template template.Template) *templateDestination {
+	return &templateDestination{
+		addresses: addresses,
+		template:  template,
+	}
+}
+
+func NewTemplateGenerator(addresses []string, template template.Template, identifier string) *Generator {
+	return NewGenerator(newTemplateDestination(addresses, template), identifier)
+}
+
+func (d *templateDestination) Bang() []*muse.Message {
+	allMessages := []*muse.Message{}
+	protoMessages := d.template.Value()
+
+	for _, address := range d.addresses {
+		for _, message := range protoMessages {
+			allMessages = append(allMessages, muse.NewMessage(address, message))
+		}
+	}
+
+	return allMessages
 }

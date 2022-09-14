@@ -6,14 +6,14 @@ import (
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/io"
-	"github.com/almerlucke/muse/messengers/banger/prototype"
+	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/mkb218/gosndfile/sndfile"
 
 	"github.com/almerlucke/muse/modules/player"
 	"github.com/almerlucke/muse/values"
-	proto "github.com/almerlucke/muse/values/prototype"
+	"github.com/almerlucke/muse/values/template"
 )
 
 type DrumKit struct {
@@ -28,7 +28,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 
 	env.AddMessenger(stepper.NewStepper(swing.New(values.NewConst(tempo), values.NewConst(division), steps), []string{identifier}, ""))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, proto.Prototype{
+	env.AddMessenger(banger.NewTemplateGenerator([]string{moduleName}, template.Template{
 		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 	}, identifier))
 

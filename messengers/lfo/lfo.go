@@ -3,32 +3,28 @@ package lfo
 import (
 	"github.com/almerlucke/muse"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
-	"github.com/almerlucke/muse/values/prototype"
+	"github.com/almerlucke/muse/values/template"
 )
 
 type Target struct {
-	Address     string
-	Shaper      shaping.Shaper
-	Placeholder string
-	Proto       prototype.Prototype
+	Address   string
+	Shaper    shaping.Shaper
+	Parameter string
+	Template  template.Template
 }
 
-func NewTarget(address string, shaper shaping.Shaper, placeholder string, proto prototype.Prototype) *Target {
-	return &Target{Address: address, Shaper: shaper, Placeholder: placeholder, Proto: proto}
-}
-
-func (t *Target) replacements(value float64) []*prototype.Replacement {
-	if t.Shaper == nil {
-		return []*prototype.Replacement{prototype.NewReplacement(t.Placeholder, value)}
-	}
-
-	return []*prototype.Replacement{prototype.NewReplacement(t.Placeholder, t.Shaper.Shape(value))}
+func NewTarget(address string, shaper shaping.Shaper, parameter string, template template.Template) *Target {
+	return &Target{Address: address, Shaper: shaper, Parameter: parameter, Template: template}
 }
 
 func (t *Target) Messages(value float64) []*muse.Message {
-	t.Proto.Replace(t.replacements(value))
+	if t.Shaper == nil {
+		t.Template.SetParameter(t.Parameter, value)
+	} else {
+		t.Template.SetParameter(t.Parameter, t.Shaper.Shape(value))
+	}
 
-	raw := t.Proto.Value()
+	raw := t.Template.Value()
 	msgs := make([]*muse.Message, len(raw))
 
 	for i, msg := range raw {

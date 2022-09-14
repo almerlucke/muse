@@ -20,7 +20,7 @@ import (
 	museTheme "github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils"
 
-	proto "github.com/almerlucke/muse/values/prototype"
+	"github.com/almerlucke/muse/values/template"
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
@@ -134,14 +134,14 @@ func main() {
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
-	targetSuperSaw := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.15, 0.1)), "superSawM1", proto.Prototype{
+	targetSuperSaw := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.15, 0.1)), "superSawM1", template.Template{
 		"command":    "voice",
-		"superSawM1": proto.NewPlaceholder("superSawM1"),
+		"superSawM1": template.NewParameter("superSawM1", nil),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(6000.0, 800.0)), "frequency", proto.Prototype{
+	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(6000.0, 800.0)), "frequency", template.Template{
 		"command":         "voice",
-		"filterFrequency": proto.NewPlaceholder("frequency"),
+		"filterFrequency": template.NewParameter("frequency", nil),
 	})
 
 	env.AddMessenger(lfo.NewLFO(0.23, []*lfo.Target{targetSuperSaw}, env.Config, "lfo1"))

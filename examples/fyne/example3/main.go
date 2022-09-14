@@ -17,7 +17,7 @@ import (
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/io"
-	"github.com/almerlucke/muse/messengers/banger/prototype"
+	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
@@ -26,7 +26,7 @@ import (
 	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/values"
 
-	proto "github.com/almerlucke/muse/values/prototype"
+	"github.com/almerlucke/muse/values/template"
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
@@ -165,7 +165,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 
 	env.AddMessenger(stepper.NewStepper(swing.New(values.NewConst(tempo), values.NewConst(division), steps), []string{identifier}, ""))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{moduleName}, proto.Prototype{
+	env.AddMessenger(banger.NewTemplateGenerator([]string{moduleName}, template.Template{
 		"speed": values.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 	}, identifier))
 
@@ -224,25 +224,25 @@ func main() {
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
-	targetShaper := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.8, 0.1)), "shaper", proto.Prototype{
+	targetShaper := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.8, 0.1)), "shaper", template.Template{
 		"command": "voice",
-		"shaper":  proto.NewPlaceholder("shaper"),
+		"shaper":  template.NewParameter("shaper", nil),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.4, 0.1)), "adsrDecayLevel", proto.Prototype{
+	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.4, 0.1)), "adsrDecayLevel", template.Template{
 		"command":        "voice",
-		"adsrDecayLevel": proto.NewPlaceholder("adsrDecayLevel"),
+		"adsrDecayLevel": template.NewParameter("adsrDecayLevel", nil),
 	})
 
 	env.AddMessenger(lfo.NewLFO(0.05, []*lfo.Target{targetShaper}, env.Config, "lfo1"))
 	env.AddMessenger(lfo.NewLFO(0.1, []*lfo.Target{targetFilter}, env.Config, "lfo2"))
 
-	env.AddMessenger(prototype.NewPrototypeGenerator([]string{"polyphony"}, proto.Prototype{
+	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
 		"duration":  values.NewSequence([]any{Nums{125.0, 300.0}, Nums{125.0, 400.0}, Nums{125.0, 500.0}, Nums{250.0, 300.0}, Nums{250.0, 400.0}}),
 		"amplitude": values.NewConst[any](1.0),
-		"message": proto.Prototype{
-			"osc": proto.Prototype{
+		"message": template.Template{
+			"osc": template.Template{
 				"frequency": values.NewSequence([]any{
 					utils.Chord(60, 48), utils.Chord(67, 53), utils.Chord(65, 60), utils.Chord(64, 48), utils.Chord(60, 48), utils.Chord(67, 53), utils.Chord(62, 60), utils.Chord(62, 48),
 					utils.Chord(64, 48), utils.Chord(65, 53), utils.Chord(69, 60), utils.Chord(72, 48),
