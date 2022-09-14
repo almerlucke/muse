@@ -16,16 +16,18 @@ import (
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
+	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
+
 	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
-	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
-	museTheme "github.com/almerlucke/muse/ui/theme"
+
+	"github.com/almerlucke/muse/ui/theme"
+
 	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/values"
-
 	"github.com/almerlucke/muse/values/template"
 
 	"github.com/almerlucke/muse/modules/adsr"
@@ -282,7 +284,7 @@ func main() {
 
 	// Theme
 
-	appTheme := &museTheme.Theme{}
+	appTheme := &theme.Theme{}
 
 	// theme.LightTheme() appTheme
 

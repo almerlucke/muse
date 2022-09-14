@@ -23,7 +23,7 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/ui"
 	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
-	museTheme "github.com/almerlucke/muse/ui/theme"
+	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/values"
 
@@ -346,7 +346,7 @@ func main() {
 
 	// Theme
 
-	appTheme := &museTheme.Theme{}
+	appTheme := &theme.Theme{}
 
 	// theme.LightTheme() appTheme
 
