@@ -101,21 +101,24 @@ func main() {
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 
-	voices := []polyphony.Voice{}
+	voices1 := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
-		voice := NewTestVoice(env.Config, ampEnvControl)
-		voices = append(voices, voice)
+		var voice polyphony.Voice
+
+		voice = NewTestVoice(env.Config, ampEnvControl)
+
+		voices1 = append(voices1, voice)
 	}
 
 	bpm := 100.0
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
+	poly1 := env.AddModule(polyphony.NewPolyphony(1, voices1, env.Config, "polyphony1"))
 
 	octave := notes.O4
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony1"}, template.Template{
 		"command":   "trigger",
 		"duration":  value.NewSequence([]any{375.0}),
 		"amplitude": value.NewConst[any](0.5),
@@ -123,45 +126,62 @@ func main() {
 			"osc": template.Template{
 				"frequency": value.NewAnd(
 					[]value.Valuer[any]{
-						value.NewRepeat[any](arpeggio.NewArpeggiatorNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 2),
-						value.NewRepeat[any](arpeggio.NewArpeggiatorNC(notes.DMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.Inclusive, false), 2, 2),
-						value.NewRepeat[any](arpeggio.NewArpeggiatorNC(notes.CMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, false), 1, 1),
-						value.NewRepeat[any](arpeggio.NewArpeggiatorNC(notes.GMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, true), 2, 2),
-						value.NewRepeat[any](arpeggio.NewArpeggiatorNC(notes.AMinor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 1),
-						value.NewRepeat[any](arpeggio.NewArpeggiatorNC(notes.DMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-						value.NewRepeat[any](arpeggio.NewArpeggiatorNC(notes.GMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.Exclusive, false), 1, 1),
-						value.NewRepeat[any](arpeggio.NewArpeggiatorNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, true), 2, 2),
-
-						// // Row 1
-						// notes.GMajor.Freq(octave), notes.DMajor.Freq(octave), notes.CMajor.Freq(octave), notes.GMajor.Freq(octave),
-						// notes.AMinor.Freq(octave), notes.DMajor7.Freq(octave), notes.GMajor.Freq(octave), notes.DMajor.Freq(octave),
-						// // Row 2
-						// notes.GMajor.Freq(octave), notes.AMajor7.Freq(octave), notes.DMajor.Freq(octave), notes.EMinor.Freq(octave),
-						// notes.AMajor7.Freq(octave), notes.DMajor.Freq(octave),
-						// // Row 3
-						// notes.GMajor.Freq(octave), notes.DMajor.Freq(octave), notes.CMajor.Freq(octave), notes.GMajor.Freq(octave),
-						// notes.AMinor.Freq(octave), notes.DMajor7.Freq(octave), notes.GMajor.Freq(octave), notes.DMajor.Freq(octave),
-						// // Row 4
-						// notes.GMajor.Freq(octave), notes.AMajor7.Freq(octave), notes.DMajor.Freq(octave), notes.BMinor.Freq(octave),
-						// notes.AMinor.Freq(octave), notes.DMajor7.Freq(octave), notes.GMajor.Freq(octave),
-						// // Row 5
-						// notes.CMajor.Freq(octave), notes.DMajor7.Freq(octave), notes.GMajor.Freq(octave), notes.EMinor.Freq(octave),
-						// notes.CMajor.Freq(octave), notes.DMajor7.Freq(octave), notes.GMajor.Freq(octave),
+						// Row 1
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, false), 1, 1),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, true), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMinor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 1),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 1, 1),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, true), 2, 2),
+						// Row 2
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMajor7.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Exclusive, true), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.EMinor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 2, 2),
+						// Row 3
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, false), 1, 1),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, true), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMinor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 1),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 1, 1),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, true), 2, 2),
+						// Row 4
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMajor7.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Exclusive, true), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.BMinor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMinor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 2),
+						// Row 5
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, false), 1, 1),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.EMinor.FreqAny(octave), arpeggio.Converge, arpeggio.None, true), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 1),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
+						value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 1, 1),
 					}, true),
 			},
 		},
-	}, "template"))
+	}, "template1"))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(value.NewConst(bpm), value.NewConst(2.0), value.NewSequence(
 			[]*swing.Step{
-				{},
+				{}, {}, {}, {}, {}, {}, {}, {Shuffle: 0.1}, {}, {}, {}, {}, {}, {}, {}, {Shuffle: 0.1, ShuffleRand: 0.05},
 			},
 		)),
-		[]string{"template"}, "",
+		[]string{"template1"}, "",
 	))
 
-	muse.Connect(poly, 0, env, 0)
+	muse.Connect(poly1, 0, env, 0)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()

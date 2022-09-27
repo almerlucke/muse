@@ -33,13 +33,15 @@ type Moog struct {
 }
 
 func NewMoog(fc float64, res float64, drive float64, config *muse.Configuration, identifier string) *Moog {
-
-	return &Moog{
+	m := &Moog{
 		BaseModule: muse.NewBaseModule(4, 1, config, identifier),
-		fc:         fc,
-		res:        res * 4.0,
-		drive:      drive,
 	}
+
+	m.SetDrive(drive)
+	m.SetResonance(res)
+	m.SetFrequency(fc)
+
+	return m
 }
 
 func (m *Moog) SetResonance(res float64) {

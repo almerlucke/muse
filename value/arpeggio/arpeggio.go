@@ -19,7 +19,7 @@ const (
 	Inclusive
 )
 
-type Arpeggiator[T any] struct {
+type Arpeggio[T any] struct {
 	Sequence   []T
 	Mode       Mode
 	MirrorMode MirrorMode
@@ -29,8 +29,8 @@ type Arpeggiator[T any] struct {
 	continuous bool
 }
 
-func NewArpeggiator[T any](sequence []T, mode Mode, mirrorMode MirrorMode, reverse bool) *Arpeggiator[T] {
-	a := &Arpeggiator[T]{
+func NewArpeggio[T any](sequence []T, mode Mode, mirrorMode MirrorMode, reverse bool) *Arpeggio[T] {
+	a := &Arpeggio[T]{
 		Sequence:   sequence,
 		Mode:       mode,
 		MirrorMode: mirrorMode,
@@ -43,8 +43,8 @@ func NewArpeggiator[T any](sequence []T, mode Mode, mirrorMode MirrorMode, rever
 	return a
 }
 
-func NewArpeggiatorNC[T any](sequence []T, mode Mode, mirrorMode MirrorMode, reverse bool) *Arpeggiator[T] {
-	a := &Arpeggiator[T]{
+func NewArpeggioNC[T any](sequence []T, mode Mode, mirrorMode MirrorMode, reverse bool) *Arpeggio[T] {
+	a := &Arpeggio[T]{
 		Sequence:   sequence,
 		Mode:       mode,
 		MirrorMode: mirrorMode,
@@ -57,7 +57,7 @@ func NewArpeggiatorNC[T any](sequence []T, mode Mode, mirrorMode MirrorMode, rev
 	return a
 }
 
-func (a *Arpeggiator[T]) Value() T {
+func (a *Arpeggio[T]) Value() T {
 	var v T
 
 	if a.index < len(a.pattern) {
@@ -76,20 +76,20 @@ func (a *Arpeggiator[T]) Value() T {
 	return v
 }
 
-func (a *Arpeggiator[T]) Continuous() bool {
+func (a *Arpeggio[T]) Continuous() bool {
 	return a.continuous
 }
 
-func (a *Arpeggiator[T]) Reset() {
+func (a *Arpeggio[T]) Reset() {
 	a.index = 0
 	a.generatePattern()
 }
 
-func (a *Arpeggiator[T]) Finished() bool {
+func (a *Arpeggio[T]) Finished() bool {
 	return !a.continuous && a.index == len(a.pattern)
 }
 
-func (a *Arpeggiator[T]) GetState() map[string]any {
+func (a *Arpeggio[T]) GetState() map[string]any {
 	return map[string]any{
 		"pattern":    a.pattern,
 		"sequence":   a.Sequence,
@@ -101,7 +101,7 @@ func (a *Arpeggiator[T]) GetState() map[string]any {
 	}
 }
 
-func (a *Arpeggiator[T]) SetState(state map[string]any) {
+func (a *Arpeggio[T]) SetState(state map[string]any) {
 	a.pattern = state["pattern"].([]int)
 	a.Sequence = state["sequence"].([]T)
 	a.index = state["index"].(int)
@@ -110,7 +110,7 @@ func (a *Arpeggiator[T]) SetState(state map[string]any) {
 	a.MirrorMode = MirrorMode(state["mirrorMode"].(int))
 }
 
-func (a *Arpeggiator[T]) generatePattern() {
+func (a *Arpeggio[T]) generatePattern() {
 	n := len(a.Sequence)
 	pattern := []int{}
 

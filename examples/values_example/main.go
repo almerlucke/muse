@@ -25,8 +25,8 @@ const (
 )
 
 func main() {
-	mode := Random
-	mirrorMode := None
+	mode := Alternate
+	mirrorMode := Exclusive
 	reverse := false
 	sequence := []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}
 
