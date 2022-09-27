@@ -26,9 +26,10 @@ import (
 
 	"github.com/almerlucke/muse/ui/theme"
 
-	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/template"
+
+	"github.com/almerlucke/muse/utils/notes"
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
@@ -246,19 +247,20 @@ func main() {
 		"message": template.Template{
 			"osc": template.Template{
 				"frequency": value.NewSequence([]any{
-					utils.Chord(60, 48), utils.Chord(67, 53), utils.Chord(65, 60), utils.Chord(64, 48), utils.Chord(60, 48), utils.Chord(67, 53), utils.Chord(62, 60), utils.Chord(62, 48),
-					utils.Chord(64, 48), utils.Chord(65, 53), utils.Chord(69, 60), utils.Chord(72, 48),
+					notes.Mtofs(60, 48), notes.Mtofs(67, 53), notes.Mtofs(65, 60), notes.Mtofs(64, 48), notes.Mtofs(60, 48),
+					notes.Mtofs(67, 53), notes.Mtofs(62, 60), notes.Mtofs(62, 48), notes.Mtofs(64, 48), notes.Mtofs(65, 53),
+					notes.Mtofs(69, 60), notes.Mtofs(72, 48),
 				}),
 				"phase": 0.0,
 			},
 		},
-	}, "prototype1"))
+	}, "template1"))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(value.NewConst(40.0), value.NewConst(2.0), value.NewSequence([]*swing.Step{
 			{}, {}, {}, {},
 		})),
-		[]string{"prototype1"}, "",
+		[]string{"template1"}, "",
 	))
 
 	muse.Connect(kickPlayer, 0, mult, 0)
@@ -282,13 +284,7 @@ func main() {
 
 	a := app.New()
 
-	// Theme
-
-	appTheme := &theme.Theme{}
-
-	// theme.LightTheme() appTheme
-
-	a.Settings().SetTheme(appTheme)
+	a.Settings().SetTheme(&theme.Theme{})
 
 	w := a.NewWindow("Muse")
 

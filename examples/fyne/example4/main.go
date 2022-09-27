@@ -24,10 +24,11 @@ import (
 	"github.com/almerlucke/muse/ui"
 	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
 	"github.com/almerlucke/muse/ui/theme"
-	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/value"
 
 	"github.com/almerlucke/muse/value/template"
+
+	"github.com/almerlucke/muse/utils/notes"
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
@@ -231,14 +232,14 @@ func main() {
 		"message": template.Template{
 			"osc": template.Template{
 				"frequency": value.NewTransform[any](value.NewSequence([]any{
-					utils.Mtof(60), utils.Mtof(67), utils.Mtof(62), utils.Mtof(69), utils.Mtof(64), utils.Mtof(71),
-					utils.Mtof(66), utils.Mtof(61), utils.Mtof(68), utils.Mtof(63), utils.Mtof(70), utils.Mtof(65),
+					notes.Mtof(60), notes.Mtof(67), notes.Mtof(62), notes.Mtof(69), notes.Mtof(64), notes.Mtof(71),
+					notes.Mtof(66), notes.Mtof(61), notes.Mtof(68), notes.Mtof(63), notes.Mtof(70), notes.Mtof(65),
 				}),
 					value.TFunc[any](func(v any) any { return v.(float64) / 2.0 })),
 				"phase": 0.0,
 			},
 		},
-	}, "prototype1"))
+	}, "template1"))
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
@@ -247,28 +248,28 @@ func main() {
 		"message": template.Template{
 			"osc": template.Template{
 				"frequency": value.NewTransform[any](value.NewSequence([]any{
-					utils.Mtof(67), utils.Mtof(62), utils.Mtof(69), utils.Mtof(64), utils.Mtof(71), utils.Mtof(66),
-					utils.Mtof(61), utils.Mtof(68), utils.Mtof(63), utils.Mtof(70), utils.Mtof(65), utils.Mtof(72),
+					notes.Mtof(67), notes.Mtof(62), notes.Mtof(69), notes.Mtof(64), notes.Mtof(71), notes.Mtof(66),
+					notes.Mtof(61), notes.Mtof(68), notes.Mtof(63), notes.Mtof(70), notes.Mtof(65), notes.Mtof(72),
 				}),
 					value.TFunc[any](func(v any) any { return v.(float64) / 4.0 })),
 				"phase": 0.375,
 			},
 		},
-	}, "prototype2"))
+	}, "template2"))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(value.NewConst(bpm), value.NewConst(4.0), value.NewSequence(
 			[]*swing.Step{{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {}, {Skip: true}, {Shuffle: 0.2, ShuffleRand: 0.1}, {SkipFactor: 0.3},
 				{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Shuffle: 0.2}, {SkipFactor: 0.3}, {SkipFactor: 0.3}},
 		)),
-		[]string{"prototype1"}, "",
+		[]string{"template1"}, "",
 	))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(value.NewConst(bpm), value.NewConst(2.0), value.NewSequence(
 			[]*swing.Step{{Skip: true}, {}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {}, {Shuffle: 0.2, ShuffleRand: 0.1}, {SkipFactor: 0.3}},
 		)),
-		[]string{"prototype2"}, "",
+		[]string{"template2"}, "",
 	))
 
 	hihatSound, _ := io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
@@ -344,13 +345,7 @@ func main() {
 
 	a := app.New()
 
-	// Theme
-
-	appTheme := &theme.Theme{}
-
-	// theme.LightTheme() appTheme
-
-	a.Settings().SetTheme(appTheme)
+	a.Settings().SetTheme(&theme.Theme{})
 
 	w := a.NewWindow("Muse")
 

@@ -17,8 +17,8 @@ import (
 	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/lfo"
 	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
-	museTheme "github.com/almerlucke/muse/ui/theme"
-	"github.com/almerlucke/muse/utils"
+	"github.com/almerlucke/muse/ui/theme"
+	"github.com/almerlucke/muse/utils/notes"
 
 	"github.com/almerlucke/muse/value/template"
 
@@ -163,13 +163,7 @@ func main() {
 
 	a := app.New()
 
-	// Theme
-
-	appTheme := &museTheme.Theme{}
-
-	// theme.LightTheme() appTheme
-
-	a.Settings().SetTheme(appTheme)
+	a.Settings().SetTheme(&theme.Theme{})
 
 	w := a.NewWindow("Muse")
 
@@ -182,56 +176,56 @@ func main() {
 
 	baseNote := 36
 
-	keyMap["`"] = utils.Mtof(baseNote + 0)
-	keyMap["Z"] = utils.Mtof(baseNote + 1)
-	keyMap["X"] = utils.Mtof(baseNote + 2)
-	keyMap["C"] = utils.Mtof(baseNote + 3)
-	keyMap["V"] = utils.Mtof(baseNote + 4)
-	keyMap["B"] = utils.Mtof(baseNote + 5)
-	keyMap["N"] = utils.Mtof(baseNote + 6)
-	keyMap["M"] = utils.Mtof(baseNote + 7)
-	keyMap[","] = utils.Mtof(baseNote + 8)
-	keyMap["."] = utils.Mtof(baseNote + 9)
-	keyMap["/"] = utils.Mtof(baseNote + 10)
+	keyMap["`"] = notes.Mtof(baseNote + 0)
+	keyMap["Z"] = notes.Mtof(baseNote + 1)
+	keyMap["X"] = notes.Mtof(baseNote + 2)
+	keyMap["C"] = notes.Mtof(baseNote + 3)
+	keyMap["V"] = notes.Mtof(baseNote + 4)
+	keyMap["B"] = notes.Mtof(baseNote + 5)
+	keyMap["N"] = notes.Mtof(baseNote + 6)
+	keyMap["M"] = notes.Mtof(baseNote + 7)
+	keyMap[","] = notes.Mtof(baseNote + 8)
+	keyMap["."] = notes.Mtof(baseNote + 9)
+	keyMap["/"] = notes.Mtof(baseNote + 10)
 
-	keyMap["A"] = utils.Mtof(baseNote + 11)
-	keyMap["S"] = utils.Mtof(baseNote + 12)
-	keyMap["D"] = utils.Mtof(baseNote + 13)
-	keyMap["F"] = utils.Mtof(baseNote + 14)
-	keyMap["G"] = utils.Mtof(baseNote + 15)
-	keyMap["H"] = utils.Mtof(baseNote + 16)
-	keyMap["J"] = utils.Mtof(baseNote + 17)
-	keyMap["K"] = utils.Mtof(baseNote + 18)
-	keyMap["L"] = utils.Mtof(baseNote + 19)
-	keyMap[";"] = utils.Mtof(baseNote + 20)
-	keyMap["'"] = utils.Mtof(baseNote + 21)
-	keyMap["\\"] = utils.Mtof(baseNote + 22)
+	keyMap["A"] = notes.Mtof(baseNote + 11)
+	keyMap["S"] = notes.Mtof(baseNote + 12)
+	keyMap["D"] = notes.Mtof(baseNote + 13)
+	keyMap["F"] = notes.Mtof(baseNote + 14)
+	keyMap["G"] = notes.Mtof(baseNote + 15)
+	keyMap["H"] = notes.Mtof(baseNote + 16)
+	keyMap["J"] = notes.Mtof(baseNote + 17)
+	keyMap["K"] = notes.Mtof(baseNote + 18)
+	keyMap["L"] = notes.Mtof(baseNote + 19)
+	keyMap[";"] = notes.Mtof(baseNote + 20)
+	keyMap["'"] = notes.Mtof(baseNote + 21)
+	keyMap["\\"] = notes.Mtof(baseNote + 22)
 
-	keyMap["Q"] = utils.Mtof(baseNote + 23)
-	keyMap["W"] = utils.Mtof(baseNote + 24)
-	keyMap["E"] = utils.Mtof(baseNote + 25)
-	keyMap["R"] = utils.Mtof(baseNote + 26)
-	keyMap["T"] = utils.Mtof(baseNote + 27)
-	keyMap["Y"] = utils.Mtof(baseNote + 28)
-	keyMap["U"] = utils.Mtof(baseNote + 29)
-	keyMap["I"] = utils.Mtof(baseNote + 30)
-	keyMap["O"] = utils.Mtof(baseNote + 31)
-	keyMap["P"] = utils.Mtof(baseNote + 32)
-	keyMap["["] = utils.Mtof(baseNote + 33)
-	keyMap["]"] = utils.Mtof(baseNote + 34)
+	keyMap["Q"] = notes.Mtof(baseNote + 23)
+	keyMap["W"] = notes.Mtof(baseNote + 24)
+	keyMap["E"] = notes.Mtof(baseNote + 25)
+	keyMap["R"] = notes.Mtof(baseNote + 26)
+	keyMap["T"] = notes.Mtof(baseNote + 27)
+	keyMap["Y"] = notes.Mtof(baseNote + 28)
+	keyMap["U"] = notes.Mtof(baseNote + 29)
+	keyMap["I"] = notes.Mtof(baseNote + 30)
+	keyMap["O"] = notes.Mtof(baseNote + 31)
+	keyMap["P"] = notes.Mtof(baseNote + 32)
+	keyMap["["] = notes.Mtof(baseNote + 33)
+	keyMap["]"] = notes.Mtof(baseNote + 34)
 
-	keyMap["1"] = utils.Mtof(baseNote + 35)
-	keyMap["2"] = utils.Mtof(baseNote + 36)
-	keyMap["3"] = utils.Mtof(baseNote + 37)
-	keyMap["4"] = utils.Mtof(baseNote + 38)
-	keyMap["5"] = utils.Mtof(baseNote + 39)
-	keyMap["6"] = utils.Mtof(baseNote + 40)
-	keyMap["7"] = utils.Mtof(baseNote + 41)
-	keyMap["8"] = utils.Mtof(baseNote + 42)
-	keyMap["9"] = utils.Mtof(baseNote + 43)
-	keyMap["0"] = utils.Mtof(baseNote + 44)
-	keyMap["-"] = utils.Mtof(baseNote + 45)
-	keyMap["="] = utils.Mtof(baseNote + 46)
+	keyMap["1"] = notes.Mtof(baseNote + 35)
+	keyMap["2"] = notes.Mtof(baseNote + 36)
+	keyMap["3"] = notes.Mtof(baseNote + 37)
+	keyMap["4"] = notes.Mtof(baseNote + 38)
+	keyMap["5"] = notes.Mtof(baseNote + 39)
+	keyMap["6"] = notes.Mtof(baseNote + 40)
+	keyMap["7"] = notes.Mtof(baseNote + 41)
+	keyMap["8"] = notes.Mtof(baseNote + 42)
+	keyMap["9"] = notes.Mtof(baseNote + 43)
+	keyMap["0"] = notes.Mtof(baseNote + 44)
+	keyMap["-"] = notes.Mtof(baseNote + 45)
+	keyMap["="] = notes.Mtof(baseNote + 46)
 
 	if deskCanvas, ok := w.Canvas().(desktop.Canvas); ok {
 		deskCanvas.SetOnKeyDown(func(k *fyne.KeyEvent) {

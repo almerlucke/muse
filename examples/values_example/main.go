@@ -1,74 +1,80 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"math/rand"
-	"time"
-
-	"github.com/almerlucke/muse/value"
 )
 
-type Test struct {
-	V float64 `json:"v"`
-}
+// "github.com/almerlucke/muse/value"
 
-func (t *Test) GetState() map[string]any {
-	return map[string]any{"v": t.V}
-}
+type Mode int
 
-func (t *Test) SetState(s map[string]any) {
-	t.V = s["v"].(float64)
-}
+type MirrorMode int
+
+const (
+	Up Mode = iota
+	Converge
+	Alternate
+	Random
+)
+
+const (
+	None MirrorMode = iota
+	Exclusive
+	Inclusive
+)
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
+	mode := Random
+	mirrorMode := None
+	reverse := false
+	sequence := []float64{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}
 
-	c1 := value.NewConst(&Test{V: 1.2})
+	n := len(sequence)
+	pattern := []int{}
 
-	c2 := value.NewConst(&Test{V: 1.0})
-
-	b1, err := json.Marshal(c1.GetState())
-	if err != nil {
-		log.Printf("marshal err %v", err)
+	switch mode {
+	case Random:
+		for i := 0; i < n; i++ {
+			pattern = append(pattern, i)
+		}
+		rand.Shuffle(len(pattern), func(i, j int) { pattern[i], pattern[j] = pattern[j], pattern[i] })
+	case Up:
+		for i := 0; i < n; i++ {
+			pattern = append(pattern, i)
+		}
+	case Converge:
+		for i := 0; i < n/2; i++ {
+			pattern = append(pattern, i, n-1-i)
+		}
+		if n%2 == 1 {
+			pattern = append(pattern, n/2)
+		}
+	case Alternate:
+		for i := 1; i < n; i++ {
+			pattern = append(pattern, 0, i)
+		}
 	}
 
-	log.Printf("b1 done")
+	n = len(pattern)
 
-	var jsonState map[string]any
-
-	err = json.Unmarshal(b1, &jsonState)
-	if err != nil {
-		log.Printf("unmarshal err %v", err)
+	if mirrorMode == Exclusive {
+		for i := n - 2; i >= 1; i-- {
+			pattern = append(pattern, pattern[i])
+		}
+	} else if mirrorMode == Inclusive {
+		for i := n - 1; i >= 0; i-- {
+			pattern = append(pattern, pattern[i])
+		}
 	}
 
-	log.Printf("unmarshal done %v", jsonState)
+	n = len(pattern)
 
-	c2.SetState(jsonState)
+	if reverse {
+		for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
+			pattern[i], pattern[j] = pattern[j], pattern[i]
+		}
+	}
 
-	log.Printf("state %v", c2.GetState())
-
-	// p := values.MapPrototype{
-	// 	"duration":  values.NewSequence([]any{250.0, 500.0, 125.0, 250.0, 250.0, 750.0, 500.0, 375.0, 250.0, 250.0}, true),
-	// 	"amplitude": values.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7, 1.0}, true),
-	// 	"message": values.MapPrototype{
-	// 		"osc": values.MapPrototype{
-	// 			"frequency": values.NewSequence([]any{400.0, 500.0, 600.0, 100.0, 50.0, 50.0, 100.0, 250.0, 750.0}, true),
-	// 			"phase":     values.NewConst[any](0.0),
-	// 		},
-	// 	},
-	// }
-
-	// m := p.Map()
-	// log.Printf("d: %v", m.F("duration"))
-	// log.Printf("f: %v", m.M("message").M("osc").F("frequency"))
-	// log.Printf("p: %v", m.M("message").M("osc").F("phase"))
-	// m = p.Map()
-	// log.Printf("d: %v", m.F("duration"))
-	// log.Printf("f: %v", m.M("message").M("osc").F("frequency"))
-	// log.Printf("p: %v", m.M("message").M("osc").F("phase"))
-	// m = p.Map()
-	// log.Printf("d: %v", m.F("duration"))
-	// log.Printf("f: %v", m.M("message").M("osc").F("frequency"))
-	// log.Printf("p: %v", m.M("message").M("osc").F("phase"))
+	log.Printf("pattern: %v", pattern)
 }
