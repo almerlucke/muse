@@ -27,11 +27,11 @@ const (
 
 type Chorus struct {
 	muse.BaseModule
-	modShaper   waveshaping.Shaper
 	delayLine   *delay.Delay
-	mods        [4]*phasor.Phasor
 	delayCenter float64
 	delayRange  float64
+	modShaper   waveshaping.Shaper
+	mods        [4]*phasor.Phasor
 	modDepth    float64
 	modSpeed    float64
 	mix         float64
@@ -45,10 +45,10 @@ func NewChorus(stereo bool, delayCenter float64, delayRange float64, modDepth fl
 
 	c := &Chorus{
 		BaseModule:  *muse.NewBaseModule(4, numOutputs, config, identifier),
-		modShaper:   modShaper,
 		delayLine:   delay.NewDelay(int((delayCenter + delayRange*0.5 + 1) * config.SampleRate * 0.001)),
 		delayCenter: delayCenter,
 		delayRange:  delayRange,
+		modShaper:   modShaper,
 		modDepth:    modDepth,
 		modSpeed:    modSpeed,
 		mix:         mix,
@@ -66,6 +66,28 @@ func NewChorus(stereo bool, delayCenter float64, delayRange float64, modDepth fl
 	}
 
 	return c
+}
+
+func (c *Chorus) ReceiveMessage(msg any) []*muse.Message {
+	m := msg.(map[string]any)
+
+	if modDepth, ok := m["modDepth"].(float64); ok {
+		c.modDepth = modDepth
+	}
+
+	if modSpeed, ok := m["modSpeed"].(float64); ok {
+		c.modSpeed = modSpeed
+		c.mods[0].SetFrequency(c.modSpeed, c.Config.SampleRate)
+		c.mods[1].SetFrequency(c.modSpeed/mod2SpeedDiv, c.Config.SampleRate)
+		c.mods[2].SetFrequency(c.modSpeed/mod3SpeedDiv, c.Config.SampleRate)
+		c.mods[3].SetFrequency(c.modSpeed/mod4SpeedDiv, c.Config.SampleRate)
+	}
+
+	if mix, ok := m["mix"].(float64); ok {
+		c.mix = mix
+	}
+
+	return nil
 }
 
 func (c *Chorus) Synthesize() bool {
@@ -88,7 +110,6 @@ func (c *Chorus) Synthesize() bool {
 	modRange := c.modDepth * c.delayRange * 0.5
 
 	for i := 0; i < c.Config.BufferSize; i++ {
-
 		if c.Inputs[1].IsConnected() {
 			c.modDepth = c.Inputs[1].Buffer[i]
 			modRange = c.modDepth * c.delayRange * 0.5
