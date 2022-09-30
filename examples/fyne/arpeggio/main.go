@@ -15,6 +15,7 @@ import (
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
+	"github.com/almerlucke/muse/components/waveshaping"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -29,6 +30,7 @@ import (
 	"github.com/almerlucke/muse/utils/notes"
 
 	"github.com/almerlucke/muse/modules/adsr"
+	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
@@ -115,13 +117,14 @@ func main() {
 	// milliPerBeat := 60000.0 / bpm
 
 	poly1 := env.AddModule(polyphony.NewPolyphony(1, voices1, env.Config, "polyphony1"))
+	chor := env.AddModule(chorus.NewChorus(waveshaping.NewSineTable(512), 0.5, 0.12, 0.6, env.Config, "chorus"))
 
 	octave := notes.O4
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony1"}, template.Template{
 		"command":   "trigger",
 		"duration":  value.NewSequence([]any{375.0}),
-		"amplitude": value.NewConst[any](0.5),
+		"amplitude": value.NewConst[any](0.2),
 		"message": template.Template{
 			"osc": template.Template{
 				"frequency": value.NewAnd(
@@ -181,7 +184,8 @@ func main() {
 		[]string{"template1"}, "",
 	))
 
-	muse.Connect(poly1, 0, env, 0)
+	muse.Connect(poly1, 0, chor, 0)
+	muse.Connect(chor, 0, env, 0)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()

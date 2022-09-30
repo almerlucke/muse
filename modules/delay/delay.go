@@ -20,6 +20,9 @@ func NewDelay(length float64, location float64, config *muse.Configuration, iden
 }
 
 func (d *Delay) Synthesize() bool {
+	if !d.BaseModule.Synthesize() {
+		return false
+	}
 	in := d.Inputs[0].Buffer
 	out := d.Outputs[0].Buffer
 

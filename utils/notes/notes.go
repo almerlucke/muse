@@ -212,8 +212,8 @@ func (c Chord) FreqAny(transpose Note) []any {
 	return f
 }
 
-func (n *Note) Freq() float64 {
-	return Mtof(int(*n))
+func (n Note) Freq() float64 {
+	return Mtof(int(n))
 }
 
 func Mtof(midiNote int) float64 {

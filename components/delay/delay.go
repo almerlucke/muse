@@ -27,9 +27,9 @@ func (delay *Delay) Read(location float64) float64 {
 	buffer := delay.Buffer
 	buflen := len(buffer)
 
-	if location >= float64(buflen) {
-		location = float64(buflen - 1)
-	}
+	// if location >= float64(buflen) {
+	// 	location = float64(buflen - 1)
+	// }
 
 	sampleLocation := float64(delay.WriteHead) - location
 
@@ -41,16 +41,11 @@ func (delay *Delay) Read(location float64) float64 {
 	fraction := sampleLocation - float64(firstIndex)
 	secondIndex := firstIndex + 1
 
-	if firstIndex >= buflen {
-		firstIndex -= buflen
-	}
-
 	if secondIndex >= buflen {
 		secondIndex -= buflen
 	}
 
 	v1 := buffer[firstIndex]
-	v2 := buffer[secondIndex]
 
-	return v1 + (v2-v1)*fraction
+	return v1 + (buffer[secondIndex]-v1)*fraction
 }

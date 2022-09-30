@@ -15,6 +15,7 @@ import (
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
+	"github.com/almerlucke/muse/components/waveshaping"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/banger"
@@ -32,6 +33,7 @@ import (
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
+	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/monitor"
@@ -317,6 +319,8 @@ func main() {
 
 	mult := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config, ""))
 
+	chor1 := env.AddModule(chorus.NewChorus(waveshaping.NewSineTable(512), 0.9, 0.3, 0.2, env.Config, ""))
+
 	muse.Connect(kickPlayer, 0, mult, 0)
 	muse.Connect(hihatPlayer, 0, mult, 0)
 	muse.Connect(snarePlayer, 0, mult, 0)
@@ -326,9 +330,10 @@ func main() {
 	muse.Connect(swirlPlayer, 0, mult, 0)
 	muse.Connect(vocalPlayer, 0, mult, 0)
 
-	muse.Connect(poly, 0, allpass, 0)
+	muse.Connect(poly, 0, chor1, 0)
+	muse.Connect(chor1, 0, allpass, 0)
 	muse.Connect(poly, 0, monitor, 0)
-	muse.Connect(poly, 0, env, 0)
+	muse.Connect(chor1, 0, env, 0)
 	muse.Connect(mult, 0, env, 0)
 	muse.Connect(mult, 0, env, 1)
 	muse.Connect(allpass, 0, env, 1)
