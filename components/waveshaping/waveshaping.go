@@ -288,7 +288,7 @@ func NewJP8000triMod() *Chain {
 		NewAbs(),
 		NewLinear(2.0, -1.0),
 		NewMod1(),
-		NewMult(0.7),
+		NewMult(0.3),
 		NewAny(func(x float64) float64 { return 2.0 * (x - math.Ceil(x-0.5)) }),
 	)
 }

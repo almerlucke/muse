@@ -15,7 +15,6 @@ import (
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/components/waveshaping"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -52,7 +51,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	testVoice := &TestVoice{
 		BasePatch:       muse.NewPatch(0, 1, config, ""),
 		ampStepProvider: ampStepProvider,
-		shaper:          shaping.NewSineTable(512),
+		shaper:          shaping.NewJP8000triMod(),
 	}
 
 	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampAdsr"))
@@ -117,14 +116,14 @@ func main() {
 	// milliPerBeat := 60000.0 / bpm
 
 	poly1 := env.AddModule(polyphony.NewPolyphony(1, voices1, env.Config, "polyphony1"))
-	chor := env.AddModule(chorus.NewChorus(true, 15, 10, 0.4, 2.42, 0.3, waveshaping.NewSineTable(512), env.Config, "chorus"))
+	chor := env.AddModule(chorus.NewChorus(true, 15, 10, 0.2, 3.42, 0.5, nil, env.Config, "chorus"))
 
 	octave := notes.O4
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony1"}, template.Template{
 		"command":   "trigger",
 		"duration":  value.NewSequence([]any{375.0}),
-		"amplitude": value.NewConst[any](0.4),
+		"amplitude": value.NewConst[any](0.7),
 		"message": template.Template{
 			"osc": template.Template{
 				"frequency": value.NewAnd(
