@@ -99,7 +99,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(1, 44100, 1024)
+	env := muse.NewEnvironment(2, 44100, 1024)
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 
@@ -117,14 +117,14 @@ func main() {
 	// milliPerBeat := 60000.0 / bpm
 
 	poly1 := env.AddModule(polyphony.NewPolyphony(1, voices1, env.Config, "polyphony1"))
-	chor := env.AddModule(chorus.NewChorus(waveshaping.NewSineTable(512), 0.5, 0.12, 0.6, env.Config, "chorus"))
+	chor := env.AddModule(chorus.NewChorus(true, 15, 10, 0.4, 2.42, 0.3, waveshaping.NewSineTable(512), env.Config, "chorus"))
 
 	octave := notes.O4
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony1"}, template.Template{
 		"command":   "trigger",
 		"duration":  value.NewSequence([]any{375.0}),
-		"amplitude": value.NewConst[any](0.2),
+		"amplitude": value.NewConst[any](0.4),
 		"message": template.Template{
 			"osc": template.Template{
 				"frequency": value.NewAnd(
@@ -186,6 +186,7 @@ func main() {
 
 	muse.Connect(poly1, 0, chor, 0)
 	muse.Connect(chor, 0, env, 0)
+	muse.Connect(chor, 1, env, 1)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()

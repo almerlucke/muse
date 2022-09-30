@@ -319,7 +319,7 @@ func main() {
 
 	mult := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config, ""))
 
-	chor1 := env.AddModule(chorus.NewChorus(waveshaping.NewSineTable(512), 0.9, 0.3, 0.2, env.Config, ""))
+	chor1 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.9, 1.3, 0.3, waveshaping.NewSineTable(512), env.Config, ""))
 
 	muse.Connect(kickPlayer, 0, mult, 0)
 	muse.Connect(hihatPlayer, 0, mult, 0)
@@ -358,87 +358,6 @@ func main() {
 		Width:  700,
 		Height: 400,
 	})
-
-	// keyMap := map[string]float64{}
-
-	// baseNote := 36
-
-	// keyMap["`"] = utils.Mtof(baseNote + 0)
-	// keyMap["Z"] = utils.Mtof(baseNote + 1)
-	// keyMap["X"] = utils.Mtof(baseNote + 2)
-	// keyMap["C"] = utils.Mtof(baseNote + 3)
-	// keyMap["V"] = utils.Mtof(baseNote + 4)
-	// keyMap["B"] = utils.Mtof(baseNote + 5)
-	// keyMap["N"] = utils.Mtof(baseNote + 6)
-	// keyMap["M"] = utils.Mtof(baseNote + 7)
-	// keyMap[","] = utils.Mtof(baseNote + 8)
-	// keyMap["."] = utils.Mtof(baseNote + 9)
-	// keyMap["/"] = utils.Mtof(baseNote + 10)
-
-	// keyMap["A"] = utils.Mtof(baseNote + 11)
-	// keyMap["S"] = utils.Mtof(baseNote + 12)
-	// keyMap["D"] = utils.Mtof(baseNote + 13)
-	// keyMap["F"] = utils.Mtof(baseNote + 14)
-	// keyMap["G"] = utils.Mtof(baseNote + 15)
-	// keyMap["H"] = utils.Mtof(baseNote + 16)
-	// keyMap["J"] = utils.Mtof(baseNote + 17)
-	// keyMap["K"] = utils.Mtof(baseNote + 18)
-	// keyMap["L"] = utils.Mtof(baseNote + 19)
-	// keyMap[";"] = utils.Mtof(baseNote + 20)
-	// keyMap["'"] = utils.Mtof(baseNote + 21)
-	// keyMap["\\"] = utils.Mtof(baseNote + 22)
-
-	// keyMap["Q"] = utils.Mtof(baseNote + 23)
-	// keyMap["W"] = utils.Mtof(baseNote + 24)
-	// keyMap["E"] = utils.Mtof(baseNote + 25)
-	// keyMap["R"] = utils.Mtof(baseNote + 26)
-	// keyMap["T"] = utils.Mtof(baseNote + 27)
-	// keyMap["Y"] = utils.Mtof(baseNote + 28)
-	// keyMap["U"] = utils.Mtof(baseNote + 29)
-	// keyMap["I"] = utils.Mtof(baseNote + 30)
-	// keyMap["O"] = utils.Mtof(baseNote + 31)
-	// keyMap["P"] = utils.Mtof(baseNote + 32)
-	// keyMap["["] = utils.Mtof(baseNote + 33)
-	// keyMap["]"] = utils.Mtof(baseNote + 34)
-
-	// keyMap["1"] = utils.Mtof(baseNote + 35)
-	// keyMap["2"] = utils.Mtof(baseNote + 36)
-	// keyMap["3"] = utils.Mtof(baseNote + 37)
-	// keyMap["4"] = utils.Mtof(baseNote + 38)
-	// keyMap["5"] = utils.Mtof(baseNote + 39)
-	// keyMap["6"] = utils.Mtof(baseNote + 40)
-	// keyMap["7"] = utils.Mtof(baseNote + 41)
-	// keyMap["8"] = utils.Mtof(baseNote + 42)
-	// keyMap["9"] = utils.Mtof(baseNote + 43)
-	// keyMap["0"] = utils.Mtof(baseNote + 44)
-	// keyMap["-"] = utils.Mtof(baseNote + 45)
-	// keyMap["="] = utils.Mtof(baseNote + 46)
-
-	// if deskCanvas, ok := w.Canvas().(desktop.Canvas); ok {
-	// 	deskCanvas.SetOnKeyDown(func(k *fyne.KeyEvent) {
-	// 		if f, ok := keyMap[string(k.Name)]; ok {
-	// 			poly.ReceiveMessage(map[string]any{
-	// 				"command":   "trigger",
-	// 				"noteOn":    string(k.Name),
-	// 				"amplitude": 1.0,
-	// 				"message": map[string]any{
-	// 					"osc": map[string]any{
-	// 						"frequency": f,
-	// 					},
-	// 				},
-	// 			})
-	// 		}
-	// 	})
-
-	// 	deskCanvas.SetOnKeyUp(func(k *fyne.KeyEvent) {
-	// 		if _, ok := keyMap[string(k.Name)]; ok {
-	// 			poly.ReceiveMessage(map[string]any{
-	// 				"command": "trigger",
-	// 				"noteOff": string(k.Name),
-	// 			})
-	// 		}
-	// 	})
-	// }
 
 	w.SetContent(
 		container.NewVBox(

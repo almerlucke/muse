@@ -75,6 +75,21 @@ func NewNormalizedSineTable(n int) LookupTable {
 	return table
 }
 
+// func NewHarmonicsTable(n int, harmonics int) LookupTable {
+// 	table := make(LookupTable, n)
+
+// 	for i := 0; i < n; i++ {
+// 		inc := float64(i) / float64(n-1)
+// 		acc := 0.0
+// 		for j := 1; j <= harmonics; j++ {
+// 			acc += math.Sin(2.0 * math.Pi * inc * float64(j) * 2.0)
+// 		}
+// 		table[i] = acc
+// 	}
+
+// 	return table
+// }
+
 type ParallelFunction func(float64, float64) float64
 
 type Parallel struct {

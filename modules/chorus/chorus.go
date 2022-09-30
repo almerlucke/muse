@@ -8,59 +8,40 @@ import (
 )
 
 /*
+flanger : delay from 0.01 to 5 ms
+chorus : delay from 5 to 25 ms
+doubler : delay from 25 to 75 ms
+echo : delay from 75 to 1000 ms (and beyond)
 
-baseDelay * 1.414 + 2
-
-
-Chorus delay: milliseconds 20 - 50
-Chorus speed: frequency
-
-Fc, at 1/2 Fc, 1/4 Fc and at 1/8 F
-
-Delay between 20 / 50 milliseconds
-
-
-msSamps = fs / 1000.0
-d1 = delay.Read(msSamps * (35 + 15 * modDepth * mod1.Tick()))
-d2 = delay.Read(msSamps * (35 + 15 * modDepth * mod2.Tick()))
-d3 = delay.Read(msSamps * (35 + 15 * modDepth * mod3.Tick()))
-d4 = delay.Read(msSamps * (35 + 15 * modDepth * mod4.Tick()))
-
-
-
-phase1 = 0
-phase2 = 0.2497
-phase3 = 0.5001
-phase4 = 0.7493
-
-fc1 = fc
-fc2 = fc * 0.5001
-fc3 = fc * 0.2499
-fc4 = fc * 0.1241
-
-35 + 15 * mod(-1 / 1) * modDepth(0 / 1)
-
-
+speed : 0 -20
 */
 
 type Chorus struct {
 	muse.BaseModule
-	modShaper waveshaping.Shaper
-	delayLine *delay.Delay
-	mods      [4]*phasor.Phasor
-	modDepth  float64
-	modSpeed  float64
-	mix       float64
+	modShaper   waveshaping.Shaper
+	delayLine   *delay.Delay
+	mods        [4]*phasor.Phasor
+	delayCenter float64
+	delayRange  float64
+	modDepth    float64
+	modSpeed    float64
+	mix         float64
 }
 
-func NewChorus(modShaper waveshaping.Shaper, modDepth float64, modSpeed float64, mix float64, config *muse.Configuration, identifier string) *Chorus {
+func NewChorus(stereo bool, delayCenter float64, delayRange float64, modDepth float64, modSpeed float64, mix float64, modShaper waveshaping.Shaper, config *muse.Configuration, identifier string) *Chorus {
+	numOutputs := 1
+	if stereo {
+		numOutputs = 2
+	}
 	c := &Chorus{
-		BaseModule: *muse.NewBaseModule(1, 1, config, identifier),
-		modShaper:  modShaper,
-		delayLine:  delay.NewDelay(int(51 * config.SampleRate * 0.001)),
-		modDepth:   modDepth,
-		modSpeed:   modSpeed,
-		mix:        mix,
+		BaseModule:  *muse.NewBaseModule(1, numOutputs, config, identifier),
+		modShaper:   modShaper,
+		delayLine:   delay.NewDelay(int((delayCenter + delayRange*0.5 + 1) * config.SampleRate * 0.001)),
+		delayCenter: delayCenter,
+		delayRange:  delayRange,
+		modDepth:    modDepth,
+		modSpeed:    modSpeed,
+		mix:         mix,
 	}
 
 	speed := [4]float64{modSpeed, modSpeed / 2.0, modSpeed / 3.0, modSpeed / 5.0}
@@ -81,17 +62,36 @@ func (c *Chorus) Synthesize() bool {
 	msSamps := c.Config.SampleRate * 0.001
 
 	in := c.Inputs[0].Buffer
-	out := c.Outputs[0].Buffer
+	stereo := len(c.Outputs) == 2
 
-	for i := 0; i < c.Config.BufferSize; i++ {
-		d1 := c.delayLine.Read(msSamps * (35 + 15*c.modDepth*c.modShaper.Shape(c.mods[0].Tick())))
-		d2 := c.delayLine.Read(msSamps * (35 + 15*c.modDepth*c.modShaper.Shape(c.mods[1].Tick())))
-		d3 := c.delayLine.Read(msSamps * (35 + 15*c.modDepth*c.modShaper.Shape(c.mods[2].Tick())))
-		d4 := c.delayLine.Read(msSamps * (35 + 15*c.modDepth*c.modShaper.Shape(c.mods[3].Tick())))
+	if stereo {
+		outLeft := c.Outputs[0].Buffer
+		outRight := c.Outputs[1].Buffer
 
-		c.delayLine.Write(in[i])
+		for i := 0; i < c.Config.BufferSize; i++ {
+			d1 := c.delayLine.Read(msSamps * (c.delayCenter + c.delayRange*0.5*c.modDepth*c.modShaper.Shape(c.mods[0].Tick())))
+			d2 := c.delayLine.Read(msSamps * (c.delayCenter + c.delayRange*0.5*c.modDepth*c.modShaper.Shape(c.mods[1].Tick())))
+			d3 := c.delayLine.Read(msSamps * (c.delayCenter + c.delayRange*0.5*c.modDepth*c.modShaper.Shape(c.mods[2].Tick())))
+			d4 := c.delayLine.Read(msSamps * (c.delayCenter + c.delayRange*0.5*c.modDepth*c.modShaper.Shape(c.mods[3].Tick())))
 
-		out[i] = in[i]*(1.0-c.mix) + c.mix*(d1+d2+d3+d4)
+			c.delayLine.Write(in[i])
+
+			outLeft[i] = in[i]*(1.0-c.mix) + c.mix*(d1+d3)
+			outRight[i] = in[i]*(1.0-c.mix) + c.mix*(d2+d4)
+		}
+	} else {
+		out := c.Outputs[0].Buffer
+
+		for i := 0; i < c.Config.BufferSize; i++ {
+			d1 := c.delayLine.Read(msSamps * (c.delayCenter + c.delayRange*0.5*c.modDepth*c.modShaper.Shape(c.mods[0].Tick())))
+			d2 := c.delayLine.Read(msSamps * (c.delayCenter + c.delayRange*0.5*c.modDepth*c.modShaper.Shape(c.mods[1].Tick())))
+			d3 := c.delayLine.Read(msSamps * (c.delayCenter + c.delayRange*0.5*c.modDepth*c.modShaper.Shape(c.mods[2].Tick())))
+			d4 := c.delayLine.Read(msSamps * (c.delayCenter + c.delayRange*0.5*c.modDepth*c.modShaper.Shape(c.mods[3].Tick())))
+
+			c.delayLine.Write(in[i])
+
+			out[i] = in[i]*(1.0-c.mix) + c.mix*(d1+d2+d3+d4)
+		}
 	}
 
 	return true

@@ -32,7 +32,7 @@ func main() {
 	// adsrEnv := env.AddModule(adsr.NewADSR(steps, adsrc.Ratio, adsrc.Automatic, 1.0, env.Config, "adsr"))
 	// mult := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config, ""))
 	osc := env.AddModule(blosc.NewBloscModule(100.0, 0.0, 1.0, env.Config, "osc"))
-	ch := env.AddModule(chorus.NewChorus(waveshaping.NewSineTable(512.0), 0.7, 1.6, env.Config, "chorus"))
+	ch := env.AddModule(chorus.NewChorus(false, 15, 10, 0.7, 1.6, 0.3, waveshaping.NewSineTable(512.0), env.Config, "chorus"))
 
 	muse.Connect(osc, 0, ch, 0)
 	muse.Connect(ch, 0, env, 0)
