@@ -1,6 +1,6 @@
 [
-  [{"address": "blosc1", "content": {"frequency": 100.0}}],
-  [{"address": "blosc1", "content": {"frequency": 200.0}}],
-  [{"address": "blosc1", "content": {"frequency": 50.0}}],
-  [{"address": "blosc1", "content": {"frequency": 50.0}}]
+  [{"address": "osc", "content": {"frequency": 100.0}}],
+  [{"address": "osc", "content": {"frequency": 200.0}}],
+  [{"address": "osc", "content": {"frequency": 50.0}}],
+  [{"address": "osc", "content": {"frequency": 50.0}}]
 ]

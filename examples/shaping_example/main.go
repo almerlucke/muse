@@ -91,5 +91,5 @@ func main() {
 	muse.Connect(reverb, 0, env, 0)
 	muse.Connect(reverb, 1, env, 1)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/shaper.aiff", 24.0, 44100.0, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/shaper.aiff", 24.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

@@ -7,20 +7,26 @@ import (
 )
 
 // Band limited oscillator
-type BloscModule struct {
+type Osc struct {
 	*muse.BaseModule
 	lastOutput float64
 	phase      float64
 	frequency  float64
-	amplitude  float64
+	pw         float64
+	mix        [4]float64
 }
 
-func NewBloscModule(frequency float64, phase float64, amplitude float64, config *muse.Configuration, identifier string) *BloscModule {
-	return &BloscModule{
-		BaseModule: muse.NewBaseModule(3, 4, config, identifier),
-		phase:      phase,
+func NewOsc(frequency float64, phase float64, config *muse.Configuration, identifier string) *Osc {
+	return NewOscX(frequency, phase, 0.5, [4]float64{1.0, 0.0, 0.0, 0.0}, config, identifier)
+}
+
+func NewOscX(frequency float64, phase float64, pw float64, mix [4]float64, config *muse.Configuration, identifier string) *Osc {
+	return &Osc{
+		BaseModule: muse.NewBaseModule(3, 5, config, identifier),
 		frequency:  frequency,
-		amplitude:  amplitude,
+		phase:      phase,
+		pw:         pw,
+		mix:        mix,
 	}
 }
 
@@ -36,51 +42,78 @@ func polyBlep(t float64, dt float64) float64 {
 	return 0.0
 }
 
-func (b *BloscModule) ReceiveMessage(msg any) []*muse.Message {
+func (o *Osc) ReceiveMessage(msg any) []*muse.Message {
 	params, ok := msg.(map[string]any)
 	if ok {
 		f, ok := params["frequency"]
 		if ok {
-			b.frequency = f.(float64)
+			o.frequency = f.(float64)
+		}
+
+		pw, ok := params["pulseWidth"]
+		if ok {
+			o.pw = pw.(float64)
+		}
+
+		mix1, ok := params["mix1"]
+		if ok {
+			o.mix[0] = mix1.(float64)
+		}
+
+		mix2, ok := params["mix2"]
+		if ok {
+			o.mix[1] = mix2.(float64)
+		}
+
+		mix3, ok := params["mix3"]
+		if ok {
+			o.mix[2] = mix3.(float64)
+		}
+
+		mix4, ok := params["mix4"]
+		if ok {
+			o.mix[3] = mix4.(float64)
 		}
 	}
 
 	return nil
 }
 
-func (b *BloscModule) Synthesize() bool {
-	if !b.BaseModule.Synthesize() {
+func (o *Osc) Synthesize() bool {
+	if !o.BaseModule.Synthesize() {
 		return false
 	}
 
-	frequency := b.frequency
-	amplitude := b.amplitude
+	frequency := o.frequency
 	phaseOffset := 0.0
+	pw := o.pw
 
-	freqInput := b.InputAtIndex(0)
-	phaseOffsetInput := b.InputAtIndex(1)
-	ampInput := b.InputAtIndex(2)
+	freqInput := o.InputAtIndex(0)
+	phaseOffsetInput := o.InputAtIndex(1)
+	pwInput := o.InputAtIndex(2)
 
-	sinOut := b.OutputAtIndex(0).Buffer
-	sawOut := b.OutputAtIndex(1).Buffer
-	sqrOut := b.OutputAtIndex(2).Buffer
-	triOut := b.OutputAtIndex(3).Buffer
+	sinOut := o.OutputAtIndex(0).Buffer
+	sawOut := o.OutputAtIndex(1).Buffer
+	pwOut := o.OutputAtIndex(2).Buffer
+	triOut := o.OutputAtIndex(3).Buffer
+	mixOut := o.OutputAtIndex(4).Buffer
 
-	for i := 0; i < b.Config.BufferSize; i++ {
+	for i := 0; i < o.Config.BufferSize; i++ {
+		var sinSamp, sawSamp, pwSamp, sqrSamp, triSamp float64
+
 		if freqInput.IsConnected() {
 			frequency = float64(freqInput.Buffer[i])
 		}
 		if phaseOffsetInput.IsConnected() {
 			phaseOffset = float64(phaseOffsetInput.Buffer[i])
 		}
-		if ampInput.IsConnected() {
-			amplitude = float64(ampInput.Buffer[i])
+		if pwInput.IsConnected() {
+			pw = float64(pwInput.Buffer[i])
 		}
 
-		dt := frequency / b.Config.SampleRate
-		t := b.phase + phaseOffset
+		dt := frequency / o.Config.SampleRate
 
-		var sinSamp, sawSamp, sqrSamp, triSamp float64
+		t := o.phase + phaseOffset
 
 		// Fold phase back because of possible overshoot by adding phase offset
 		for t >= 1.0 {
@@ -96,6 +129,12 @@ func (b *BloscModule) Synthesize() bool {
 		sawSamp = 2.0*t - 1.0
 		sawSamp -= polyBlep(t, dt)
 
+		if t < pw {
+			pwSamp = 1.0
+		} else {
+			pwSamp = -1.0
+		}
+
 		if t < 0.5 {
 			sqrSamp = 1.0
 		} else {
@@ -103,29 +142,38 @@ func (b *BloscModule) Synthesize() bool {
 		}
 
 		sqrSamp += polyBlep(t, dt)
+		pwSamp += polyBlep(t, dt)
+
 		sqrSamp -= polyBlep(math.Mod(t+0.5, 1.0), dt)
+		pwSamp -= polyBlep(math.Mod(t+(1.0-pw), 1.0), dt)
 
 		// Use square wave as input, leaky integration
-		triSamp = dt*sqrSamp + (1.0-dt)*b.lastOutput
-		b.lastOutput = triSamp
-		// Boost signal with triangle
-		triSamp *= 2.0
+		triSamp = dt*sqrSamp + (1.0-dt)*o.lastOutput
+		o.lastOutput = triSamp
 
-		b.phase += dt
-
-		// Keep phase within 0-1 bounds
-		for b.phase >= 1.0 {
-			b.phase -= 1.0
+		triSamp *= 4.0
+		if triSamp > 1.0 {
+			triSamp = 1.0
+		}
+		if triSamp < -1.0 {
+			triSamp = -1.0
 		}
 
-		for b.phase < 0.0 {
-			b.phase += 1.0
-		}
+		// Separate outputs
+		sinOut[i] = sinSamp
+		sawOut[i] = sawSamp
+		pwOut[i] = pwSamp
+		triOut[i] = triSamp
 
-		sinOut[i] = sinSamp * amplitude
-		sawOut[i] = sawSamp * amplitude
-		sqrOut[i] = sqrSamp * amplitude
-		triOut[i] = triSamp * amplitude
+		// Mixed output
+		mixOut[i] = sinSamp*o.mix[0] + sawSamp*o.mix[1] + pwSamp*o.mix[2] + triSamp*o.mix[3]
+
+		// Update phase
+		o.phase += dt
+
+		for o.phase >= 1.0 {
+			o.phase -= 1.0
+		}
 	}
 
 	return true

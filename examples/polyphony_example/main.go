@@ -161,5 +161,5 @@ func main() {
 	muse.Connect(reverb, 0, env, 0)
 	muse.Connect(reverb, 1, env, 1)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/voices.aiff", 24.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/voices.aiff", 24.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

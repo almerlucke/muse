@@ -174,5 +174,5 @@ func main() {
 		muse.Connect(gr, i, env, i)
 	}
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/john.aiff", 34.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/john.aiff", 34.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

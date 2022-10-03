@@ -71,5 +71,5 @@ func main() {
 	muse.Connect(hihatPlayer, 0, env, 0)
 	muse.Connect(snarePlayer, 0, env, 0)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/beats.aiff", 20.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/beats.aiff", 20.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }
