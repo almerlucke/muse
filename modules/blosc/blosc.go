@@ -17,7 +17,7 @@ type Osc struct {
 }
 
 func NewOsc(frequency float64, phase float64, config *muse.Configuration, identifier string) *Osc {
-	return NewOscX(frequency, phase, 0.5, [4]float64{1.0, 0.0, 0.0, 0.0}, config, identifier)
+	return NewOscX(frequency, phase, 0.5, [4]float64{0.5, 0.01, 0.1, 0.5}, config, identifier)
 }
 
 func NewOscX(frequency float64, phase float64, pw float64, mix [4]float64, config *muse.Configuration, identifier string) *Osc {
@@ -28,6 +28,38 @@ func NewOscX(frequency float64, phase float64, pw float64, mix [4]float64, confi
 		pw:         pw,
 		mix:        mix,
 	}
+}
+
+func (o *Osc) MixAt(i int) float64 {
+	return o.mix[i]
+}
+
+func (o *Osc) Mix() [4]float64 {
+	return o.mix
+}
+
+func (o *Osc) SetMixAt(i int, mix float64) {
+	o.mix[i] = mix
+}
+
+func (o *Osc) SetMix(mix [4]float64) {
+	o.mix = mix
+}
+
+func (o *Osc) SetFrequency(fc float64) {
+	o.frequency = fc
+}
+
+func (o *Osc) Frequency() float64 {
+	return o.frequency
+}
+
+func (o *Osc) SetPulseWidth(pw float64) {
+	o.pw = pw
+}
+
+func (o *Osc) PulseWidth() float64 {
+	return o.pw
 }
 
 func polyBlep(t float64, dt float64) float64 {
@@ -98,6 +130,12 @@ func (o *Osc) Synthesize() bool {
 	triOut := o.OutputAtIndex(3).Buffer
 	mixOut := o.OutputAtIndex(4).Buffer
 
+	mixScale := o.mix[0] + o.mix[1] + o.mix[2] + o.mix[3]
+
+	if mixScale > 0 {
+		mixScale = 1.0 / mixScale
+	}
+
 	for i := 0; i < o.Config.BufferSize; i++ {
 		var sinSamp, sawSamp, pwSamp, sqrSamp, triSamp float64
 
@@ -166,7 +204,7 @@ func (o *Osc) Synthesize() bool {
 		triOut[i] = triSamp
 
 		// Mixed output
-		mixOut[i] = sinSamp*o.mix[0] + sawSamp*o.mix[1] + pwSamp*o.mix[2] + triSamp*o.mix[3]
+		mixOut[i] = mixScale * (sinSamp*o.mix[0] + sawSamp*o.mix[1] + pwSamp*o.mix[2] + triSamp*o.mix[3])
 
 		// Update phase
 		o.phase += dt

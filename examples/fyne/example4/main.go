@@ -64,8 +64,8 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 
 	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampAdsr"))
 	filterEnv := testVoice.AddModule(adsr.NewADSR(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "filterAdsr"))
-	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
-	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*8000.0 + 100.0 }, config, ""))
+	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
+	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*8000.0 + 100.0 }, config))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.5, 1, config, "filter"))
 	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config, "shaper"))
@@ -317,7 +317,7 @@ func main() {
 		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 	}))
 
-	mult := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config, ""))
+	mult := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config))
 
 	chor1 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.9, 1.3, 0.3, waveshaping.NewSineTable(512), env.Config, ""))
 

@@ -43,6 +43,24 @@ type Step struct {
 	Shape         float64
 }
 
+type StepProvider interface {
+	GetSteps() []Step
+}
+
+type BasicStepProvider struct {
+	Steps []Step
+}
+
+func NewBasicStepProvider() *BasicStepProvider {
+	return &BasicStepProvider{
+		Steps: make([]Step, 4),
+	}
+}
+
+func (bsp *BasicStepProvider) GetSteps() []Step {
+	return bsp.Steps
+}
+
 func (s *Step) GetState() map[string]any {
 	return map[string]any{
 		"level":         s.Level,

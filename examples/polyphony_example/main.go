@@ -58,7 +58,7 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 	}
 
 	adsrEnv := testVoice.AddModule(adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
-	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config, ""))
+	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	shape := testVoice.AddModule(waveshaper.NewWaveShaper(shaping.NewSuperSaw(), 1, paramMapper, nil, config, "shaper"))
 	filter := testVoice.AddModule(moog.NewMoog(1700.0, 0.48, 1.0, config, "filter"))
@@ -124,8 +124,8 @@ func main() {
 
 	paramVarTri1 := env.AddModule(vartri.NewVarTri(0.265, 0.0, 0.5, env.Config, "vartri1"))
 	paramVarTri2 := env.AddModule(vartri.NewVarTri(0.325, 0.0, 0.5, env.Config, "vartri2"))
-	superSawDrive := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.84 + 0.15 }, env.Config, ""))
-	filterCutOff := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*3200.0 + 40.0 }, env.Config, ""))
+	superSawDrive := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.84 + 0.15 }, env.Config))
+	filterCutOff := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*3200.0 + 40.0 }, env.Config))
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
@@ -138,7 +138,7 @@ func main() {
 
 	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
 	allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config, "allpass"))
-	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config, ""))
+	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config))
 	reverb := env.AddModule(freeverb.NewFreeVerb(env.Config, "freeverb"))
 
 	reverb.(*freeverb.FreeVerb).SetDamp(0.1)

@@ -80,13 +80,11 @@ func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 			p.activePool.Push(elem)
 		}
 	} else if command == "voice" {
-		// Pass message to active voices
+		// Pass message to voices
 		elem := p.activePool.First()
 		end := p.activePool.End()
 		for elem != end {
-			if elem.Value.IsActive() {
-				elem.Value.ReceiveMessage(msg)
-			}
+			elem.Value.ReceiveMessage(msg)
 			elem = elem.Next
 		}
 	}

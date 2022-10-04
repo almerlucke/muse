@@ -10,12 +10,16 @@ type Functor struct {
 	inVec []float64
 }
 
-func NewFunctor(numInputs int, f FunctorFunction, config *muse.Configuration, identifier string) *Functor {
+func NewFunctor(numInputs int, f FunctorFunction, config *muse.Configuration) *Functor {
 	return &Functor{
-		BaseModule: muse.NewBaseModule(numInputs, 1, config, identifier),
+		BaseModule: muse.NewBaseModule(numInputs, 1, config, ""),
 		f:          f,
 		inVec:      make([]float64, numInputs),
 	}
+}
+
+func NewMult(numInputs int, config *muse.Configuration) *Functor {
+	return NewFunctor(numInputs, FunctorMult, config)
 }
 
 func FunctorMult(vec []float64) float64 {
