@@ -126,7 +126,7 @@ func main() {
 			"osc2TriMix":   value.NewSequence([]any{1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7}),
 			"frequency":    noteSequence(notes.O3),
 		},
-	}, "template"))
+	}, "control"))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(value.NewConst(bpm), value.NewConst(2.0), value.NewSequence(
@@ -134,7 +134,7 @@ func main() {
 				{}, {Skip: true},
 			},
 		)),
-		[]string{"template"}, "",
+		[]string{"control"}, "",
 	))
 
 	sineTable := shaping.NewNormalizedSineTable(128)
@@ -174,6 +174,8 @@ func main() {
 	muse.Connect(chor1, 1, env, 1)
 	muse.Connect(chor2, 0, env, 0)
 	muse.Connect(chor2, 1, env, 1)
+
+	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 240.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()
