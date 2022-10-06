@@ -6,6 +6,8 @@ import (
 	"github.com/almerlucke/muse/value/template"
 )
 
+var lfoSineShaper = shaping.NewNormalizedSineTable(128.0)
+
 type Target struct {
 	Address   string
 	Shaper    shaping.Shaper
@@ -38,17 +40,38 @@ type LFO struct {
 	*muse.BaseMessenger
 	phase   float64
 	delta   float64
+	speed   float64
 	targets []*Target
 }
 
-func NewLFO(frequency float64, targets []*Target, config *muse.Configuration, identifier string) *LFO {
+func NewLFO(speed float64, targets []*Target, config *muse.Configuration, identifier string) *LFO {
 	sampleRate := config.SampleRate / float64(config.BufferSize)
 
 	return &LFO{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
-		delta:         frequency / sampleRate,
+		delta:         speed / sampleRate,
+		speed:         speed,
 		targets:       targets,
 	}
+}
+
+func NewBasicLFO(speed float64, scale float64, offset float64, addresses []string, config *muse.Configuration, param string, templ template.Template) *LFO {
+	ts := make([]*Target, len(addresses))
+	for i, address := range addresses {
+		ts[i] = NewTarget(address, shaping.NewChain(lfoSineShaper, shaping.NewLinear(scale, offset)), param, templ)
+	}
+
+	return NewLFO(speed, ts, config, "")
+}
+
+func (lfo *LFO) Speed() float64 {
+	return lfo.speed
+}
+
+func (lfo *LFO) SetSpeed(speed float64, config *muse.Configuration) {
+	sampleRate := config.SampleRate / float64(config.BufferSize)
+	lfo.delta = speed / sampleRate
+	lfo.speed = speed
 }
 
 func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Message {

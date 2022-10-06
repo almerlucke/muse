@@ -9,7 +9,6 @@ import (
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/envelopes/adsr"
-	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -73,15 +72,6 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 		}, true)
 }
 
-func makeLFO(speed float64, targets []string, shaper shaping.Shaper, config *muse.Configuration, param string, templ template.Template) *lfo.LFO {
-	ts := make([]*lfo.Target, len(targets))
-	for i, target := range targets {
-		ts[i] = lfo.NewTarget(target, shaper, param, templ)
-	}
-
-	return lfo.NewLFO(speed, ts, config, "")
-}
-
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -129,40 +119,45 @@ func main() {
 	}, "control"))
 
 	env.AddMessenger(stepper.NewStepper(
-		swing.New(value.NewConst(bpm), value.NewConst(2.0), value.NewSequence(
-			[]*swing.Step{
-				{}, {Skip: true},
-			},
-		)),
+		swing.New(value.NewConst(bpm), value.NewConst(2.0),
+			value.NewSequence([]*swing.Step{{}, {Skip: true}}),
+		),
 		[]string{"control"}, "",
 	))
 
-	sineTable := shaping.NewNormalizedSineTable(128)
-	oscScale := shaping.NewLinear(0.7, 0.15)
-
-	env.AddMessenger(makeLFO(0.14, []string{"poly"}, shaping.NewChain(sineTable, oscScale), env.Config, "pw", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"poly"}, env.Config, "pw", template.Template{
 		"command":        "voice",
 		"osc1PulseWidth": template.NewParameter("pw", nil),
 	}))
 
-	env.AddMessenger(makeLFO(0.103, []string{"poly"}, shaping.NewChain(sineTable, oscScale), env.Config, "pw", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"poly"}, env.Config, "pw", template.Template{
 		"command":        "voice",
 		"osc2PulseWidth": template.NewParameter("pw", nil),
 	}))
 
-	env.AddMessenger(makeLFO(0.085, []string{"poly"}, shaping.NewChain(sineTable, shaping.NewLinear(0.6, 0.25)), env.Config, "resonance", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.085, 0.6, 0.25, []string{"poly"}, env.Config, "resonance", template.Template{
 		"command":         "voice",
 		"filterResonance": template.NewParameter("resonance", nil),
 	}))
 
-	env.AddMessenger(makeLFO(0.115, []string{"poly"}, shaping.NewChain(sineTable, shaping.NewLinear(0.06, 3)), env.Config, "tuning", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.115, 0.06, 4.0, []string{"poly"}, env.Config, "tuning", template.Template{
 		"command":    "voice",
 		"osc2Tuning": template.NewParameter("tuning", nil),
 	}))
 
-	env.AddMessenger(makeLFO(0.0367, []string{"poly"}, shaping.NewChain(sineTable, shaping.NewLinear(0.1, 0.01)), env.Config, "noise", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"poly"}, env.Config, "noise", template.Template{
 		"command":  "voice",
 		"noiseMix": template.NewParameter("noise", nil),
+	}))
+
+	env.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"poly"}, env.Config, "noise", template.Template{
+		"command": "voice",
+		"osc1Mix": template.NewParameter("noise", nil),
+	}))
+
+	env.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"poly"}, env.Config, "noise", template.Template{
+		"command": "voice",
+		"osc2Mix": template.NewParameter("noise", nil),
 	}))
 
 	muse.Connect(poly, 0, polyAmp, 0)
