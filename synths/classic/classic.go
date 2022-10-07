@@ -27,6 +27,8 @@ type Voice struct {
 	ampEnvSteps    adsrc.StepProvider
 	filterEnvSteps adsrc.StepProvider
 	osc2Tuning     float64
+	filterFcMin    float64
+	filterFcMax    float64
 }
 
 func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider) *Voice {
@@ -47,6 +49,8 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 		ampEnvSteps:    ampEnvSteps,
 		filterEnvSteps: filterEnvSteps,
 		osc2Tuning:     2.03,
+		filterFcMin:    50.0,
+		filterFcMax:    8000,
 	}
 
 	voice.SourceMixer.SetMix([]float64{osc1Mix, osc2Mix, noiseMix})
@@ -60,7 +64,16 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 	voice.AddModule(voice.filter)
 	voice.AddModule(voice.panner)
 
-	filterScaler := voice.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0]*8000.0 + 50.0 }, config))
+	filterScaler := voice.AddModule(functor.NewFunctor(1, func(v []float64) float64 {
+		min := voice.filterFcMin
+		max := voice.filterFcMax
+		if min > max {
+			tmp := max
+			max = min
+			min = tmp
+		}
+		return v[0]*(max-min) + min
+	}, config))
 	ampVCA := voice.AddModule(functor.NewMult(2, config))
 
 	muse.Connect(voice.Osc1, 4, voice.SourceMixer, 0)
@@ -188,6 +201,14 @@ func (v *Voice) SetPan(pan float64) {
 	v.panner.SetPan(pan)
 }
 
+func (v *Voice) SetFilterFcMin(min float64) {
+	v.filterFcMin = min
+}
+
+func (v *Voice) SetFilterFcMax(max float64) {
+	v.filterFcMax = max
+}
+
 func (v *Voice) handleMessage(content map[string]any) {
 	if osc1Mix, ok := content["osc1Mix"]; ok {
 		v.SetOsc1Mix(osc1Mix.(float64))
@@ -251,6 +272,14 @@ func (v *Voice) handleMessage(content map[string]any) {
 
 	if pan, ok := content["pan"]; ok {
 		v.SetPan(pan.(float64))
+	}
+
+	if filterFcMin, ok := content["filterFcMin"]; ok {
+		v.SetFilterFcMin(filterFcMin.(float64))
+	}
+
+	if filterFcMax, ok := content["filterFcMax"]; ok {
+		v.SetFilterFcMax(filterFcMax.(float64))
 	}
 }
 

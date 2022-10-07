@@ -1,11 +1,15 @@
 package main
 
 import (
-	"bufio"
 	"log"
 	"math/rand"
-	"os"
 	"time"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/widget"
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/envelopes/adsr"
@@ -19,6 +23,7 @@ import (
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/synths/classic"
+	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils/notes"
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/arpeggio"
@@ -75,7 +80,7 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 
 type ClassicSynth struct {
 	*muse.BasePatch
-	controls  []control.Control
+	*control.BaseControllable
 	ampEnv    *adsr.BasicStepProvider
 	filterEnv *adsr.BasicStepProvider
 	poly      *polyphony.Polyphony
@@ -85,7 +90,8 @@ type ClassicSynth struct {
 
 func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	synth := &ClassicSynth{
-		BasePatch: muse.NewPatch(0, 2, config, "classic"),
+		BasePatch:        muse.NewPatch(0, 2, config, "classic"),
+		BaseControllable: control.NewBaseControllable(),
 	}
 
 	ampEnv := adsr.NewBasicStepProvider()
@@ -128,7 +134,25 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	muse.Connect(synth.chorus1, 0, synth, 0)
 	muse.Connect(synth.chorus2, 0, synth, 1)
 
+	ctrl := control.NewBaseFloatControl("filterFcMax", "Filter", "Filter Frequency Max", 50.0, 8000.0, 1.0, 8000.0)
+	ctrl.AddListener(synth)
+	ctrl.SetControllable(synth)
+	synth.AddControl(ctrl)
+
 	return synth
+}
+
+func (cs *ClassicSynth) ControlChanged(ctrl control.Control, oldValue any, newValue any, setter any) {
+	if setter == cs {
+		return
+	}
+
+	if ctrl.Identifier() == "filterFcMax" {
+		cs.poly.ReceiveMessage(map[string]any{
+			"command":     "voice",
+			"filterFcMax": newValue,
+		})
+	}
 }
 
 func main() {
@@ -220,9 +244,51 @@ func main() {
 
 	defer stream.Close()
 
-	stream.Start()
+	a := app.New()
 
-	reader := bufio.NewReader(os.Stdin)
+	a.Settings().SetTheme(&theme.Theme{})
 
-	reader.ReadString('\n')
+	w := a.NewWindow("Muse")
+
+	w.Resize(fyne.Size{
+		Width:  700,
+		Height: 400,
+	})
+
+	filterFcMaxControl := synth.ControlById("filterFcMax").(control.FloatControl)
+	fcMaxBinding := binding.NewFloat()
+	filterFcMaxControl.AddListener(control.NewChangeCallback(func(ctrl control.Control, oldValue any, newValue any, setter any) {
+		if setter != fcMaxBinding {
+			fcMaxBinding.Set(newValue.(float64))
+		}
+	}))
+	fcMaxBinding.AddListener(binding.NewDataListener(func() {
+		v, err := fcMaxBinding.Get()
+		if err == nil {
+			filterFcMaxControl.Set(v, fcMaxBinding)
+		}
+	}))
+	fcMaxSlider := widget.NewSliderWithData(50.0, 8000.0, fcMaxBinding)
+	fcMaxSlider.Step = 1.0
+
+	w.SetContent(
+		container.NewVBox(
+			container.NewHBox(
+				widget.NewButton("Start", func() {
+					stream.Start()
+				}),
+				widget.NewButton("Stop", func() {
+					stream.Stop()
+				}),
+				// widget.NewButton("Notes Off", func() {
+				// 	poly.(*polyphony.Polyphony).AllNotesOff()
+				// }),
+			),
+			container.NewHBox(
+				fcMaxSlider,
+			),
+		),
+	)
+
+	w.ShowAndRun()
 }

@@ -38,7 +38,9 @@ func (c *ChangeCallback) ControlChanged(control Control, oldValue any, newValue 
 
 type Controllable interface {
 	Listener
+	AddControl(Control)
 	Controls() []Control
+	ControlById(string) Control
 }
 
 type Control interface {
@@ -49,6 +51,7 @@ type Control interface {
 	AddListener(Listener)
 	RemoveListener(Listener)
 	Controllable() Controllable
+	SetControllable(Controllable)
 }
 
 type FloatControl interface {
@@ -71,17 +74,14 @@ type BaseControl struct {
 	controlType  ControlType
 }
 
-func NewBaseControl(id string, group string, name string, controlType ControlType, controllable Controllable) *BaseControl {
+func NewBaseControl(id string, group string, name string, controlType ControlType) *BaseControl {
 	bc := &BaseControl{
-		identifier:   id,
-		group:        group,
-		displayName:  name,
-		listeners:    list.New(),
-		controllable: controllable,
-		controlType:  controlType,
+		identifier:  id,
+		group:       group,
+		displayName: name,
+		listeners:   list.New(),
+		controlType: controlType,
 	}
-
-	bc.AddListener(controllable)
 
 	return bc
 }
@@ -148,9 +148,9 @@ type BaseFloatControl struct {
 	value float64
 }
 
-func NewBaseFloatControl(id string, group string, name string, min float64, max float64, step float64, value float64, controllable Controllable) *BaseFloatControl {
+func NewBaseFloatControl(id string, group string, name string, min float64, max float64, step float64, value float64) *BaseFloatControl {
 	return &BaseFloatControl{
-		BaseControl: NewBaseControl(id, group, name, Float, controllable),
+		BaseControl: NewBaseControl(id, group, name, Float),
 		min:         min,
 		max:         max,
 		step:        step,
@@ -185,4 +185,36 @@ func (fc *BaseFloatControl) Set(newValue float64, setter any) {
 func (fc *BaseFloatControl) AddListener(listener Listener) {
 	fc.BaseControl.AddListener(listener)
 	listener.ControlChanged(fc, fc.value, fc.value, fc)
+}
+
+type BaseControllable struct {
+	controls []Control
+}
+
+func NewBaseControllable() *BaseControllable {
+	return &BaseControllable{
+		controls: []Control{},
+	}
+}
+
+func (bc *BaseControllable) ControlChanged(ctrl Control, oldValue any, newValue any, setter any) {
+	// STUB, override by embedder
+}
+
+func (bc *BaseControllable) AddControl(ctrl Control) {
+	bc.controls = append(bc.controls, ctrl)
+}
+
+func (bc *BaseControllable) Controls() []Control {
+	return bc.controls
+}
+
+func (bc *BaseControllable) ControlById(id string) Control {
+	for _, ctrl := range bc.controls {
+		if ctrl.Identifier() == id {
+			return ctrl
+		}
+	}
+
+	return nil
 }
