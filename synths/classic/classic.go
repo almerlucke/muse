@@ -10,6 +10,8 @@ import (
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/mixer"
 	"github.com/almerlucke/muse/modules/noise"
+	"github.com/almerlucke/muse/modules/pan"
+	"github.com/almerlucke/muse/modules/polyphony"
 )
 
 type Voice struct {
@@ -21,6 +23,7 @@ type Voice struct {
 	noiseGen       *noise.Noise
 	SourceMixer    *mixer.Mixer
 	filter         *moog.Moog
+	panner         *pan.StereoPan
 	ampEnvSteps    adsrc.StepProvider
 	filterEnvSteps adsrc.StepProvider
 	osc2Tuning     float64
@@ -32,7 +35,7 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 	noiseMix := 0.05
 
 	voice := &Voice{
-		BasePatch:      muse.NewPatch(0, 1, config, ""),
+		BasePatch:      muse.NewPatch(0, 2, config, ""),
 		ampEnv:         adsr.NewADSR(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampEnv"),
 		filterEnv:      adsr.NewADSR(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "filterEnv"),
 		Osc1:           blosc.NewOsc(100.0, 0.0, config, "osc1"),
@@ -40,6 +43,7 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 		noiseGen:       noise.NewNoise(1, config),
 		SourceMixer:    mixer.NewMixer(3, config, "sourceMixer"),
 		filter:         moog.NewMoog(1500.0, 0.7, 1.0, config, "filter"),
+		panner:         pan.NewStereoPan(0.5, config, "panner"),
 		ampEnvSteps:    ampEnvSteps,
 		filterEnvSteps: filterEnvSteps,
 		osc2Tuning:     2.03,
@@ -54,6 +58,7 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 	voice.AddModule(voice.noiseGen)
 	voice.AddModule(voice.SourceMixer)
 	voice.AddModule(voice.filter)
+	voice.AddModule(voice.panner)
 
 	filterScaler := voice.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0]*8000.0 + 50.0 }, config))
 	ampVCA := voice.AddModule(functor.NewMult(2, config))
@@ -66,9 +71,21 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 	muse.Connect(filterScaler, 0, voice.filter, 1)
 	muse.Connect(voice.filter, 0, ampVCA, 0)
 	muse.Connect(voice.ampEnv, 0, ampVCA, 1)
-	muse.Connect(ampVCA, 0, voice, 0)
+	muse.Connect(ampVCA, 0, voice.panner, 0)
+	muse.Connect(voice.panner, 0, voice, 0)
+	muse.Connect(voice.panner, 1, voice, 1)
 
 	return voice
+}
+
+func NewSynth(numVoices int, ampEnv adsrc.StepProvider, filterEnv adsrc.StepProvider, config *muse.Configuration, identifier string) *polyphony.Polyphony {
+	voices := make([]polyphony.Voice, numVoices)
+
+	for i := 0; i < numVoices; i++ {
+		voices[i] = NewVoice(config, ampEnv, filterEnv)
+	}
+
+	return polyphony.NewPolyphony(2, voices, config, identifier)
 }
 
 func (v *Voice) IsActive() bool {
@@ -111,8 +128,16 @@ func (v *Voice) SetNoiseMix(mix float64) {
 	v.SourceMixer.SetMixAt(2, mix)
 }
 
+func (v *Voice) Osc1PulseWidth() float64 {
+	return v.Osc1.PulseWidth()
+}
+
 func (v *Voice) SetOsc1PulseWidth(pw float64) {
 	v.Osc1.SetPulseWidth(pw)
+}
+
+func (v *Voice) Osc2PulseWidth() float64 {
+	return v.Osc2.PulseWidth()
 }
 
 func (v *Voice) SetOsc2PulseWidth(pw float64) {
@@ -157,6 +182,10 @@ func (v *Voice) SetOsc2TriMix(mix float64) {
 
 func (v *Voice) SetOsc2Tuning(tuning float64) {
 	v.osc2Tuning = tuning
+}
+
+func (v *Voice) SetPan(pan float64) {
+	v.panner.SetPan(pan)
 }
 
 func (v *Voice) handleMessage(content map[string]any) {
@@ -218,6 +247,10 @@ func (v *Voice) handleMessage(content map[string]any) {
 
 	if osc2Tuning, ok := content["osc2Tuning"]; ok {
 		v.SetOsc2Tuning(osc2Tuning.(float64))
+	}
+
+	if pan, ok := content["pan"]; ok {
+		v.SetPan(pan.(float64))
 	}
 }
 

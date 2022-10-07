@@ -16,7 +16,6 @@ import (
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/functor"
-	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/synths/classic"
 	"github.com/almerlucke/muse/utils/notes"
 	"github.com/almerlucke/muse/value"
@@ -87,19 +86,17 @@ func main() {
 	filterEnv.Steps[1] = adsr.Step{Level: 0.5, Duration: 80.0}
 	filterEnv.Steps[3] = adsr.Step{Duration: 2000.0}
 
-	voices := make([]polyphony.Voice, 20)
-	for i := 0; i < 20; i++ {
-		voices[i] = classic.NewVoice(env.Config, ampEnv, filterEnv)
-	}
-
 	bpm := 100.0
 
-	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "poly"))
-	polyAmp := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, env.Config))
-	allpass := env.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, env.Config, "allpass"))
-	allpassAmp := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config))
-	chor1 := env.AddModule(chorus.NewChorus(true, 15, 10, 0.3, 1.42, 0.5, nil, env.Config, "chorus1"))
-	chor2 := env.AddModule(chorus.NewChorus(true, 15, 10, 0.31, 1.43, 0.55, nil, env.Config, "chorus2"))
+	synth := env.AddModule(classic.NewSynth(20, ampEnv, filterEnv, env.Config, "synth"))
+	synthAmp1 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, env.Config))
+	synthAmp2 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, env.Config))
+	allpass1 := env.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, env.Config, "allpass"))
+	allpass2 := env.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, env.Config, "allpass"))
+	allpassAmp1 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config))
+	allpassAmp2 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config))
+	chor1 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, env.Config, "chorus1"))
+	chor2 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, env.Config, "chorus2"))
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
 		"command":   "trigger",
@@ -160,15 +157,23 @@ func main() {
 		"osc2Mix": template.NewParameter("noise", nil),
 	}))
 
-	muse.Connect(poly, 0, polyAmp, 0)
-	muse.Connect(polyAmp, 0, chor1, 0)
-	muse.Connect(polyAmp, 0, allpass, 0)
-	muse.Connect(allpass, 0, allpassAmp, 0)
-	muse.Connect(allpassAmp, 0, chor2, 0)
+	env.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"poly"}, env.Config, "pan", template.Template{
+		"command": "voice",
+		"pan":     template.NewParameter("pan", nil),
+	}))
+
+	muse.Connect(synth, 0, synthAmp1, 0)
+	muse.Connect(synth, 1, synthAmp2, 0)
+	muse.Connect(synthAmp1, 0, chor1, 0)
+	muse.Connect(synthAmp2, 0, chor2, 0)
+	muse.Connect(synthAmp1, 0, allpass1, 0)
+	muse.Connect(synthAmp2, 0, allpass2, 0)
+	muse.Connect(allpass1, 0, allpassAmp1, 0)
+	muse.Connect(allpass2, 0, allpassAmp2, 0)
+	muse.Connect(allpassAmp1, 0, chor1, 0)
+	muse.Connect(allpassAmp2, 0, chor2, 0)
 	muse.Connect(chor1, 0, env, 0)
-	muse.Connect(chor1, 1, env, 1)
-	muse.Connect(chor2, 0, env, 0)
-	muse.Connect(chor2, 1, env, 1)
+	muse.Connect(chor2, 0, env, 1)
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 240.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 

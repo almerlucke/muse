@@ -13,8 +13,10 @@ chorus : delay from 5 to 25 ms
 doubler : delay from 25 to 75 ms
 echo : delay from 75 to 1000 ms (and beyond)
 
-speed : 0 -20
+speed : 0 - 20
 */
+
+var defaultModTable = waveshaping.NewSineTable(512)
 
 const (
 	mod2SpeedDiv = 2.0
@@ -55,7 +57,7 @@ func NewChorus(stereo bool, delayCenter float64, delayRange float64, modDepth fl
 	}
 
 	if modShaper == nil {
-		c.modShaper = waveshaping.NewSineTable(512)
+		c.modShaper = defaultModTable
 	}
 
 	speed := [4]float64{modSpeed, modSpeed / mod2SpeedDiv, modSpeed / mod3SpeedDiv, modSpeed / mod4SpeedDiv}
