@@ -6,9 +6,6 @@ func Connect(from Module, outIndex int, to Module, inIndex int) {
 		if p.Contains(to) {
 			from = p.InputModuleAtIndex(outIndex)
 			outIndex = 0
-		} else {
-			from = p.OutputModuleAtIndex(outIndex)
-			outIndex = 0
 		}
 	}
 
