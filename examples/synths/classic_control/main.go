@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"math/rand"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -30,6 +31,118 @@ import (
 	"github.com/almerlucke/muse/value/template"
 	"github.com/gordonklaus/portaudio"
 )
+
+type ClassicSynth struct {
+	*muse.BasePatch
+	*control.Collection
+	ampEnv    *adsr.BasicStepProvider
+	filterEnv *adsr.BasicStepProvider
+	poly      *polyphony.Polyphony
+	chorus1   *chorus.Chorus
+	chorus2   *chorus.Chorus
+}
+
+func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
+	synth := &ClassicSynth{
+		BasePatch:  muse.NewPatch(0, 2, config, "synth"),
+		Collection: control.NewCollection(),
+	}
+
+	synth.AddReceiver(synth, "synth")
+
+	ampEnv := adsr.NewBasicStepProvider()
+	ampEnv.Steps[0] = adsr.Step{Level: 1.0, Duration: 25.0}
+	ampEnv.Steps[1] = adsr.Step{Level: 0.3, Duration: 80.0}
+	ampEnv.Steps[3] = adsr.Step{Duration: 2000.0}
+
+	filterEnv := adsr.NewBasicStepProvider()
+	filterEnv.Steps[0] = adsr.Step{Level: 0.9, Duration: 25.0}
+	filterEnv.Steps[1] = adsr.Step{Level: 0.5, Duration: 80.0}
+	filterEnv.Steps[3] = adsr.Step{Duration: 2000.0}
+
+	synth.ampEnv = ampEnv
+	synth.filterEnv = filterEnv
+	synth.poly = classic.NewSynth(20, ampEnv, filterEnv, config, "poly")
+	synth.chorus1 = chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, config, "chorus1")
+	synth.chorus2 = chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, config, "chorus2")
+
+	synth.AddModule(synth.poly)
+	synth.AddModule(synth.chorus1)
+	synth.AddModule(synth.chorus2)
+
+	synthAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, config))
+	synthAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, config))
+	allpass1 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, config, "allpass"))
+	allpass2 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, config, "allpass"))
+	allpassAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
+	allpassAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
+
+	muse.Connect(synth.poly, 0, synthAmp1, 0)
+	muse.Connect(synth.poly, 1, synthAmp2, 0)
+	muse.Connect(synthAmp1, 0, synth.chorus1, 0)
+	muse.Connect(synthAmp2, 0, synth.chorus2, 0)
+	muse.Connect(synthAmp1, 0, allpass1, 0)
+	muse.Connect(synthAmp2, 0, allpass2, 0)
+	muse.Connect(allpass1, 0, allpassAmp1, 0)
+	muse.Connect(allpass2, 0, allpassAmp2, 0)
+	muse.Connect(allpassAmp1, 0, synth.chorus1, 0)
+	muse.Connect(allpassAmp2, 0, synth.chorus2, 0)
+	muse.Connect(synth.chorus1, 0, synth, 0)
+	muse.Connect(synth.chorus2, 0, synth, 1)
+
+	synth.AddControl(control.NewBaseFloatControl("voice.filterFcMin", "Filter", "Filter Frequency Min", 50.0, 8000.0, 1.0, 50.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.filterFcMax", "Filter", "Filter Frequency Max", 50.0, 8000.0, 1.0, 8000.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.filterResonance", "Filter", "Resonance", 0.0, 1.0, 0.01, 0.7))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc1Mix", "Mixer", "Osc1 Mix", 0.0, 1.0, 0.01, 0.6))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc2Mix", "Mixer", "Osc2 Mix", 0.0, 1.0, 0.01, 0.35))
+	synth.AddControl(control.NewBaseFloatControl("voice.noiseMix", "Mixer", "Noise Mix", 0.0, 1.0, 0.01, 0.05))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc1PulseWidth", "Osc1", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc1SineMix", "Osc1", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc1SawMix", "Osc1", "Saw Mix", 0.0, 1.0, 0.01, 0.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc1PulseMix", "Osc1", "Pulse Mix", 0.0, 1.0, 0.01, 1.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc1TriMix", "Osc1", "Tri Mix", 0.0, 1.0, 0.01, 0.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc2PulseWidth", "Osc2", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc2SineMix", "Osc2", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc2SawMix", "Osc2", "Saw Mix", 0.0, 1.0, 0.01, 0.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc2PulseMix", "Osc2", "Pulse Mix", 0.0, 1.0, 0.01, 1.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc2TriMix", "Osc2", "Tri Mix", 0.0, 1.0, 0.01, 0.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.osc2Tuning", "Osc2", "Tuning", 0.125, 8.0, 0.01, 2.0))
+	synth.AddControl(control.NewBaseFloatControl("voice.pan", "Pan", "Pan", 0.0, 1.0, 0.01, 0.5))
+
+	return synth
+}
+
+func (cs *ClassicSynth) AddControl(ctrl control.Control) {
+	cs.Collection.AddControl(ctrl)
+	ctrl.AddListener(cs)
+}
+
+func (cs *ClassicSynth) ControlChanged(ctrl control.Control, oldValue any, newValue any, setter any) {
+	id := ctrl.Identifier()
+	components := strings.Split(id, ".")
+
+	if components[0] == "voice" {
+		cs.poly.ReceiveMessage(map[string]any{
+			"command":     "voice",
+			components[1]: newValue,
+		})
+	}
+}
+
+func (cs *ClassicSynth) ReceiveMessage(msg any) []*muse.Message {
+	content := msg.(map[string]any)
+
+	for k, v := range content {
+		ctrl := cs.ControlById(k)
+		if ctrl != nil {
+			if ctrl.Type() == control.Float {
+				ctrl.(*control.BaseFloatControl).Set(v.(float64), nil)
+			}
+		}
+	}
+
+	return nil
+}
 
 func noteSequence(octave notes.Note) value.Valuer[any] {
 	return value.NewAnd(
@@ -78,83 +191,6 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 		}, true)
 }
 
-type ClassicSynth struct {
-	*muse.BasePatch
-	*control.BaseControllable
-	ampEnv    *adsr.BasicStepProvider
-	filterEnv *adsr.BasicStepProvider
-	poly      *polyphony.Polyphony
-	chorus1   *chorus.Chorus
-	chorus2   *chorus.Chorus
-}
-
-func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
-	synth := &ClassicSynth{
-		BasePatch:        muse.NewPatch(0, 2, config, "classic"),
-		BaseControllable: control.NewBaseControllable(),
-	}
-
-	ampEnv := adsr.NewBasicStepProvider()
-	ampEnv.Steps[0] = adsr.Step{Level: 1.0, Duration: 25.0}
-	ampEnv.Steps[1] = adsr.Step{Level: 0.3, Duration: 80.0}
-	ampEnv.Steps[3] = adsr.Step{Duration: 2000.0}
-
-	filterEnv := adsr.NewBasicStepProvider()
-	filterEnv.Steps[0] = adsr.Step{Level: 0.9, Duration: 25.0}
-	filterEnv.Steps[1] = adsr.Step{Level: 0.5, Duration: 80.0}
-	filterEnv.Steps[3] = adsr.Step{Duration: 2000.0}
-
-	synth.ampEnv = ampEnv
-	synth.filterEnv = filterEnv
-	synth.poly = classic.NewSynth(20, ampEnv, filterEnv, config, "poly")
-	synth.chorus1 = chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, config, "chorus1")
-	synth.chorus2 = chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, config, "chorus2")
-
-	synth.AddModule(synth.poly)
-	synth.AddModule(synth.chorus1)
-	synth.AddModule(synth.chorus2)
-
-	synthAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, config))
-	synthAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, config))
-	allpass1 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, config, "allpass"))
-	allpass2 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, config, "allpass"))
-	allpassAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
-	allpassAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
-
-	muse.Connect(synth.poly, 0, synthAmp1, 0)
-	muse.Connect(synth.poly, 1, synthAmp2, 0)
-	muse.Connect(synthAmp1, 0, synth.chorus1, 0)
-	muse.Connect(synthAmp2, 0, synth.chorus2, 0)
-	muse.Connect(synthAmp1, 0, allpass1, 0)
-	muse.Connect(synthAmp2, 0, allpass2, 0)
-	muse.Connect(allpass1, 0, allpassAmp1, 0)
-	muse.Connect(allpass2, 0, allpassAmp2, 0)
-	muse.Connect(allpassAmp1, 0, synth.chorus1, 0)
-	muse.Connect(allpassAmp2, 0, synth.chorus2, 0)
-	muse.Connect(synth.chorus1, 0, synth, 0)
-	muse.Connect(synth.chorus2, 0, synth, 1)
-
-	ctrl := control.NewBaseFloatControl("filterFcMax", "Filter", "Filter Frequency Max", 50.0, 8000.0, 1.0, 8000.0)
-	ctrl.AddListener(synth)
-	ctrl.SetControllable(synth)
-	synth.AddControl(ctrl)
-
-	return synth
-}
-
-func (cs *ClassicSynth) ControlChanged(ctrl control.Control, oldValue any, newValue any, setter any) {
-	if setter == cs {
-		return
-	}
-
-	if ctrl.Identifier() == "filterFcMax" {
-		cs.poly.ReceiveMessage(map[string]any{
-			"command":     "voice",
-			"filterFcMax": newValue,
-		})
-	}
-}
-
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -192,44 +228,36 @@ func main() {
 		[]string{"control"}, "",
 	))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"poly"}, env.Config, "pw", template.Template{
-		"command":        "voice",
-		"osc1PulseWidth": template.NewParameter("pw", nil),
+	synth.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"synth"}, env.Config, "val", template.Template{
+		"voice.osc1PulseWidth": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"poly"}, env.Config, "pw", template.Template{
-		"command":        "voice",
-		"osc2PulseWidth": template.NewParameter("pw", nil),
+	synth.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"synth"}, env.Config, "val", template.Template{
+		"voice.osc2PulseWidth": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.085, 0.6, 0.25, []string{"poly"}, env.Config, "resonance", template.Template{
-		"command":         "voice",
-		"filterResonance": template.NewParameter("resonance", nil),
+	synth.AddMessenger(lfo.NewBasicLFO(0.085, 0.6, 0.25, []string{"synth"}, env.Config, "val", template.Template{
+		"voice.filterResonance": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.115, 0.06, 4.0, []string{"poly"}, env.Config, "tuning", template.Template{
-		"command":    "voice",
-		"osc2Tuning": template.NewParameter("tuning", nil),
+	synth.AddMessenger(lfo.NewBasicLFO(0.115, 0.06, 4.0, []string{"synth"}, env.Config, "val", template.Template{
+		"voice.osc2Tuning": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"poly"}, env.Config, "noise", template.Template{
-		"command":  "voice",
-		"noiseMix": template.NewParameter("noise", nil),
+	synth.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"synth"}, env.Config, "val", template.Template{
+		"voice.noiseMix": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"poly"}, env.Config, "noise", template.Template{
-		"command": "voice",
-		"osc1Mix": template.NewParameter("noise", nil),
+	synth.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"synth"}, env.Config, "val", template.Template{
+		"voice.osc1Mix": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"poly"}, env.Config, "noise", template.Template{
-		"command": "voice",
-		"osc2Mix": template.NewParameter("noise", nil),
+	synth.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"synth"}, env.Config, "val", template.Template{
+		"voice.osc2Mix": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"poly"}, env.Config, "pan", template.Template{
-		"command": "voice",
-		"pan":     template.NewParameter("pan", nil),
+	synth.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"synth"}, env.Config, "val", template.Template{
+		"voice.pan": template.NewParameter("val", nil),
 	}))
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 240.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
@@ -255,7 +283,7 @@ func main() {
 		Height: 400,
 	})
 
-	filterFcMaxControl := synth.ControlById("filterFcMax").(control.FloatControl)
+	filterFcMaxControl := synth.ControlById("voice.filterFcMax").(control.FloatControl)
 	fcMaxBinding := binding.NewFloat()
 	filterFcMaxControl.AddListener(control.NewChangeCallback(func(ctrl control.Control, oldValue any, newValue any, setter any) {
 		if setter != fcMaxBinding {

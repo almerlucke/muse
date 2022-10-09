@@ -8,6 +8,7 @@ import (
 type Patch interface {
 	Module
 	AddMessenger(Messenger) Messenger
+	AddReceiver(Receiver, string)
 	AddModule(Module) Module
 	Contains(Module) bool
 	Lookup(string) Receiver
@@ -61,6 +62,10 @@ func (p *BasePatch) NumInputs() int {
 
 func (p *BasePatch) NumOutputs() int {
 	return len(p.outputModules)
+}
+
+func (p *BasePatch) AddReceiver(rcvr Receiver, identifier string) {
+	p.receivers[identifier] = rcvr
 }
 
 func (p *BasePatch) AddMessenger(msgr Messenger) Messenger {

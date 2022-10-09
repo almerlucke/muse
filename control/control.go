@@ -36,13 +36,6 @@ func (c *ChangeCallback) ControlChanged(control Control, oldValue any, newValue 
 	c.f(control, oldValue, newValue, setter)
 }
 
-type Controllable interface {
-	Listener
-	AddControl(Control)
-	Controls() []Control
-	ControlById(string) Control
-}
-
 type Control interface {
 	muse.Identifiable
 	Group() string
@@ -50,8 +43,6 @@ type Control interface {
 	Type() ControlType
 	AddListener(Listener)
 	RemoveListener(Listener)
-	Controllable() Controllable
-	SetControllable(Controllable)
 }
 
 type FloatControl interface {
@@ -66,12 +57,11 @@ type FloatControl interface {
 }
 
 type BaseControl struct {
-	identifier   string
-	group        string
-	displayName  string
-	listeners    *list.List
-	controllable Controllable
-	controlType  ControlType
+	identifier  string
+	group       string
+	displayName string
+	listeners   *list.List
+	controlType ControlType
 }
 
 func NewBaseControl(id string, group string, name string, controlType ControlType) *BaseControl {
@@ -118,14 +108,6 @@ func (bc *BaseControl) RemoveListener(listener Listener) {
 	if elem != nil {
 		bc.listeners.Remove(elem)
 	}
-}
-
-func (bc *BaseControl) SetControllable(controllable Controllable) {
-	bc.controllable = controllable
-}
-
-func (bc *BaseControl) Controllable() Controllable {
-	return bc.controllable
 }
 
 func (bc *BaseControl) Type() ControlType {
@@ -187,30 +169,26 @@ func (fc *BaseFloatControl) AddListener(listener Listener) {
 	listener.ControlChanged(fc, fc.value, fc.value, fc)
 }
 
-type BaseControllable struct {
+type Collection struct {
 	controls []Control
 }
 
-func NewBaseControllable() *BaseControllable {
-	return &BaseControllable{
+func NewCollection() *Collection {
+	return &Collection{
 		controls: []Control{},
 	}
 }
 
-func (bc *BaseControllable) ControlChanged(ctrl Control, oldValue any, newValue any, setter any) {
-	// STUB, override by embedder
+func (c *Collection) AddControl(ctrl Control) {
+	c.controls = append(c.controls, ctrl)
 }
 
-func (bc *BaseControllable) AddControl(ctrl Control) {
-	bc.controls = append(bc.controls, ctrl)
+func (c *Collection) Controls() []Control {
+	return c.controls
 }
 
-func (bc *BaseControllable) Controls() []Control {
-	return bc.controls
-}
-
-func (bc *BaseControllable) ControlById(id string) Control {
-	for _, ctrl := range bc.controls {
+func (c *Collection) ControlById(id string) Control {
+	for _, ctrl := range c.controls {
 		if ctrl.Identifier() == id {
 			return ctrl
 		}
