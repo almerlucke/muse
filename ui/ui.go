@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
 )
 
@@ -65,10 +66,14 @@ func NewFixedWidthLayout(w float32) *FixedWidthLayout {
 	return &FixedWidthLayout{Width: w}
 }
 
+func NewFixedWidthContainer(w float32, object fyne.CanvasObject) *fyne.Container {
+	return container.New(NewFixedWidthLayout(w), object)
+}
+
 func (fwl *FixedWidthLayout) Layout(objects []fyne.CanvasObject, containerSize fyne.Size) {
 	for _, object := range objects {
-		object.Resize(fyne.NewSize(fwl.Width, objects[0].MinSize().Height))
-		object.Move(fyne.NewPos(0, 0))
+		object.Resize(fyne.NewSize(containerSize.Width, object.MinSize().Height))
+		object.Move(fyne.NewPos(0, (containerSize.Height-object.MinSize().Height)/2.0))
 	}
 }
 

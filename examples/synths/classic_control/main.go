@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/almerlucke/muse"
@@ -30,11 +29,12 @@ import (
 	"github.com/almerlucke/muse/value/arpeggio"
 	"github.com/almerlucke/muse/value/template"
 	"github.com/gordonklaus/portaudio"
+	"github.com/mkb218/gosndfile/sndfile"
 )
 
 type ClassicSynth struct {
 	*muse.BasePatch
-	*control.Collection
+	controls  *control.Group
 	ampEnv    *adsr.BasicStepProvider
 	filterEnv *adsr.BasicStepProvider
 	poly      *polyphony.Polyphony
@@ -44,10 +44,11 @@ type ClassicSynth struct {
 
 func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	synth := &ClassicSynth{
-		BasePatch:  muse.NewPatch(0, 2, config, "synth"),
-		Collection: control.NewCollection(),
+		BasePatch: muse.NewPatch(0, 2, config, "synth"),
+		controls:  control.NewGroup("group.main", "Classic Synth"),
 	}
 
+	// Add self as receiver
 	synth.AddReceiver(synth, "synth")
 
 	ampEnv := adsr.NewBasicStepProvider()
@@ -90,31 +91,55 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	muse.Connect(synth.chorus1, 0, synth, 0)
 	muse.Connect(synth.chorus2, 0, synth, 1)
 
-	synth.AddControl(control.NewBaseFloatControl("voice.filterFcMin", "Filter", "Filter Frequency Min", 50.0, 8000.0, 1.0, 50.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.filterFcMax", "Filter", "Filter Frequency Max", 50.0, 8000.0, 1.0, 8000.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.filterResonance", "Filter", "Resonance", 0.0, 1.0, 0.01, 0.7))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc1Mix", "Mixer", "Osc1 Mix", 0.0, 1.0, 0.01, 0.6))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc2Mix", "Mixer", "Osc2 Mix", 0.0, 1.0, 0.01, 0.35))
-	synth.AddControl(control.NewBaseFloatControl("voice.noiseMix", "Mixer", "Noise Mix", 0.0, 1.0, 0.01, 0.05))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc1PulseWidth", "Osc1", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc1SineMix", "Osc1", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc1SawMix", "Osc1", "Saw Mix", 0.0, 1.0, 0.01, 0.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc1PulseMix", "Osc1", "Pulse Mix", 0.0, 1.0, 0.01, 1.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc1TriMix", "Osc1", "Tri Mix", 0.0, 1.0, 0.01, 0.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc2PulseWidth", "Osc2", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc2SineMix", "Osc2", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc2SawMix", "Osc2", "Saw Mix", 0.0, 1.0, 0.01, 0.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc2PulseMix", "Osc2", "Pulse Mix", 0.0, 1.0, 0.01, 1.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc2TriMix", "Osc2", "Tri Mix", 0.0, 1.0, 0.01, 0.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.osc2Tuning", "Osc2", "Tuning", 0.125, 8.0, 0.01, 2.0))
-	synth.AddControl(control.NewBaseFloatControl("voice.pan", "Pan", "Pan", 0.0, 1.0, 0.01, 0.5))
+	synth.SetupControls()
 
 	return synth
 }
 
-func (cs *ClassicSynth) AddControl(ctrl control.Control) {
-	cs.Collection.AddControl(ctrl)
-	ctrl.AddListener(cs)
+func (cs *ClassicSynth) SetupControls() {
+	filterGroup := cs.controls.AddChild(control.NewGroup("group.filter", "Filter"))
+	filterGroup.AddControl(control.NewSliderControl("voice.filterFcMin", "Filter Frequency Min", 50.0, 8000.0, 1.0, 50.0))
+	filterGroup.AddControl(control.NewSliderControl("voice.filterFcMax", "Filter Frequency Max", 50.0, 8000.0, 1.0, 8000.0))
+	filterGroup.AddControl(control.NewSliderControl("voice.filterResonance", "Resonance", 0.0, 1.0, 0.01, 0.7))
+
+	mixerGroup := cs.controls.AddChild(control.NewGroup("group.mixer", "Mixer"))
+	mixerGroup.AddControl(control.NewSliderControl("voice.osc1Mix", "Osc1 Mix", 0.0, 1.0, 0.01, 0.6))
+	mixerGroup.AddControl(control.NewSliderControl("voice.osc2Mix", "Osc2 Mix", 0.0, 1.0, 0.01, 0.35))
+	mixerGroup.AddControl(control.NewSliderControl("voice.noiseMix", "Noise Mix", 0.0, 1.0, 0.01, 0.05))
+
+	osc1Group := cs.controls.AddChild(control.NewGroup("group.osc1", "Oscillator 1"))
+	osc1Group.AddControl(control.NewSliderControl("voice.osc1PulseWidth", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
+	osc1Group.AddControl(control.NewSliderControl("voice.osc1SineMix", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
+	osc1Group.AddControl(control.NewSliderControl("voice.osc1SawMix", "Saw Mix", 0.0, 1.0, 0.01, 0.0))
+	osc1Group.AddControl(control.NewSliderControl("voice.osc1PulseMix", "Pulse Mix", 0.0, 1.0, 0.01, 1.0))
+	osc1Group.AddControl(control.NewSliderControl("voice.osc1TriMix", "Tri Mix", 0.0, 1.0, 0.01, 0.0))
+
+	osc2Group := cs.controls.AddChild(control.NewGroup("group.osc2", "Oscillator 2"))
+	osc2Group.AddControl(control.NewSliderControl("voice.osc2PulseWidth", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
+	osc2Group.AddControl(control.NewSliderControl("voice.osc2SineMix", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
+	osc2Group.AddControl(control.NewSliderControl("voice.osc2SawMix", "Saw Mix", 0.0, 1.0, 0.01, 0.0))
+	osc2Group.AddControl(control.NewSliderControl("voice.osc2PulseMix", "Pulse Mix", 0.0, 1.0, 0.01, 1.0))
+	osc2Group.AddControl(control.NewSliderControl("voice.osc2TriMix", "Tri Mix", 0.0, 1.0, 0.01, 0.0))
+	osc2Group.AddControl(control.NewSliderControl("voice.osc2Tuning", "Tuning", 0.125, 8.0, 0.01, 2.0))
+
+	panGroup := cs.controls.AddChild(control.NewGroup("group.pan", "Pan"))
+	panGroup.AddControl(control.NewSliderControl("voice.pan", "Pan", 0.0, 1.0, 0.01, 0.5))
+
+	ampEnvGroup := cs.controls.AddChild(control.NewGroup("group.ampEnv", "Amplitude ADSR"))
+	ampEnvGroup.AddControl(control.NewSliderControl("adsr.amplitude.attackLevel", "Attack Level", 0.0, 1.0, 0.01, 1.0))
+	ampEnvGroup.AddControl(control.NewSliderControl("adsr.amplitude.attackDuration", "Attack Duration (ms)", 2.0, 1000.0, 1.0, 25.0))
+	ampEnvGroup.AddControl(control.NewSliderControl("adsr.amplitude.decayLevel", "Decay Level", 0.0, 1.0, 0.01, 0.3))
+	ampEnvGroup.AddControl(control.NewSliderControl("adsr.amplitude.decayDuration", "Decay Duration (ms)", 2.0, 1000.0, 1.0, 80.0))
+	ampEnvGroup.AddControl(control.NewSliderControl("adsr.amplitude.releaseDuration", "Release Duration (ms)", 5.0, 4000.0, 1.0, 2000.0))
+
+	filterEnvGroup := cs.controls.AddChild(control.NewGroup("group.filterEnv", "Filter ADSR"))
+	filterEnvGroup.AddControl(control.NewSliderControl("adsr.filter.attackLevel", "Attack Level", 0.0, 1.0, 0.01, 0.9))
+	filterEnvGroup.AddControl(control.NewSliderControl("adsr.filter.attackDuration", "Attack Duration (ms)", 2.0, 1000.0, 1.0, 25.0))
+	filterEnvGroup.AddControl(control.NewSliderControl("adsr.filter.decayLevel", "Decay Level", 0.0, 1.0, 0.01, 0.5))
+	filterEnvGroup.AddControl(control.NewSliderControl("adsr.filter.decayDuration", "Decay Duration (ms)", 2.0, 1000.0, 1.0, 80.0))
+	filterEnvGroup.AddControl(control.NewSliderControl("adsr.filter.releaseDuration", "Release Duration (ms)", 5.0, 4000.0, 1.0, 2000.0))
+
+	cs.controls.AddListenerDeep(cs)
 }
 
 func (cs *ClassicSynth) ControlChanged(ctrl control.Control, oldValue any, newValue any, setter any) {
@@ -122,10 +147,34 @@ func (cs *ClassicSynth) ControlChanged(ctrl control.Control, oldValue any, newVa
 	components := strings.Split(id, ".")
 
 	if components[0] == "voice" {
+		// If voice control send through to polyphony module (which will pass message to voices)
 		cs.poly.ReceiveMessage(map[string]any{
 			"command":     "voice",
 			components[1]: newValue,
 		})
+	} else if components[0] == "adsr" {
+		// If adsr set steps
+		var stepProvider *adsr.BasicStepProvider
+		if components[1] == "filter" {
+			stepProvider = cs.filterEnv
+		} else if components[1] == "amplitude" {
+			stepProvider = cs.ampEnv
+		}
+
+		if stepProvider != nil {
+			switch components[2] {
+			case "attackLevel":
+				stepProvider.Steps[0].Level = newValue.(float64)
+			case "attackDuration":
+				stepProvider.Steps[0].Duration = newValue.(float64)
+			case "decayLevel":
+				stepProvider.Steps[1].Level = newValue.(float64)
+			case "decayDuration":
+				stepProvider.Steps[1].Duration = newValue.(float64)
+			case "releaseDuration":
+				stepProvider.Steps[3].Duration = newValue.(float64)
+			}
+		}
 	}
 }
 
@@ -133,10 +182,12 @@ func (cs *ClassicSynth) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
 	for k, v := range content {
-		ctrl := cs.ControlById(k)
+		ctrl := cs.controls.ControlById(k)
 		if ctrl != nil {
-			if ctrl.Type() == control.Float {
-				ctrl.(*control.BaseFloatControl).Set(v.(float64), nil)
+			if ctrl.Type() == control.Slider {
+				// Change control from message will take a lot of cpy because it updates fyne UI elements, which is really inefficient
+				// ctrl.(*control.SliderControl).Set(v.(float64), nil)
+				cs.ControlChanged(ctrl, 0, v.(float64), nil)
 			}
 		}
 	}
@@ -194,7 +245,7 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100.0, 512)
+	env := muse.NewEnvironment(2, 44100.0, 2048)
 
 	bpm := 100.0
 	synth := NewClassicSynth(bpm, env.Config)
@@ -260,7 +311,11 @@ func main() {
 		"voice.pan": template.NewParameter("val", nil),
 	}))
 
-	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 240.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	// synth.AddMessenger(lfo.NewBasicLFO(0.0569, 6800.0, 1200.0, []string{"synth"}, env.Config, "val", template.Template{
+	// 	"voice.filterFcMax": template.NewParameter("val", nil),
+	// }))
+
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()
@@ -283,22 +338,6 @@ func main() {
 		Height: 400,
 	})
 
-	filterFcMaxControl := synth.ControlById("voice.filterFcMax").(control.FloatControl)
-	fcMaxBinding := binding.NewFloat()
-	filterFcMaxControl.AddListener(control.NewChangeCallback(func(ctrl control.Control, oldValue any, newValue any, setter any) {
-		if setter != fcMaxBinding {
-			fcMaxBinding.Set(newValue.(float64))
-		}
-	}))
-	fcMaxBinding.AddListener(binding.NewDataListener(func() {
-		v, err := fcMaxBinding.Get()
-		if err == nil {
-			filterFcMaxControl.Set(v, fcMaxBinding)
-		}
-	}))
-	fcMaxSlider := widget.NewSliderWithData(50.0, 8000.0, fcMaxBinding)
-	fcMaxSlider.Step = 1.0
-
 	w.SetContent(
 		container.NewVBox(
 			container.NewHBox(
@@ -308,13 +347,8 @@ func main() {
 				widget.NewButton("Stop", func() {
 					stream.Stop()
 				}),
-				// widget.NewButton("Notes Off", func() {
-				// 	poly.(*polyphony.Polyphony).AllNotesOff()
-				// }),
 			),
-			container.NewHBox(
-				fcMaxSlider,
-			),
+			container.NewHScroll(synth.controls.UI()),
 		),
 	)
 

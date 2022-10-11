@@ -2,14 +2,20 @@ package control
 
 import (
 	"container/list"
+	"fmt"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/widget"
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/ui"
 )
 
 type ControlType int
 
 const (
-	Float ControlType = iota
+	Slider ControlType = iota
 	// Int
 	// List
 	// Switch
@@ -36,68 +42,180 @@ func (c *ChangeCallback) ControlChanged(control Control, oldValue any, newValue 
 	c.f(control, oldValue, newValue, setter)
 }
 
+type UserInterfacer interface {
+	DisplayName() string
+	UI() fyne.CanvasObject
+}
+
 type Control interface {
 	muse.Identifiable
-	Group() string
-	DisplayName() string
+	UserInterfacer
+	Group() *Group
+	SetGroup(*Group)
 	Type() ControlType
 	AddListener(Listener)
 	RemoveListener(Listener)
 }
 
-type FloatControl interface {
-	Control
-	Min() float64
-	Max() float64
-	Step() float64
-	Get() float64
-	// Set a new value, also pass the setter so listeners can decide
-	// to do something with the value or not (if they themselves where the setter)
-	Set(float64, any)
+type Group struct {
+	id          string
+	displayName string
+	Controls    []Control
+	Parent      *Group
+	Children    []*Group
+}
+
+func NewGroup(id string, displayName string) *Group {
+	return &Group{
+		id:          id,
+		displayName: displayName,
+		Controls:    []Control{},
+		Children:    []*Group{},
+	}
+}
+
+func (g *Group) DisplayName() string {
+	return g.displayName
+}
+
+func (g *Group) UI() fyne.CanvasObject {
+	controlUis := make([]fyne.CanvasObject, len(g.Controls))
+
+	for i, c := range g.Controls {
+		controlUis[i] = c.UI()
+	}
+
+	childrenUis := make([]fyne.CanvasObject, len(g.Children)+1)
+	childrenUis[0] = container.NewVBox(controlUis...)
+
+	for i, child := range g.Children {
+		childrenUis[i+1] = child.UI()
+	}
+
+	return widget.NewCard(g.displayName, "", container.NewHBox(childrenUis...))
+
+	// 				widget.NewLabel("attack duration (ms)"),
+	// 				container.NewBorder(nil, nil, nil, container.New(ui.NewFixedWidthLayout(80), attackDurationLabel), attackDurationSlider),
+	// 				widget.NewLabel("attack amplitude (0.0 - 1.0)"),
+	// 				container.NewBorder(nil, nil, nil, container.New(ui.NewFixedWidthLayout(80), attackLevelLabel), attackLevelSlider),
+	// 				widget.NewLabel("attack shape (-1.0 - 1.0)"),
+	// 				container.NewBorder(nil, nil, nil, container.New(ui.NewFixedWidthLayout(80), attackShapeLabel), attackShapeSlider),
+	// 			)),
+	// 		),
+}
+
+func (g *Group) Identifier() string {
+	return g.id
+}
+
+func (g *Group) SetIdentifier(id string) {
+	g.id = id
+}
+
+func (g *Group) AddControl(c Control) Control {
+	g.Controls = append(g.Controls, c)
+	c.SetGroup(g)
+	return c
+}
+
+func (g *Group) AddChild(child *Group) *Group {
+	g.Children = append(g.Children, child)
+	child.Parent = g
+	return child
+}
+
+func (g *Group) ControlById(id string) Control {
+	for _, c := range g.Controls {
+		if c.Identifier() == id {
+			return c
+		}
+	}
+
+	for _, child := range g.Children {
+		c := child.ControlById(id)
+		if c != nil {
+			return c
+		}
+	}
+
+	return nil
+}
+
+func (g *Group) ChildById(id string) *Group {
+	for _, child := range g.Children {
+		if child.Identifier() == id {
+			return child
+		}
+	}
+
+	return nil
+}
+
+func (g *Group) AddListenerShallow(l Listener) {
+	for _, c := range g.Controls {
+		c.AddListener(l)
+	}
+}
+
+func (g *Group) AddListenerDeep(l Listener) {
+	for _, c := range g.Controls {
+		c.AddListener(l)
+	}
+
+	for _, child := range g.Children {
+		child.AddListenerDeep(l)
+	}
 }
 
 type BaseControl struct {
-	identifier  string
-	group       string
-	displayName string
+	id          string
+	name        string
+	group       *Group
 	listeners   *list.List
 	controlType ControlType
 }
 
-func NewBaseControl(id string, group string, name string, controlType ControlType) *BaseControl {
-	bc := &BaseControl{
-		identifier:  id,
-		group:       group,
-		displayName: name,
+func NewBaseControl(id string, name string, controlType ControlType) *BaseControl {
+	c := &BaseControl{
+		id:          id,
+		name:        name,
 		listeners:   list.New(),
 		controlType: controlType,
 	}
 
-	return bc
+	return c
 }
 
-func (bc *BaseControl) Identifier() string {
-	return bc.identifier
+func (c *BaseControl) Identifier() string {
+	return c.id
 }
 
-func (bc *BaseControl) SetIdentifier(identifier string) {
-	bc.identifier = identifier
+func (c *BaseControl) SetIdentifier(id string) {
+	c.id = id
 }
 
-func (bc *BaseControl) Group() string {
-	return bc.group
+func (c *BaseControl) DisplayName() string {
+	return c.name
 }
 
-func (bc *BaseControl) DisplayName() string {
-	return bc.displayName
+func (c *BaseControl) UI() fyne.CanvasObject {
+	return nil // STUB
 }
 
-func (bc *BaseControl) AddListener(listener Listener) {
-	bc.listeners.PushBack(listener)
+func (c *BaseControl) Group() *Group {
+	return c.group
 }
 
-func (bc *BaseControl) RemoveListener(listener Listener) {
-	elem := bc.listeners.Front()
+func (c *BaseControl) SetGroup(g *Group) {
+	c.group = g
+}
+
+func (c *BaseControl) AddListener(listener Listener) {
+	c.listeners.PushBack(listener)
+}
+
+func (c *BaseControl) RemoveListener(listener Listener) {
+	elem := c.listeners.Front()
 	for elem != nil {
 		if elem.Value == listener {
 			break
@@ -106,23 +224,23 @@ func (bc *BaseControl) RemoveListener(listener Listener) {
 	}
 
 	if elem != nil {
-		bc.listeners.Remove(elem)
+		c.listeners.Remove(elem)
 	}
 }
 
-func (bc *BaseControl) Type() ControlType {
-	return bc.controlType
+func (c *BaseControl) Type() ControlType {
+	return c.controlType
 }
 
-func (bc *BaseControl) SendChangeToListeners(control Control, oldValue any, newValue any, setter any) {
-	elem := bc.listeners.Front()
+func (c *BaseControl) SendChangeToListeners(control Control, oldValue any, newValue any, setter any) {
+	elem := c.listeners.Front()
 	for elem != nil {
 		elem.Value.(Listener).ControlChanged(control, oldValue, newValue, setter)
 		elem = elem.Next()
 	}
 }
 
-type BaseFloatControl struct {
+type SliderControl struct {
 	*BaseControl
 	min   float64
 	max   float64
@@ -130,9 +248,9 @@ type BaseFloatControl struct {
 	value float64
 }
 
-func NewBaseFloatControl(id string, group string, name string, min float64, max float64, step float64, value float64) *BaseFloatControl {
-	return &BaseFloatControl{
-		BaseControl: NewBaseControl(id, group, name, Float),
+func NewSliderControl(id string, name string, min float64, max float64, step float64, value float64) *SliderControl {
+	return &SliderControl{
+		BaseControl: NewBaseControl(id, name, Slider),
 		min:         min,
 		max:         max,
 		step:        step,
@@ -140,59 +258,67 @@ func NewBaseFloatControl(id string, group string, name string, min float64, max 
 	}
 }
 
-func (fc *BaseFloatControl) Min() float64 {
-	return fc.min
+func (sc *SliderControl) Min() float64 {
+	return sc.min
 }
 
-func (fc *BaseFloatControl) Max() float64 {
-	return fc.max
+func (sc *SliderControl) Max() float64 {
+	return sc.max
 }
 
-func (fc *BaseFloatControl) Step() float64 {
-	return fc.step
+func (sc *SliderControl) Step() float64 {
+	return sc.step
 }
 
-func (fc *BaseFloatControl) Get() float64 {
-	return fc.value
+func (sc *SliderControl) Get() float64 {
+	return sc.value
 }
 
-func (fc *BaseFloatControl) Set(newValue float64, setter any) {
-	if fc.value != newValue && newValue >= fc.min && newValue <= fc.max {
-		oldValue := fc.value
-		fc.value = newValue
-		fc.SendChangeToListeners(fc, oldValue, newValue, setter)
+func (sc *SliderControl) Set(newValue float64, setter any) {
+	if sc.value != newValue && newValue >= sc.min && newValue <= sc.max {
+		oldValue := sc.value
+		sc.value = newValue
+		sc.SendChangeToListeners(sc, oldValue, newValue, setter)
 	}
 }
 
-func (fc *BaseFloatControl) AddListener(listener Listener) {
-	fc.BaseControl.AddListener(listener)
-	listener.ControlChanged(fc, fc.value, fc.value, fc)
+func (sc *SliderControl) AddListener(listener Listener) {
+	sc.BaseControl.AddListener(listener)
+	listener.ControlChanged(sc, sc.value, sc.value, sc)
 }
 
-type Collection struct {
-	controls []Control
-}
+func (sc *SliderControl) UI() fyne.CanvasObject {
+	floatValueLabelBinding := binding.NewString()
+	floatValueLabelBinding.Set(fmt.Sprintf("%.2f", sc.value))
 
-func NewCollection() *Collection {
-	return &Collection{
-		controls: []Control{},
-	}
-}
+	floatValueLabel := widget.NewLabelWithData(floatValueLabelBinding)
+	floatValueLabel.Alignment = fyne.TextAlignTrailing
 
-func (c *Collection) AddControl(ctrl Control) {
-	c.controls = append(c.controls, ctrl)
-}
+	valueBinding := binding.NewFloat()
+	valueBinding.Set(sc.value)
 
-func (c *Collection) Controls() []Control {
-	return c.controls
-}
-
-func (c *Collection) ControlById(id string) Control {
-	for _, ctrl := range c.controls {
-		if ctrl.Identifier() == id {
-			return ctrl
+	valueBinding.AddListener(binding.NewDataListener(func() {
+		v, err := valueBinding.Get()
+		if err == nil {
+			floatValueLabelBinding.Set(fmt.Sprintf("%.2f", v))
+			sc.Set(v, valueBinding)
 		}
-	}
+	}))
 
-	return nil
+	sc.AddListener(NewChangeCallback(func(ctrl Control, oldValue any, newValue any, setter any) {
+		if setter != valueBinding {
+			valueBinding.Set(newValue.(float64))
+		}
+	}))
+
+	valueSlider := widget.NewSliderWithData(sc.min, sc.max, valueBinding)
+	valueSlider.Step = sc.step
+
+	return container.NewVBox(
+		widget.NewLabel(sc.DisplayName()),
+		container.NewBorder(nil, nil, nil,
+			ui.NewFixedWidthContainer(70, floatValueLabel),
+			ui.NewFixedWidthContainer(140, valueSlider),
+		),
+	)
 }
