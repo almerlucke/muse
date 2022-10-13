@@ -40,7 +40,6 @@ func (p *Polyphony) noteOff(identifier string) {
 	for elem != end {
 		if elem.Value.Identifier() == identifier {
 			elem.Value.NoteOff()
-			break
 		}
 		elem = elem.Next
 	}
@@ -80,9 +79,19 @@ func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 			p.activePool.Push(elem)
 		}
 	} else if command == "voice" {
-		// Pass message to voices
+		// Pass message to all voices
+
+		// Active voices first
 		elem := p.activePool.First()
 		end := p.activePool.End()
+		for elem != end {
+			elem.Value.ReceiveMessage(msg)
+			elem = elem.Next
+		}
+
+		// Free voices as well
+		elem = p.freePool.First()
+		end = p.freePool.End()
 		for elem != end {
 			elem.Value.ReceiveMessage(msg)
 			elem = elem.Next

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"strings"
@@ -14,10 +15,6 @@ import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/envelopes/adsr"
 	"github.com/almerlucke/muse/control"
-	"github.com/almerlucke/muse/messengers/banger"
-	"github.com/almerlucke/muse/messengers/lfo"
-	"github.com/almerlucke/muse/messengers/triggers/stepper"
-	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/functor"
@@ -25,10 +22,12 @@ import (
 	"github.com/almerlucke/muse/synths/classic"
 	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils/notes"
-	"github.com/almerlucke/muse/value"
-	"github.com/almerlucke/muse/value/arpeggio"
-	"github.com/almerlucke/muse/value/template"
 	"github.com/gordonklaus/portaudio"
+
+	"gitlab.com/gomidi/midi"
+	. "gitlab.com/gomidi/midi/midimessage/channel" // (Channel Messages)
+	"gitlab.com/gomidi/midi/reader"
+	"gitlab.com/gomidi/rtmididrv"
 )
 
 type ClassicSynth struct {
@@ -36,7 +35,7 @@ type ClassicSynth struct {
 	controls  *control.Group
 	ampEnv    *adsr.BasicStepProvider
 	filterEnv *adsr.BasicStepProvider
-	poly      *polyphony.Polyphony
+	Poly      *polyphony.Polyphony
 	chorus1   *chorus.Chorus
 	chorus2   *chorus.Chorus
 }
@@ -62,11 +61,11 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 
 	synth.ampEnv = ampEnv
 	synth.filterEnv = filterEnv
-	synth.poly = classic.NewSynth(20, ampEnv, filterEnv, config, "poly")
+	synth.Poly = classic.NewSynth(20, ampEnv, filterEnv, config, "poly")
 	synth.chorus1 = chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, config, "chorus1")
 	synth.chorus2 = chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, config, "chorus2")
 
-	synth.AddModule(synth.poly)
+	synth.AddModule(synth.Poly)
 	synth.AddModule(synth.chorus1)
 	synth.AddModule(synth.chorus2)
 
@@ -77,8 +76,8 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	allpassAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
 	allpassAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
 
-	muse.Connect(synth.poly, 0, synthAmp1, 0)
-	muse.Connect(synth.poly, 1, synthAmp2, 0)
+	muse.Connect(synth.Poly, 0, synthAmp1, 0)
+	muse.Connect(synth.Poly, 1, synthAmp2, 0)
 	muse.Connect(synthAmp1, 0, synth.chorus1, 0)
 	muse.Connect(synthAmp2, 0, synth.chorus2, 0)
 	muse.Connect(synthAmp1, 0, allpass1, 0)
@@ -144,14 +143,15 @@ func (cs *ClassicSynth) SetupControls() {
 func (cs *ClassicSynth) ControlChanged(ctrl control.Control, oldValue any, newValue any, setter any) {
 	id := ctrl.Identifier()
 	components := strings.Split(id, ".")
+	route := components[0]
 
-	if components[0] == "voice" {
+	if route == "voice" {
 		// If voice control send through to polyphony module (which will pass message to voices)
-		cs.poly.ReceiveMessage(map[string]any{
+		cs.Poly.ReceiveMessage(map[string]any{
 			"command":     "voice",
 			components[1]: newValue,
 		})
-	} else if components[0] == "adsr" {
+	} else if route == "adsr" {
 		// If adsr set steps
 		var stepProvider *adsr.BasicStepProvider
 		if components[1] == "filter" {
@@ -194,53 +194,6 @@ func (cs *ClassicSynth) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func noteSequence(octave notes.Note) value.Valuer[any] {
-	return value.NewAnd(
-		[]value.Valuer[any]{
-			// Row 1
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMinor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, true), 2, 2),
-			// Row 2
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMajor7.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Exclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.EMinor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 2, 2),
-			// Row 3
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMinor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, true), 2, 2),
-			// Row 4
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMajor7.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Exclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.BMinor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMinor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 2),
-			// Row 5
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.EMinor.FreqAny(octave), arpeggio.Converge, arpeggio.None, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 1, 1),
-		}, true)
-}
-
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
@@ -254,67 +207,126 @@ func main() {
 	muse.Connect(synth, 0, env, 0)
 	muse.Connect(synth, 1, env, 1)
 
-	synth.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
-		"command":   "trigger",
-		"duration":  value.NewSequence([]any{375.0, 750.0, 1000.0, 250.0, 250.0, 375.0, 750.0}),
-		"amplitude": value.NewConst[any](1.0),
-		"message": template.Template{
-			"osc1SineMix":  value.NewSequence([]any{1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7}),
-			"osc1SawMix":   value.NewSequence([]any{0.0, 0.1, 0.3, 0.5, 0.7, 1.0, 0.7, 0.5, 0.3, 0.2, 0.1}),
-			"osc1PulseMix": value.NewSequence([]any{0.2, 0.5, 0.7, 1.0, 0.7, 0.5, 0.2, 0.1, 0.0}),
-			"osc1TriMix":   value.NewSequence([]any{0.7, 1.0, 1.0, 0.7, 0.3, 0.1, 0.0, 0.0, 0.0}),
-			"osc2SineMix":  value.NewSequence([]any{0.7, 1.0, 1.0, 0.7, 0.3, 0.1, 0.0, 0.0, 0.0}),
-			"osc2SawMix":   value.NewSequence([]any{0.2, 0.5, 0.7, 1.0, 0.7, 0.5, 0.2, 0.1, 0.0}),
-			"osc2PulseMix": value.NewSequence([]any{0.0, 0.1, 0.3, 0.5, 0.7, 1.0, 0.7, 0.5, 0.3, 0.2, 0.1}),
-			"osc2TriMix":   value.NewSequence([]any{1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7}),
-			"frequency":    noteSequence(notes.O3),
-		},
-	}, "control"))
+	// synth.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
+	// 	"command":   "trigger",
+	// 	"duration":  value.NewSequence([]any{375.0, 750.0, 1000.0, 250.0, 250.0, 375.0, 750.0}),
+	// 	"amplitude": value.NewConst[any](1.0),
+	// 	"message": template.Template{
+	// 		// "osc1SineMix":  value.NewSequence([]any{1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7}),
+	// 		// "osc1SawMix":   value.NewSequence([]any{0.0, 0.1, 0.3, 0.5, 0.7, 1.0, 0.7, 0.5, 0.3, 0.2, 0.1}),
+	// 		// "osc1PulseMix": value.NewSequence([]any{0.2, 0.5, 0.7, 1.0, 0.7, 0.5, 0.2, 0.1, 0.0}),
+	// 		// "osc1TriMix":   value.NewSequence([]any{0.7, 1.0, 1.0, 0.7, 0.3, 0.1, 0.0, 0.0, 0.0}),
+	// 		// "osc2SineMix":  value.NewSequence([]any{0.7, 1.0, 1.0, 0.7, 0.3, 0.1, 0.0, 0.0, 0.0}),
+	// 		// "osc2SawMix":   value.NewSequence([]any{0.2, 0.5, 0.7, 1.0, 0.7, 0.5, 0.2, 0.1, 0.0}),
+	// 		// "osc2PulseMix": value.NewSequence([]any{0.0, 0.1, 0.3, 0.5, 0.7, 1.0, 0.7, 0.5, 0.3, 0.2, 0.1}),
+	// 		// "osc2TriMix":   value.NewSequence([]any{1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7}),
+	// 		"frequency": noteSequence(notes.O3),
+	// 	},
+	// }, "control"))
 
-	synth.AddMessenger(stepper.NewStepper(
-		swing.New(value.NewConst(bpm), value.NewConst(2.0),
-			value.NewSequence([]*swing.Step{{}, {Skip: true}}),
-		),
-		[]string{"control"}, "",
-	))
+	// synth.AddMessenger(stepper.NewStepper(
+	// 	swing.New(value.NewConst(bpm), value.NewConst(2.0),
+	// 		value.NewSequence([]*swing.Step{{}, {Skip: true}}),
+	// 	),
+	// 	[]string{"control"}, "",
+	// ))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"synth"}, env.Config, "val", template.Template{
-		"voice.osc1PulseWidth": template.NewParameter("val", nil),
-	}))
+	// synth.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"synth"}, env.Config, "val", template.Template{
+	// 	"voice.osc1PulseWidth": template.NewParameter("val", nil),
+	// }))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"synth"}, env.Config, "val", template.Template{
-		"voice.osc2PulseWidth": template.NewParameter("val", nil),
-	}))
+	// synth.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"synth"}, env.Config, "val", template.Template{
+	// 	"voice.osc2PulseWidth": template.NewParameter("val", nil),
+	// }))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.085, 0.6, 0.25, []string{"synth"}, env.Config, "val", template.Template{
-		"voice.filterResonance": template.NewParameter("val", nil),
-	}))
+	// synth.AddMessenger(lfo.NewBasicLFO(0.085, 0.6, 0.25, []string{"synth"}, env.Config, "val", template.Template{
+	// 	"voice.filterResonance": template.NewParameter("val", nil),
+	// }))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.115, 0.06, 4.0, []string{"synth"}, env.Config, "val", template.Template{
-		"voice.osc2Tuning": template.NewParameter("val", nil),
-	}))
+	// synth.AddMessenger(lfo.NewBasicLFO(0.115, 0.06, 4.0, []string{"synth"}, env.Config, "val", template.Template{
+	// 	"voice.osc2Tuning": template.NewParameter("val", nil),
+	// }))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"synth"}, env.Config, "val", template.Template{
-		"voice.noiseMix": template.NewParameter("val", nil),
-	}))
+	// synth.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"synth"}, env.Config, "val", template.Template{
+	// 	"voice.noiseMix": template.NewParameter("val", nil),
+	// }))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"synth"}, env.Config, "val", template.Template{
-		"voice.osc1Mix": template.NewParameter("val", nil),
-	}))
+	// synth.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"synth"}, env.Config, "val", template.Template{
+	// 	"voice.osc1Mix": template.NewParameter("val", nil),
+	// }))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"synth"}, env.Config, "val", template.Template{
-		"voice.osc2Mix": template.NewParameter("val", nil),
-	}))
+	// synth.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"synth"}, env.Config, "val", template.Template{
+	// 	"voice.osc2Mix": template.NewParameter("val", nil),
+	// }))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"synth"}, env.Config, "val", template.Template{
-		"voice.pan": template.NewParameter("val", nil),
-	}))
+	// synth.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"synth"}, env.Config, "val", template.Template{
+	// 	"voice.pan": template.NewParameter("val", nil),
+	// }))
 
 	// synth.AddMessenger(lfo.NewBasicLFO(0.0569, 6800.0, 1200.0, []string{"synth"}, env.Config, "val", template.Template{
 	// 	"voice.filterFcMax": template.NewParameter("val", nil),
 	// }))
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+
+	drv, err := rtmididrv.New()
+	if err != nil {
+		log.Fatalf("error opening midi driver, %v", err)
+	}
+
+	// make sure to close the driver at the end
+	defer drv.Close()
+
+	midiIns, err := drv.Ins()
+	if err != nil {
+		log.Fatalf("error getting midi ins, %v", err)
+	}
+
+	midiIn := midiIns[0]
+
+	log.Printf("opening MIDI Port %v\n", midiIn)
+	err = midiIn.Open()
+	if err != nil {
+		log.Fatalf("error opening midi port, %v", err)
+	}
+
+	defer midiIn.Close()
+
+	// to disable logging, pass mid.NoLogger() as option
+	midiReader := reader.New(
+		reader.NoLogger(),
+		// print every message
+		reader.Each(func(pos *reader.Position, msg midi.Message) {
+
+			// inspect
+			log.Println(msg)
+
+			switch v := msg.(type) {
+			case NoteOn:
+				velocity := float64(v.Velocity()) / 127.0
+				log.Printf("velocity %v", velocity)
+				synth.Poly.ReceiveMessage(map[string]any{
+					"command":   "trigger",
+					"noteOn":    fmt.Sprintf("%d", v.Key()),
+					"amplitude": velocity,
+					"message": map[string]any{
+						"frequency": notes.Mtof(int(v.Key())),
+					},
+				})
+			case NoteOff:
+				synth.Poly.ReceiveMessage(map[string]any{
+					"command": "trigger",
+					"noteOff": fmt.Sprintf("%d", v.Key()),
+				})
+			}
+		}),
+	)
+
+	// listen for MIDI
+	err = midiReader.ListenTo(midiIn)
+	if err != nil {
+		log.Fatalf("error lisiting to midi in, %v", err)
+	}
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()
@@ -352,4 +364,9 @@ func main() {
 	)
 
 	w.ShowAndRun()
+
+	err = midiIn.StopListening()
+	if err != nil {
+		log.Fatalf("error stop listening to midi, %v", err)
+	}
 }

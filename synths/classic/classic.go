@@ -120,13 +120,23 @@ func (v *Voice) Note(duration float64, amplitude float64, msg any, config *muse.
 	v.filterEnv.TriggerFull(duration, 1.0, v.filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration)
 }
 
-func (v *Voice) NoteOn(amplitude float64, message any, config *muse.Configuration) {
-	// STUB
+func (v *Voice) NoteOn(amplitude float64, msg any, config *muse.Configuration) {
+	content := msg.(map[string]any)
+
+	v.handleMessage(content)
+
+	if fcRaw, ok := content["frequency"]; ok {
+		fc := fcRaw.(float64)
+		v.Osc1.SetFrequency(fc)
+		v.Osc2.SetFrequency(fc * v.osc2Tuning)
+		v.ampEnv.TriggerFull(0, amplitude, v.ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.NoteOff)
+		v.filterEnv.TriggerFull(0, 1.0, v.filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.NoteOff)
+	}
 }
 
 func (v *Voice) NoteOff() {
-	// tv.ampEnv.Release()
-	// tv.filterEnv.Release()
+	v.ampEnv.Release()
+	v.filterEnv.Release()
 }
 
 func (v *Voice) SetOsc1Mix(mix float64) {

@@ -2,20 +2,18 @@ package control
 
 import (
 	"container/list"
-	"fmt"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/widget"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/ui"
 )
 
-type ControlType int
+type Type int
 
 const (
-	Slider ControlType = iota
+	SliderType Type = iota
+	SelectType
 	// Int
 	// List
 	// Switch
@@ -52,7 +50,7 @@ type Control interface {
 	UserInterfacer
 	Group() *Group
 	SetGroup(*Group)
-	Type() ControlType
+	Type() Type
 	AddListener(Listener)
 	RemoveListener(Listener)
 }
@@ -93,15 +91,6 @@ func (g *Group) UI() fyne.CanvasObject {
 	}
 
 	return widget.NewCard(g.displayName, "", container.NewHBox(childrenUis...))
-
-	// 				widget.NewLabel("attack duration (ms)"),
-	// 				container.NewBorder(nil, nil, nil, container.New(ui.NewFixedWidthLayout(80), attackDurationLabel), attackDurationSlider),
-	// 				widget.NewLabel("attack amplitude (0.0 - 1.0)"),
-	// 				container.NewBorder(nil, nil, nil, container.New(ui.NewFixedWidthLayout(80), attackLevelLabel), attackLevelSlider),
-	// 				widget.NewLabel("attack shape (-1.0 - 1.0)"),
-	// 				container.NewBorder(nil, nil, nil, container.New(ui.NewFixedWidthLayout(80), attackShapeLabel), attackShapeSlider),
-	// 			)),
-	// 		),
 }
 
 func (g *Group) Identifier() string {
@@ -172,10 +161,10 @@ type BaseControl struct {
 	name        string
 	group       *Group
 	listeners   *list.List
-	controlType ControlType
+	controlType Type
 }
 
-func NewBaseControl(id string, name string, controlType ControlType) *BaseControl {
+func NewBaseControl(id string, name string, controlType Type) *BaseControl {
 	c := &BaseControl{
 		id:          id,
 		name:        name,
@@ -228,7 +217,7 @@ func (c *BaseControl) RemoveListener(listener Listener) {
 	}
 }
 
-func (c *BaseControl) Type() ControlType {
+func (c *BaseControl) Type() Type {
 	return c.controlType
 }
 
@@ -238,87 +227,4 @@ func (c *BaseControl) SendChangeToListeners(control Control, oldValue any, newVa
 		elem.Value.(Listener).ControlChanged(control, oldValue, newValue, setter)
 		elem = elem.Next()
 	}
-}
-
-type SliderControl struct {
-	*BaseControl
-	min   float64
-	max   float64
-	step  float64
-	value float64
-}
-
-func NewSliderControl(id string, name string, min float64, max float64, step float64, value float64) *SliderControl {
-	return &SliderControl{
-		BaseControl: NewBaseControl(id, name, Slider),
-		min:         min,
-		max:         max,
-		step:        step,
-		value:       value,
-	}
-}
-
-func (sc *SliderControl) Min() float64 {
-	return sc.min
-}
-
-func (sc *SliderControl) Max() float64 {
-	return sc.max
-}
-
-func (sc *SliderControl) Step() float64 {
-	return sc.step
-}
-
-func (sc *SliderControl) Get() float64 {
-	return sc.value
-}
-
-func (sc *SliderControl) Set(newValue float64, setter any) {
-	if sc.value != newValue && newValue >= sc.min && newValue <= sc.max {
-		oldValue := sc.value
-		sc.value = newValue
-		sc.SendChangeToListeners(sc, oldValue, newValue, setter)
-	}
-}
-
-func (sc *SliderControl) AddListener(listener Listener) {
-	sc.BaseControl.AddListener(listener)
-	listener.ControlChanged(sc, sc.value, sc.value, sc)
-}
-
-func (sc *SliderControl) UI() fyne.CanvasObject {
-	floatValueLabelBinding := binding.NewString()
-	floatValueLabelBinding.Set(fmt.Sprintf("%.2f", sc.value))
-
-	floatValueLabel := widget.NewLabelWithData(floatValueLabelBinding)
-	floatValueLabel.Alignment = fyne.TextAlignTrailing
-
-	valueBinding := binding.NewFloat()
-	valueBinding.Set(sc.value)
-
-	valueBinding.AddListener(binding.NewDataListener(func() {
-		v, err := valueBinding.Get()
-		if err == nil {
-			floatValueLabelBinding.Set(fmt.Sprintf("%.2f", v))
-			sc.Set(v, valueBinding)
-		}
-	}))
-
-	sc.AddListener(NewChangeCallback(func(ctrl Control, oldValue any, newValue any, setter any) {
-		if setter != valueBinding {
-			valueBinding.Set(newValue.(float64))
-		}
-	}))
-
-	valueSlider := widget.NewSliderWithData(sc.min, sc.max, valueBinding)
-	valueSlider.Step = sc.step
-
-	return container.NewVBox(
-		widget.NewLabel(sc.DisplayName()),
-		container.NewBorder(nil, nil, nil,
-			ui.NewFixedWidthContainer(70, floatValueLabel),
-			ui.NewFixedWidthContainer(140, valueSlider),
-		),
-	)
 }
