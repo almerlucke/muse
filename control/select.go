@@ -45,38 +45,4 @@ func (sel *Select) UI() fyne.CanvasObject {
 		widget.NewLabel(sel.DisplayName()),
 		selectWidget,
 	)
-
-	// floatValueLabelBinding := binding.NewString()
-	// floatValueLabelBinding.Set(fmt.Sprintf("%.2f", sel.value))
-
-	// floatValueLabel := widget.NewLabelWithData(floatValueLabelBinding)
-	// floatValueLabel.Alignment = fyne.TextAlignTrailing
-
-	// valueBinding := binding.NewFloat()
-	// valueBinding.Set(sel.value)
-
-	// valueBinding.AddListener(binding.NewDataListener(func() {
-	// 	v, err := valueBinding.Get()
-	// 	if err == nil {
-	// 		floatValueLabelBinding.Set(fmt.Sprintf("%.2f", v))
-	// 		sc.Set(v, valueBinding)
-	// 	}
-	// }))
-
-	// sc.AddListener(NewChangeCallback(func(ctrl Control, oldValue any, newValue any, setter any) {
-	// 	if setter != valueBinding {
-	// 		valueBinding.Set(newValue.(float64))
-	// 	}
-	// }))
-
-	// valueSlider := widget.NewSliderWithData(sc.min, sc.max, valueBinding)
-	// valueSlider.Step = sc.step
-
-	// return container.NewVBox(
-	// 	widget.NewLabel(sc.DisplayName()),
-	// 	container.NewBorder(nil, nil, nil,
-	// 		ui.NewFixedWidthContainer(70, floatValueLabel),
-	// 		ui.NewFixedWidthContainer(140, valueSlider),
-	// 	),
-	// )
 }

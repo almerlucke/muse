@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -106,6 +107,15 @@ func (cs *ClassicSynth) SetupControls() {
 	mixerGroup.AddControl(control.NewSlider("voice.noiseMix", "Noise Mix", 0.0, 1.0, 0.01, 0.05))
 
 	mixerGroup.AddControl(control.NewRadio("test.radioButton", "Radio Button", []string{"selection1", "selection2", "selection3"}, "selection1"))
+
+	mixerGroup.AddControl(control.NewEntry("test.entry", "This is an entry", "3.4", func(v string) any {
+		fv, err := strconv.ParseFloat(v, 64)
+		if err == nil {
+			return fv
+		}
+
+		return 0.0
+	}))
 
 	osc1Group := cs.controls.AddChild(control.NewGroup("group.osc1", "Oscillator 1"))
 	osc1Group.AddControl(control.NewSlider("voice.osc1PulseWidth", "Pulse Width", 0.0, 1.0, 0.01, 0.5))

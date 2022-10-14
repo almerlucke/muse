@@ -15,6 +15,8 @@ const (
 	SliderType Type = iota
 	SelectType
 	RadioType
+	EntryType
+	FilePickerType
 	// Int
 	// List
 )
