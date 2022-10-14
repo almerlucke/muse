@@ -14,10 +14,9 @@ type Type int
 const (
 	SliderType Type = iota
 	SelectType
+	RadioType
 	// Int
 	// List
-	// Switch
-	// Radio
 )
 
 type Listener interface {

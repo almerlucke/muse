@@ -105,6 +105,8 @@ func (cs *ClassicSynth) SetupControls() {
 	mixerGroup.AddControl(control.NewSlider("voice.osc2Mix", "Osc2 Mix", 0.0, 1.0, 0.01, 0.35))
 	mixerGroup.AddControl(control.NewSlider("voice.noiseMix", "Noise Mix", 0.0, 1.0, 0.01, 0.05))
 
+	mixerGroup.AddControl(control.NewRadio("test.radioButton", "Radio Button", []string{"selection1", "selection2", "selection3"}, "selection1"))
+
 	osc1Group := cs.controls.AddChild(control.NewGroup("group.osc1", "Oscillator 1"))
 	osc1Group.AddControl(control.NewSlider("voice.osc1PulseWidth", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
 	osc1Group.AddControl(control.NewSlider("voice.osc1SineMix", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
@@ -174,6 +176,8 @@ func (cs *ClassicSynth) ControlChanged(ctrl control.Control, oldValue any, newVa
 				stepProvider.Steps[3].Duration = newValue.(float64)
 			}
 		}
+	} else {
+		log.Printf("id %v %v", id, newValue)
 	}
 }
 
