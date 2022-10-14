@@ -7,16 +7,16 @@ import (
 )
 
 type Radio struct {
-	*BaseControl
+	*Control
 	selected string
 	options  []string
 }
 
 func NewRadio(id string, name string, options []string, selected string) *Radio {
 	return &Radio{
-		BaseControl: NewBaseControl(id, name, RadioType),
-		selected:    selected,
-		options:     options,
+		Control:  NewControl(id, name, RadioType),
+		selected: selected,
+		options:  options,
 	}
 }
 
@@ -29,7 +29,7 @@ func (r *Radio) Set(newValue string, setter any) {
 }
 
 func (r *Radio) AddListener(listener Listener) {
-	r.BaseControl.AddListener(listener)
+	r.Control.AddListener(listener)
 	listener.ControlChanged(r, r.selected, r.selected, r)
 }
 

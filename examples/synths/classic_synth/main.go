@@ -152,7 +152,7 @@ func (cs *ClassicSynth) SetupControls(w fyne.Window) {
 	cs.controls.AddListenerDeep(cs)
 }
 
-func (cs *ClassicSynth) ControlChanged(ctrl control.Control, oldValue any, newValue any, setter any) {
+func (cs *ClassicSynth) ControlChanged(ctrl control.IControl, oldValue any, newValue any, setter any) {
 	id := ctrl.Identifier()
 	components := strings.Split(id, ".")
 	route := components[0]
@@ -361,7 +361,7 @@ func main() {
 	synth.SetupControls(w)
 
 	w.Resize(fyne.Size{
-		Width:  700,
+		Width:  1200,
 		Height: 400,
 	})
 

@@ -7,16 +7,16 @@ import (
 )
 
 type Select struct {
-	*BaseControl
+	*Control
 	selected string
 	options  []string
 }
 
 func NewSelect(id string, name string, options []string, selected string) *Select {
 	return &Select{
-		BaseControl: NewBaseControl(id, name, SelectType),
-		selected:    selected,
-		options:     options,
+		Control:  NewControl(id, name, SelectType),
+		selected: selected,
+		options:  options,
 	}
 }
 
@@ -29,7 +29,7 @@ func (sel *Select) Set(newValue string, setter any) {
 }
 
 func (sel *Select) AddListener(listener Listener) {
-	sel.BaseControl.AddListener(listener)
+	sel.Control.AddListener(listener)
 	listener.ControlChanged(sel, sel.selected, sel.selected, sel)
 }
 

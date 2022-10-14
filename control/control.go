@@ -17,17 +17,15 @@ const (
 	RadioType
 	EntryType
 	FilePickerType
-	// Int
-	// List
 )
 
 type Listener interface {
 	// ControlChanged is called with the control that changed, the old value,
 	// the new value and the setter that changed the value
-	ControlChanged(Control, any, any, any)
+	ControlChanged(IControl, any, any, any)
 }
 
-type ListenerFunc func(Control, any, any, any)
+type ListenerFunc func(IControl, any, any, any)
 
 type ChangeCallback struct {
 	f ListenerFunc
@@ -37,8 +35,8 @@ func NewChangeCallback(f ListenerFunc) *ChangeCallback {
 	return &ChangeCallback{f: f}
 }
 
-func (c *ChangeCallback) ControlChanged(control Control, oldValue any, newValue any, setter any) {
-	c.f(control, oldValue, newValue, setter)
+func (c *ChangeCallback) ControlChanged(ctrl IControl, oldValue any, newValue any, setter any) {
+	c.f(ctrl, oldValue, newValue, setter)
 }
 
 type UserInterfacer interface {
@@ -46,7 +44,7 @@ type UserInterfacer interface {
 	UI() fyne.CanvasObject
 }
 
-type Control interface {
+type IControl interface {
 	muse.Identifiable
 	UserInterfacer
 	Group() *Group
@@ -59,7 +57,7 @@ type Control interface {
 type Group struct {
 	id          string
 	displayName string
-	Controls    []Control
+	Controls    []IControl
 	Parent      *Group
 	Children    []*Group
 }
@@ -68,7 +66,7 @@ func NewGroup(id string, displayName string) *Group {
 	return &Group{
 		id:          id,
 		displayName: displayName,
-		Controls:    []Control{},
+		Controls:    []IControl{},
 		Children:    []*Group{},
 	}
 }
@@ -102,7 +100,7 @@ func (g *Group) SetIdentifier(id string) {
 	g.id = id
 }
 
-func (g *Group) AddControl(c Control) Control {
+func (g *Group) AddControl(c IControl) IControl {
 	g.Controls = append(g.Controls, c)
 	c.SetGroup(g)
 	return c
@@ -114,7 +112,7 @@ func (g *Group) AddChild(child *Group) *Group {
 	return child
 }
 
-func (g *Group) ControlById(id string) Control {
+func (g *Group) ControlById(id string) IControl {
 	for _, c := range g.Controls {
 		if c.Identifier() == id {
 			return c
@@ -157,7 +155,7 @@ func (g *Group) AddListenerDeep(l Listener) {
 	}
 }
 
-type BaseControl struct {
+type Control struct {
 	id          string
 	name        string
 	group       *Group
@@ -165,8 +163,8 @@ type BaseControl struct {
 	controlType Type
 }
 
-func NewBaseControl(id string, name string, controlType Type) *BaseControl {
-	c := &BaseControl{
+func NewControl(id string, name string, controlType Type) *Control {
+	c := &Control{
 		id:          id,
 		name:        name,
 		listeners:   list.New(),
@@ -176,35 +174,35 @@ func NewBaseControl(id string, name string, controlType Type) *BaseControl {
 	return c
 }
 
-func (c *BaseControl) Identifier() string {
+func (c *Control) Identifier() string {
 	return c.id
 }
 
-func (c *BaseControl) SetIdentifier(id string) {
+func (c *Control) SetIdentifier(id string) {
 	c.id = id
 }
 
-func (c *BaseControl) DisplayName() string {
+func (c *Control) DisplayName() string {
 	return c.name
 }
 
-func (c *BaseControl) UI() fyne.CanvasObject {
+func (c *Control) UI() fyne.CanvasObject {
 	return nil // STUB
 }
 
-func (c *BaseControl) Group() *Group {
+func (c *Control) Group() *Group {
 	return c.group
 }
 
-func (c *BaseControl) SetGroup(g *Group) {
+func (c *Control) SetGroup(g *Group) {
 	c.group = g
 }
 
-func (c *BaseControl) AddListener(listener Listener) {
+func (c *Control) AddListener(listener Listener) {
 	c.listeners.PushBack(listener)
 }
 
-func (c *BaseControl) RemoveListener(listener Listener) {
+func (c *Control) RemoveListener(listener Listener) {
 	elem := c.listeners.Front()
 	for elem != nil {
 		if elem.Value == listener {
@@ -218,14 +216,14 @@ func (c *BaseControl) RemoveListener(listener Listener) {
 	}
 }
 
-func (c *BaseControl) Type() Type {
+func (c *Control) Type() Type {
 	return c.controlType
 }
 
-func (c *BaseControl) SendChangeToListeners(control Control, oldValue any, newValue any, setter any) {
+func (c *Control) SendChangeToListeners(ctrl IControl, oldValue any, newValue any, setter any) {
 	elem := c.listeners.Front()
 	for elem != nil {
-		elem.Value.(Listener).ControlChanged(control, oldValue, newValue, setter)
+		elem.Value.(Listener).ControlChanged(ctrl, oldValue, newValue, setter)
 		elem = elem.Next()
 	}
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/almerlucke/muse/value/arpeggio"
 	"github.com/almerlucke/muse/value/template"
 	"github.com/gordonklaus/portaudio"
+	"github.com/mkb218/gosndfile/sndfile"
 )
 
 type ClassicSynth struct {
@@ -141,7 +142,7 @@ func (cs *ClassicSynth) SetupControls() {
 	cs.controls.AddListenerDeep(cs)
 }
 
-func (cs *ClassicSynth) ControlChanged(ctrl control.Control, oldValue any, newValue any, setter any) {
+func (cs *ClassicSynth) ControlChanged(ctrl control.IControl, oldValue any, newValue any, setter any) {
 	id := ctrl.Identifier()
 	components := strings.Split(id, ".")
 
@@ -314,7 +315,7 @@ func main() {
 	// 	"voice.filterFcMax": template.NewParameter("val", nil),
 	// }))
 
-	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()

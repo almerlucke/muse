@@ -11,7 +11,7 @@ import (
 )
 
 type Slider struct {
-	*BaseControl
+	*Control
 	min   float64
 	max   float64
 	step  float64
@@ -20,11 +20,11 @@ type Slider struct {
 
 func NewSlider(id string, name string, min float64, max float64, step float64, value float64) *Slider {
 	return &Slider{
-		BaseControl: NewBaseControl(id, name, SliderType),
-		min:         min,
-		max:         max,
-		step:        step,
-		value:       value,
+		Control: NewControl(id, name, SliderType),
+		min:     min,
+		max:     max,
+		step:    step,
+		value:   value,
 	}
 }
 
@@ -53,7 +53,7 @@ func (sc *Slider) Set(newValue float64, setter any) {
 }
 
 func (sc *Slider) AddListener(listener Listener) {
-	sc.BaseControl.AddListener(listener)
+	sc.Control.AddListener(listener)
 	listener.ControlChanged(sc, sc.value, sc.value, sc)
 }
 
@@ -75,7 +75,7 @@ func (sc *Slider) UI() fyne.CanvasObject {
 		}
 	}))
 
-	sc.AddListener(NewChangeCallback(func(ctrl Control, oldValue any, newValue any, setter any) {
+	sc.AddListener(NewChangeCallback(func(ctrl IControl, oldValue any, newValue any, setter any) {
 		if setter != valueBinding {
 			valueBinding.Set(newValue.(float64))
 		}
