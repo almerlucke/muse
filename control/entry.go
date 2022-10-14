@@ -76,6 +76,6 @@ func (e *Entry) UI() fyne.CanvasObject {
 
 	return container.NewVBox(
 		widget.NewLabel(e.DisplayName()),
-		container.NewHBox(ui.NewFixedWidthContainer(100, entry), saveButton),
+		container.NewHBox(ui.NewFixedWidthContainer(130, entry), saveButton),
 	)
 }

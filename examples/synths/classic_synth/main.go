@@ -90,12 +90,10 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	muse.Connect(synth.chorus1, 0, synth, 0)
 	muse.Connect(synth.chorus2, 0, synth, 1)
 
-	synth.SetupControls()
-
 	return synth
 }
 
-func (cs *ClassicSynth) SetupControls() {
+func (cs *ClassicSynth) SetupControls(w fyne.Window) {
 	filterGroup := cs.controls.AddChild(control.NewGroup("group.filter", "Filter"))
 	filterGroup.AddControl(control.NewSlider("voice.filterFcMin", "Filter Frequency Min", 50.0, 8000.0, 1.0, 50.0))
 	filterGroup.AddControl(control.NewSlider("voice.filterFcMax", "Filter Frequency Max", 50.0, 8000.0, 1.0, 8000.0))
@@ -116,6 +114,8 @@ func (cs *ClassicSynth) SetupControls() {
 
 		return 0.0
 	}))
+
+	mixerGroup.AddControl(control.NewFilePicker("test.filePicker", "File Picker", w))
 
 	osc1Group := cs.controls.AddChild(control.NewGroup("group.osc1", "Oscillator 1"))
 	osc1Group.AddControl(control.NewSlider("voice.osc1PulseWidth", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
@@ -357,6 +357,8 @@ func main() {
 	a.Settings().SetTheme(&theme.Theme{})
 
 	w := a.NewWindow("Muse")
+
+	synth.SetupControls(w)
 
 	w.Resize(fyne.Size{
 		Width:  700,
