@@ -75,6 +75,19 @@ func NewNormalizedSineTable(n int) LookupTable {
 	return table
 }
 
+func NewHanningWindow(n int) LookupTable {
+	table := make(LookupTable, n)
+	phase := 0.0
+	inc := 2.0 * math.Pi / float64(n-1)
+
+	for i := 0; i < n; i++ {
+		table[i] = 0.5 - 0.5*math.Cos(phase)
+		phase += inc
+	}
+
+	return table
+}
+
 // func NewHarmonicsTable(n int, harmonics int) LookupTable {
 // 	table := make(LookupTable, n)
 

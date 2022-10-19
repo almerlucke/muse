@@ -22,10 +22,10 @@ const (
 type Listener interface {
 	// ControlChanged is called with the control that changed, the old value,
 	// the new value and the setter that changed the value
-	ControlChanged(IControl, any, any, any)
+	ControlChanged(ControlProtocol, any, any, any)
 }
 
-type ListenerFunc func(IControl, any, any, any)
+type ListenerFunc func(ControlProtocol, any, any, any)
 
 type ChangeCallback struct {
 	f ListenerFunc
@@ -35,7 +35,7 @@ func NewChangeCallback(f ListenerFunc) *ChangeCallback {
 	return &ChangeCallback{f: f}
 }
 
-func (c *ChangeCallback) ControlChanged(ctrl IControl, oldValue any, newValue any, setter any) {
+func (c *ChangeCallback) ControlChanged(ctrl ControlProtocol, oldValue any, newValue any, setter any) {
 	c.f(ctrl, oldValue, newValue, setter)
 }
 
@@ -44,7 +44,7 @@ type UserInterfacer interface {
 	UI() fyne.CanvasObject
 }
 
-type IControl interface {
+type ControlProtocol interface {
 	muse.Identifiable
 	UserInterfacer
 	Group() *Group
@@ -57,7 +57,7 @@ type IControl interface {
 type Group struct {
 	id          string
 	displayName string
-	Controls    []IControl
+	Controls    []ControlProtocol
 	Parent      *Group
 	Children    []*Group
 }
@@ -66,7 +66,7 @@ func NewGroup(id string, displayName string) *Group {
 	return &Group{
 		id:          id,
 		displayName: displayName,
-		Controls:    []IControl{},
+		Controls:    []ControlProtocol{},
 		Children:    []*Group{},
 	}
 }
@@ -100,7 +100,7 @@ func (g *Group) SetIdentifier(id string) {
 	g.id = id
 }
 
-func (g *Group) AddControl(c IControl) IControl {
+func (g *Group) AddControl(c ControlProtocol) ControlProtocol {
 	g.Controls = append(g.Controls, c)
 	c.SetGroup(g)
 	return c
@@ -112,7 +112,7 @@ func (g *Group) AddChild(child *Group) *Group {
 	return child
 }
 
-func (g *Group) ControlById(id string) IControl {
+func (g *Group) ControlById(id string) ControlProtocol {
 	for _, c := range g.Controls {
 		if c.Identifier() == id {
 			return c
@@ -220,7 +220,7 @@ func (c *Control) Type() Type {
 	return c.controlType
 }
 
-func (c *Control) SendChangeToListeners(ctrl IControl, oldValue any, newValue any, setter any) {
+func (c *Control) SendChangeToListeners(ctrl ControlProtocol, oldValue any, newValue any, setter any) {
 	elem := c.listeners.Front()
 	for elem != nil {
 		elem.Value.(Listener).ControlChanged(ctrl, oldValue, newValue, setter)

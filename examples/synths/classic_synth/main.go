@@ -152,7 +152,7 @@ func (cs *ClassicSynth) SetupControls(w fyne.Window) {
 	cs.controls.AddListenerDeep(cs)
 }
 
-func (cs *ClassicSynth) ControlChanged(ctrl control.IControl, oldValue any, newValue any, setter any) {
+func (cs *ClassicSynth) ControlChanged(ctrl control.ControlProtocol, oldValue any, newValue any, setter any) {
 	id := ctrl.Identifier()
 	components := strings.Split(id, ".")
 	route := components[0]

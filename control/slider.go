@@ -75,7 +75,7 @@ func (sc *Slider) UI() fyne.CanvasObject {
 		}
 	}))
 
-	sc.AddListener(NewChangeCallback(func(ctrl IControl, oldValue any, newValue any, setter any) {
+	sc.AddListener(NewChangeCallback(func(ctrl ControlProtocol, oldValue any, newValue any, setter any) {
 		if setter != valueBinding {
 			valueBinding.Set(newValue.(float64))
 		}

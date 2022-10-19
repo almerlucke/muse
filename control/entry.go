@@ -67,7 +67,7 @@ func (e *Entry) UI() fyne.CanvasObject {
 		}
 	}
 
-	e.AddListener(NewChangeCallback(func(ctrl IControl, oldValue any, newValue any, setter any) {
+	e.AddListener(NewChangeCallback(func(ctrl ControlProtocol, oldValue any, newValue any, setter any) {
 		if setter != entry {
 			entry.SetText(e.text)
 			saveButton.Disable()
