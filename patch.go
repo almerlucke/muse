@@ -10,7 +10,7 @@ type Patch interface {
 	AddMessenger(Messenger) Messenger
 	AddMessageReceiver(MessageReceiver, string)
 	AddModule(Module) Module
-	AddControlTicker(ControlTicker) ControlTicker
+	AddControl(Control) Control
 	Contains(Module) bool
 	Lookup(string) MessageReceiver
 	InputModuleAtIndex(index int) Module
@@ -18,19 +18,19 @@ type Patch interface {
 	SendMessage(*Message)
 	SendMessages([]*Message)
 	RunMessengers()
-	InternalControlInput() ControlSupporter
-	InternalControlOutput() ControlSupporter
+	InternalInputControl() Control
+	InternalOutputControl() Control
 }
 
 type BasePatch struct {
 	*BaseModule
-	internalControlInput  *ControlThru
-	internalControlOutput *ControlThru
+	internalInputControl  *ControlThru
+	internalOutputControl *ControlThru
 	subModules            []Module
 	inputModules          []*ThruModule
 	outputModules         []*ThruModule
 	messengers            []Messenger
-	controlTickers        []ControlTicker
+	controls              []Control
 	receivers             map[string]MessageReceiver
 	timestamp             int64
 }
@@ -52,11 +52,11 @@ func NewPatch(numInputs int, numOutputs int, config *Configuration, identifier s
 
 	p := &BasePatch{
 		BaseModule:            NewBaseModule(0, 0, config, identifier),
-		internalControlInput:  NewControlThru(),
-		internalControlOutput: NewControlThru(),
+		internalInputControl:  NewControlThru(),
+		internalOutputControl: NewControlThru(),
 		subModules:            subModules,
 		messengers:            []Messenger{},
-		controlTickers:        []ControlTicker{},
+		controls:              []Control{},
 		inputModules:          inputModules,
 		outputModules:         outputModules,
 		receivers:             map[string]MessageReceiver{},
@@ -95,8 +95,8 @@ func (p *BasePatch) AddModule(m Module) Module {
 	return m
 }
 
-func (p *BasePatch) AddControlTicker(ct ControlTicker) ControlTicker {
-	p.controlTickers = append(p.controlTickers, ct)
+func (p *BasePatch) AddControl(ct Control) Control {
+	p.controls = append(p.controls, ct)
 
 	p.AddMessageReceiver(ct, ct.Identifier())
 
@@ -162,7 +162,7 @@ func (p *BasePatch) Synthesize() bool {
 	}
 
 	// Tick for each control rate object
-	for _, ticker := range p.controlTickers {
+	for _, ticker := range p.controls {
 		ticker.Tick(p.timestamp, p.Config)
 	}
 
@@ -234,18 +234,18 @@ func (p *BasePatch) OutputAtIndex(index int) *Socket {
 	return p.outputModules[index].OutputAtIndex(0)
 }
 
-func (p *BasePatch) InternalControlInput() ControlSupporter {
-	return p.internalControlInput
+func (p *BasePatch) InternalInputControl() Control {
+	return p.internalInputControl
 }
 
-func (p *BasePatch) InternalControlOutput() ControlSupporter {
-	return p.internalControlOutput
+func (p *BasePatch) InternalOutputControl() Control {
+	return p.internalOutputControl
 }
 
 func (p *BasePatch) ReceiveControlValue(value any, index int) {
-	p.internalControlInput.ReceiveControlValue(value, index)
+	p.internalInputControl.ReceiveControlValue(value, index)
 }
 
-func (p *BasePatch) ConnectControlOutput(outputIndex int, receiver ControlReceiver, inputIndex int) {
-	p.internalControlOutput.ConnectControlOutput(outputIndex, receiver, inputIndex)
+func (p *BasePatch) ConnectToControl(outputIndex int, receiver ControlReceiver, inputIndex int) {
+	p.internalOutputControl.ConnectToControl(outputIndex, receiver, inputIndex)
 }

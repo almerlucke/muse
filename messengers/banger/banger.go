@@ -6,14 +6,17 @@ import (
 	"github.com/almerlucke/muse/value/template"
 )
 
-func IsBang(msg any) bool {
-	bang, ok := msg.(string)
+type bang struct{ Bang string }
 
-	return ok && bang == "bang"
+var Bang = &bang{Bang: "bang"}
+
+func IsBang(msg any) bool {
+	return msg == Bang
 }
 
 type Banger interface {
-	Bang() []*muse.Message
+	MessageBang() []*muse.Message
+	ControlBang() []any
 }
 
 type Generator struct {
@@ -28,9 +31,18 @@ func NewGenerator(banger Banger, identifier string) *Generator {
 	}
 }
 
+func (g *Generator) ReceiveControlValue(value any, index int) {
+	if index == 0 && value == Bang {
+		contents := g.banger.ControlBang()
+		for _, content := range contents {
+			g.SendControlValue(content, 0)
+		}
+	}
+}
+
 func (g *Generator) ReceiveMessage(msg any) []*muse.Message {
-	if IsBang(msg) {
-		return g.banger.Bang()
+	if msg == Bang {
+		return g.banger.MessageBang()
 	}
 
 	return nil
@@ -50,7 +62,7 @@ func NewValueGenerator(val value.Valuer[[]*muse.Message], identifier string) *Ge
 	return NewGenerator(NewValueBang(val), identifier)
 }
 
-func (vb *ValueBang) Bang() []*muse.Message {
+func (vb *ValueBang) MessageBang() []*muse.Message {
 	msgs := vb.value.Value()
 
 	if vb.value.Finished() {
@@ -58,6 +70,21 @@ func (vb *ValueBang) Bang() []*muse.Message {
 	}
 
 	return msgs
+}
+
+func (vb *ValueBang) ControlBang() []any {
+	msgs := vb.value.Value()
+
+	if vb.value.Finished() {
+		vb.value.Reset()
+	}
+
+	contents := make([]any, len(msgs))
+	for i, msg := range msgs {
+		contents[i] = msg.Content
+	}
+
+	return contents
 }
 
 type templateDestination struct {
@@ -76,7 +103,7 @@ func NewTemplateGenerator(addresses []string, template template.Template, identi
 	return NewGenerator(newTemplateDestination(addresses, template), identifier)
 }
 
-func (d *templateDestination) Bang() []*muse.Message {
+func (d *templateDestination) MessageBang() []*muse.Message {
 	allMessages := []*muse.Message{}
 	protoMessages := d.template.Value()
 
@@ -87,4 +114,15 @@ func (d *templateDestination) Bang() []*muse.Message {
 	}
 
 	return allMessages
+}
+
+func (d *templateDestination) ControlBang() []any {
+	protoMessages := d.template.Value()
+
+	contents := make([]any, len(protoMessages))
+	for i, msg := range protoMessages {
+		contents[i] = msg
+	}
+
+	return contents
 }

@@ -54,6 +54,12 @@ func (p *Polyphony) AllNotesOff() {
 	}
 }
 
+func (p *Polyphony) ReceiveControlValue(value any, index int) {
+	if index == 0 {
+		p.ReceiveMessage(value)
+	}
+}
+
 // ReceiveMessage is used to activate voices
 func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)

@@ -1,7 +1,7 @@
 package muse
 
 type Module interface {
-	ControlSupporter
+	Control
 	MessageReceiver
 	Identifiable
 	Stater
@@ -19,7 +19,7 @@ type Module interface {
 }
 
 type BaseModule struct {
-	*BaseControlSupport
+	*BaseControl
 	Inputs        []*Socket
 	Outputs       []*Socket
 	Config        *Configuration
@@ -41,10 +41,10 @@ func NewBaseModule(numInputs int, numOutputs int, config *Configuration, identif
 	}
 
 	return &BaseModule{
-		BaseControlSupport: NewBaseControlSupport(identifier),
-		Inputs:             inputs,
-		Outputs:            outputs,
-		Config:             config,
+		BaseControl: NewBaseControl(identifier),
+		Inputs:      inputs,
+		Outputs:     outputs,
+		Config:      config,
 	}
 }
 

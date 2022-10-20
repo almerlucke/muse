@@ -696,10 +696,9 @@ func main() {
 	adsrControl := NewADSRControl()
 	swingControl := NewSwingControl(80.0, 4.0)
 
-	env.AddMessenger(stepper.NewStepperWithListener(
+	env.AddMessenger(stepper.NewStepper(
 		swingControl.Swing(),
 		[]string{"prototype1", "prototype2"},
-		swingControl,
 		"",
 	))
 

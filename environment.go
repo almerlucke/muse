@@ -9,6 +9,7 @@ import (
 type Environment struct {
 	*BasePatch
 	Config *Configuration
+	stream *portaudio.Stream
 }
 
 func NewEnvironment(numOutputs int, sampleRate float64, bufferSize int) *Environment {
@@ -40,6 +41,29 @@ func (e *Environment) portaudioCallback(in, out [][]float32) {
 			out[j][i] = float32(e.OutputAtIndex(j).Buffer[i])
 		}
 	}
+}
+
+func (e *Environment) InitializeAudio() (*portaudio.Stream, error) {
+	portaudio.Initialize()
+
+	stream, err := e.PortaudioStream()
+	if err != nil {
+		portaudio.Terminate()
+		return nil, err
+	}
+
+	e.stream = stream
+
+	return e.stream, nil
+}
+
+func (e *Environment) TerminateAudio() {
+	if e.stream != nil {
+		e.stream.Close()
+		e.stream = nil
+	}
+
+	portaudio.Terminate()
 }
 
 func (e *Environment) Synthesize() bool {

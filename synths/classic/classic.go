@@ -74,6 +74,7 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 		}
 		return v[0]*(max-min) + min
 	}, config))
+
 	ampVCA := voice.AddModule(functor.NewMult(2, config))
 
 	muse.Connect(voice.Osc1, 4, voice.SourceMixer, 0)

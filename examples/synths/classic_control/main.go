@@ -28,7 +28,6 @@ import (
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/arpeggio"
 	"github.com/almerlucke/muse/value/template"
-	"github.com/gordonklaus/portaudio"
 )
 
 type ClassicSynth struct {
@@ -316,15 +315,12 @@ func main() {
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
-	portaudio.Initialize()
-	defer portaudio.Terminate()
-
-	stream, err := env.PortaudioStream()
+	stream, err := env.InitializeAudio()
 	if err != nil {
-		log.Fatalf("error opening portaudio stream, %v", err)
+		log.Fatalf("error opening audio stream, %v", err)
 	}
 
-	defer stream.Close()
+	defer env.TerminateAudio()
 
 	a := app.New()
 

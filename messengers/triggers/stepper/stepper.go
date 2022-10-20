@@ -2,7 +2,7 @@ package stepper
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/ui"
+	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/value"
 )
 
@@ -16,36 +16,36 @@ type Stepper struct {
 	addresses []string
 	accum     float64
 	provider  StepProvider
-	listener  ui.Listener
 }
 
 func NewStepper(provider StepProvider, addresses []string, identifier string) *Stepper {
-	return NewStepperWithListener(provider, addresses, nil, identifier)
-}
-
-func NewStepperWithListener(provider StepProvider, addresses []string, listener ui.Listener, identifier string) *Stepper {
 	return &Stepper{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		addresses:     addresses,
 		provider:      provider,
-		listener:      listener,
 	}
 }
 
-func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.Message {
-	messages := []*muse.Message{}
+func NewControlStepper(provider StepProvider, identifier string) *Stepper {
+	return &Stepper{
+		BaseMessenger: muse.NewBaseMessenger(identifier),
+		addresses:     nil,
+		provider:      provider,
+	}
+}
+
+func (s *Stepper) tick(timestamp int64, config *muse.Configuration) (bool, float64) {
 	bang := false
+	durationMs := 0.0
 
 	for true {
 		if float64(timestamp) < s.accum {
 			break
 		}
 
-		if s.listener != nil {
-			s.listener.Listen(s.provider.GetState())
-		}
+		durationMs = s.provider.NextStep()
 
-		wait := s.provider.NextStep() * 0.001 * config.SampleRate
+		wait := durationMs * 0.001 * config.SampleRate
 		if wait > 0 {
 			bang = true
 			s.accum += wait
@@ -54,11 +54,30 @@ func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.
 		}
 	}
 
+	return bang, durationMs
+}
+
+func (s *Stepper) Tick(timestamp int64, config *muse.Configuration) {
+	bang, duration := s.tick(timestamp, config)
+
 	if bang {
+		s.SendControlValue(duration, 1)
+		s.SendControlValue(banger.Bang, 0)
+	}
+}
+
+func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.Message {
+	messages := []*muse.Message{}
+	bang, duration := s.tick(timestamp, config)
+
+	if bang {
+		s.SendControlValue(duration, 1)
+		s.SendControlValue(banger.Bang, 0)
+
 		for _, address := range s.addresses {
 			messages = append(messages, &muse.Message{
 				Address: address,
-				Content: "bang",
+				Content: banger.Bang,
 			})
 		}
 	}

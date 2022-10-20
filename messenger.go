@@ -17,7 +17,7 @@ type MessageReceiver interface {
 }
 
 type Messenger interface {
-	ControlSupporter
+	Control
 	Identifiable
 	MessageReceiver
 	Stater
@@ -25,12 +25,12 @@ type Messenger interface {
 }
 
 type BaseMessenger struct {
-	*BaseControlSupport
+	*BaseControl
 }
 
 func NewBaseMessenger(identifier string) *BaseMessenger {
 	return &BaseMessenger{
-		BaseControlSupport: NewBaseControlSupport(identifier),
+		BaseControl: NewBaseControl(identifier),
 	}
 }
 

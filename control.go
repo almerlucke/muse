@@ -9,7 +9,7 @@ type ControlSender interface {
 }
 
 type ControlConnector interface {
-	ConnectControlOutput(int, ControlReceiver, int)
+	ConnectToControl(int, ControlReceiver, int)
 }
 
 type ControlTicker interface {
@@ -18,7 +18,7 @@ type ControlTicker interface {
 	Tick(int64, *Configuration)
 }
 
-type ControlSupporter interface {
+type Control interface {
 	ControlReceiver
 	ControlSender
 	ControlConnector
@@ -31,38 +31,38 @@ type ControlConnection struct {
 }
 
 // Control acts at control rate (once every audio frame) instead of audio rate
-type BaseControlSupport struct {
+type BaseControl struct {
 	identifier  string
 	connections map[int][]*ControlConnection
 }
 
-func NewBaseControlSupport(id string) *BaseControlSupport {
-	return &BaseControlSupport{connections: map[int][]*ControlConnection{}, identifier: id}
+func NewBaseControl(id string) *BaseControl {
+	return &BaseControl{connections: map[int][]*ControlConnection{}, identifier: id}
 }
 
-func (cs *BaseControlSupport) Identifier() string {
-	return cs.identifier
+func (c *BaseControl) Identifier() string {
+	return c.identifier
 }
 
-func (cs *BaseControlSupport) SetIdentifier(id string) {
-	cs.identifier = id
+func (c *BaseControl) SetIdentifier(id string) {
+	c.identifier = id
 }
 
-func (cs *BaseControlSupport) Tick(timestamp int64, config *Configuration) {
+func (c *BaseControl) Tick(timestamp int64, config *Configuration) {
 	// STUB: do anything with Tick in embedding struct
 }
 
-func (cs *BaseControlSupport) ReceiveControlValue(value any, index int) {
+func (c *BaseControl) ReceiveControlValue(value any, index int) {
 	// STUB: do anything with the value received in embedding struct
 }
 
-func (cs *BaseControlSupport) ReceiveMessage(msg any) []*Message {
+func (c *BaseControl) ReceiveMessage(msg any) []*Message {
 	// STUB: do anything with the message received in embedding struct
 	return nil
 }
 
-func (cs *BaseControlSupport) SendControlValue(value any, index int) {
-	connections := cs.connections[index]
+func (c *BaseControl) SendControlValue(value any, index int) {
+	connections := c.connections[index]
 	if connections != nil {
 		for _, connection := range connections {
 			connection.Receiver.ReceiveControlValue(value, connection.Index)
@@ -70,23 +70,23 @@ func (cs *BaseControlSupport) SendControlValue(value any, index int) {
 	}
 }
 
-func (cs *BaseControlSupport) ConnectControlOutput(outputIndex int, receiver ControlReceiver, inputIndex int) {
-	connections := cs.connections[outputIndex]
+func (c *BaseControl) ConnectToControl(outputIndex int, receiver ControlReceiver, inputIndex int) {
+	connections := c.connections[outputIndex]
 	if connections == nil {
 		connections = []*ControlConnection{}
 	}
 
 	connections = append(connections, &ControlConnection{Receiver: receiver, Index: inputIndex})
 
-	cs.connections[outputIndex] = connections
+	c.connections[outputIndex] = connections
 }
 
 type ControlThru struct {
-	*BaseControlSupport
+	*BaseControl
 }
 
 func NewControlThru() *ControlThru {
-	return &ControlThru{BaseControlSupport: NewBaseControlSupport("")}
+	return &ControlThru{BaseControl: NewBaseControl("")}
 }
 
 func (ct *ControlThru) ReceiveControlValue(value any, index int) {
