@@ -1,7 +1,8 @@
 package muse
 
 type Module interface {
-	Receiver
+	ControlSupporter
+	MessageReceiver
 	Identifiable
 	Stater
 	NumInputs() int
@@ -12,12 +13,13 @@ type Module interface {
 	AddInputConnection(inputIndex int, conn *Connection)
 	AddOutputConnection(outputIndex int, conn *Connection)
 	DidSynthesize() bool
+	MustSynthesize() bool
 	PrepareSynthesis()
 	Synthesize() bool
-	MustSynthesize() bool
 }
 
 type BaseModule struct {
+	*BaseControlSupport
 	Inputs        []*Socket
 	Outputs       []*Socket
 	Config        *Configuration
@@ -39,19 +41,11 @@ func NewBaseModule(numInputs int, numOutputs int, config *Configuration, identif
 	}
 
 	return &BaseModule{
-		Inputs:     inputs,
-		Outputs:    outputs,
-		Config:     config,
-		identifier: identifier,
+		BaseControlSupport: NewBaseControlSupport(identifier),
+		Inputs:             inputs,
+		Outputs:            outputs,
+		Config:             config,
 	}
-}
-
-func (m *BaseModule) Identifier() string {
-	return m.identifier
-}
-
-func (m *BaseModule) SetIdentifier(identifier string) {
-	m.identifier = identifier
 }
 
 func (m *BaseModule) NumInputs() int {

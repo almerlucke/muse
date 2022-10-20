@@ -1,4 +1,4 @@
-package control
+package controls
 
 import (
 	"fyne.io/fyne/v2"
@@ -7,16 +7,16 @@ import (
 )
 
 type Select struct {
-	*Control
+	*BaseControl
 	selected string
 	options  []string
 }
 
 func NewSelect(id string, name string, options []string, selected string) *Select {
 	return &Select{
-		Control:  NewControl(id, name, SelectType),
-		selected: selected,
-		options:  options,
+		BaseControl: NewBaseControl(id, name, SelectType),
+		selected:    selected,
+		options:     options,
 	}
 }
 
@@ -29,7 +29,7 @@ func (sel *Select) Set(newValue string, setter any) {
 }
 
 func (sel *Select) AddListener(listener Listener) {
-	sel.Control.AddListener(listener)
+	sel.BaseControl.AddListener(listener)
 	listener.ControlChanged(sel, sel.selected, sel.selected, sel)
 }
 

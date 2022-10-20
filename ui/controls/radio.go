@@ -1,4 +1,4 @@
-package control
+package controls
 
 import (
 	"fyne.io/fyne/v2"
@@ -7,16 +7,16 @@ import (
 )
 
 type Radio struct {
-	*Control
+	*BaseControl
 	selected string
 	options  []string
 }
 
 func NewRadio(id string, name string, options []string, selected string) *Radio {
 	return &Radio{
-		Control:  NewControl(id, name, RadioType),
-		selected: selected,
-		options:  options,
+		BaseControl: NewBaseControl(id, name, RadioType),
+		selected:    selected,
+		options:     options,
 	}
 }
 
@@ -29,7 +29,7 @@ func (r *Radio) Set(newValue string, setter any) {
 }
 
 func (r *Radio) AddListener(listener Listener) {
-	r.Control.AddListener(listener)
+	r.BaseControl.AddListener(listener)
 	listener.ControlChanged(r, r.selected, r.selected, r)
 }
 

@@ -43,7 +43,7 @@ func (e *Environment) portaudioCallback(in, out [][]float32) {
 }
 
 func (e *Environment) Synthesize() bool {
-	e.RunMessengers()
+	// e.RunMessengers()
 	e.PrepareSynthesis()
 	return e.BasePatch.Synthesize()
 }

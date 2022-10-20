@@ -1,4 +1,4 @@
-package control
+package controls
 
 import (
 	"fyne.io/fyne/v2"
@@ -9,15 +9,15 @@ import (
 )
 
 type FilePicker struct {
-	*Control
+	*BaseControl
 	file fyne.URI
 	w    fyne.Window
 }
 
 func NewFilePicker(id string, name string, w fyne.Window) *FilePicker {
 	return &FilePicker{
-		Control: NewControl(id, name, FilePickerType),
-		w:       w,
+		BaseControl: NewBaseControl(id, name, FilePickerType),
+		w:           w,
 	}
 }
 

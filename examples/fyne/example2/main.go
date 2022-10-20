@@ -16,7 +16,7 @@ import (
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/lfo"
-	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
+	adsrctrl "github.com/almerlucke/muse/ui/adsr"
 	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils/notes"
 

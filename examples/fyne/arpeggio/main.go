@@ -19,7 +19,7 @@ import (
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
-	adsrctrl "github.com/almerlucke/muse/ui/controls/adsr"
+	adsrctrl "github.com/almerlucke/muse/ui/adsr"
 	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/value"
 

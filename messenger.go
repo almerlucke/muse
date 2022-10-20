@@ -12,24 +12,25 @@ func NewMessage(address string, content any) *Message {
 	}
 }
 
-type Receiver interface {
+type MessageReceiver interface {
 	ReceiveMessage(msg any) []*Message
 }
 
 type Messenger interface {
+	ControlSupporter
 	Identifiable
-	Receiver
+	MessageReceiver
 	Stater
 	Messages(timestamp int64, config *Configuration) []*Message
 }
 
 type BaseMessenger struct {
-	identifier string
+	*BaseControlSupport
 }
 
 func NewBaseMessenger(identifier string) *BaseMessenger {
 	return &BaseMessenger{
-		identifier: identifier,
+		BaseControlSupport: NewBaseControlSupport(identifier),
 	}
 }
 
@@ -41,14 +42,6 @@ func (m *BaseMessenger) ReceiveMessage(msg any) []*Message {
 func (m *BaseMessenger) Messages(timestamp int64, config *Configuration) []*Message {
 	// STUB
 	return nil
-}
-
-func (m *BaseMessenger) Identifier() string {
-	return m.identifier
-}
-
-func (m *BaseMessenger) SetIdentifier(identifier string) {
-	m.identifier = identifier
 }
 
 func (m *BaseMessenger) SetState(state map[string]any) {

@@ -13,7 +13,6 @@ import (
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/control"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -23,6 +22,7 @@ import (
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/synths/classic"
+	"github.com/almerlucke/muse/ui/controls"
 	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils/notes"
 	"github.com/almerlucke/muse/value"
@@ -33,7 +33,7 @@ import (
 
 type ClassicSynth struct {
 	*muse.BasePatch
-	controls  *control.Group
+	controls  *controls.Group
 	ampEnv    *adsr.BasicStepProvider
 	filterEnv *adsr.BasicStepProvider
 	poly      *polyphony.Polyphony
@@ -44,11 +44,11 @@ type ClassicSynth struct {
 func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	synth := &ClassicSynth{
 		BasePatch: muse.NewPatch(0, 2, config, "synth"),
-		controls:  control.NewGroup("group.main", "Classic Synth"),
+		controls:  controls.NewGroup("group.main", "Classic Synth"),
 	}
 
 	// Add self as receiver
-	synth.AddReceiver(synth, "synth")
+	synth.AddMessageReceiver(synth, "synth")
 
 	ampEnv := adsr.NewBasicStepProvider()
 	ampEnv.Steps[0] = adsr.Step{Level: 1.0, Duration: 25.0}
@@ -96,52 +96,52 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 }
 
 func (cs *ClassicSynth) SetupControls() {
-	filterGroup := cs.controls.AddChild(control.NewGroup("group.filter", "Filter"))
-	filterGroup.AddControl(control.NewSlider("voice.filterFcMin", "Filter Frequency Min", 50.0, 8000.0, 1.0, 50.0))
-	filterGroup.AddControl(control.NewSlider("voice.filterFcMax", "Filter Frequency Max", 50.0, 8000.0, 1.0, 8000.0))
-	filterGroup.AddControl(control.NewSlider("voice.filterResonance", "Resonance", 0.0, 1.0, 0.01, 0.7))
+	filterGroup := cs.controls.AddChild(controls.NewGroup("group.filter", "Filter"))
+	filterGroup.AddControl(controls.NewSlider("voice.filterFcMin", "Filter Frequency Min", 50.0, 8000.0, 1.0, 50.0))
+	filterGroup.AddControl(controls.NewSlider("voice.filterFcMax", "Filter Frequency Max", 50.0, 8000.0, 1.0, 8000.0))
+	filterGroup.AddControl(controls.NewSlider("voice.filterResonance", "Resonance", 0.0, 1.0, 0.01, 0.7))
 
-	mixerGroup := cs.controls.AddChild(control.NewGroup("group.mixer", "Mixer"))
-	mixerGroup.AddControl(control.NewSlider("voice.osc1Mix", "Osc1 Mix", 0.0, 1.0, 0.01, 0.6))
-	mixerGroup.AddControl(control.NewSlider("voice.osc2Mix", "Osc2 Mix", 0.0, 1.0, 0.01, 0.35))
-	mixerGroup.AddControl(control.NewSlider("voice.noiseMix", "Noise Mix", 0.0, 1.0, 0.01, 0.05))
+	mixerGroup := cs.controls.AddChild(controls.NewGroup("group.mixer", "Mixer"))
+	mixerGroup.AddControl(controls.NewSlider("voice.osc1Mix", "Osc1 Mix", 0.0, 1.0, 0.01, 0.6))
+	mixerGroup.AddControl(controls.NewSlider("voice.osc2Mix", "Osc2 Mix", 0.0, 1.0, 0.01, 0.35))
+	mixerGroup.AddControl(controls.NewSlider("voice.noiseMix", "Noise Mix", 0.0, 1.0, 0.01, 0.05))
 
-	osc1Group := cs.controls.AddChild(control.NewGroup("group.osc1", "Oscillator 1"))
-	osc1Group.AddControl(control.NewSlider("voice.osc1PulseWidth", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
-	osc1Group.AddControl(control.NewSlider("voice.osc1SineMix", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
-	osc1Group.AddControl(control.NewSlider("voice.osc1SawMix", "Saw Mix", 0.0, 1.0, 0.01, 0.0))
-	osc1Group.AddControl(control.NewSlider("voice.osc1PulseMix", "Pulse Mix", 0.0, 1.0, 0.01, 1.0))
-	osc1Group.AddControl(control.NewSlider("voice.osc1TriMix", "Tri Mix", 0.0, 1.0, 0.01, 0.0))
+	osc1Group := cs.controls.AddChild(controls.NewGroup("group.osc1", "Oscillator 1"))
+	osc1Group.AddControl(controls.NewSlider("voice.osc1PulseWidth", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
+	osc1Group.AddControl(controls.NewSlider("voice.osc1SineMix", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
+	osc1Group.AddControl(controls.NewSlider("voice.osc1SawMix", "Saw Mix", 0.0, 1.0, 0.01, 0.0))
+	osc1Group.AddControl(controls.NewSlider("voice.osc1PulseMix", "Pulse Mix", 0.0, 1.0, 0.01, 1.0))
+	osc1Group.AddControl(controls.NewSlider("voice.osc1TriMix", "Tri Mix", 0.0, 1.0, 0.01, 0.0))
 
-	osc2Group := cs.controls.AddChild(control.NewGroup("group.osc2", "Oscillator 2"))
-	osc2Group.AddControl(control.NewSlider("voice.osc2PulseWidth", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
-	osc2Group.AddControl(control.NewSlider("voice.osc2SineMix", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
-	osc2Group.AddControl(control.NewSlider("voice.osc2SawMix", "Saw Mix", 0.0, 1.0, 0.01, 0.0))
-	osc2Group.AddControl(control.NewSlider("voice.osc2PulseMix", "Pulse Mix", 0.0, 1.0, 0.01, 1.0))
-	osc2Group.AddControl(control.NewSlider("voice.osc2TriMix", "Tri Mix", 0.0, 1.0, 0.01, 0.0))
-	osc2Group.AddControl(control.NewSlider("voice.osc2Tuning", "Tuning", 0.125, 8.0, 0.01, 2.0))
+	osc2Group := cs.controls.AddChild(controls.NewGroup("group.osc2", "Oscillator 2"))
+	osc2Group.AddControl(controls.NewSlider("voice.osc2PulseWidth", "Pulse Width", 0.0, 1.0, 0.01, 0.5))
+	osc2Group.AddControl(controls.NewSlider("voice.osc2SineMix", "Sine Mix", 0.0, 1.0, 0.01, 0.0))
+	osc2Group.AddControl(controls.NewSlider("voice.osc2SawMix", "Saw Mix", 0.0, 1.0, 0.01, 0.0))
+	osc2Group.AddControl(controls.NewSlider("voice.osc2PulseMix", "Pulse Mix", 0.0, 1.0, 0.01, 1.0))
+	osc2Group.AddControl(controls.NewSlider("voice.osc2TriMix", "Tri Mix", 0.0, 1.0, 0.01, 0.0))
+	osc2Group.AddControl(controls.NewSlider("voice.osc2Tuning", "Tuning", 0.125, 8.0, 0.01, 2.0))
 
-	panGroup := cs.controls.AddChild(control.NewGroup("group.pan", "Pan"))
-	panGroup.AddControl(control.NewSlider("voice.pan", "Pan", 0.0, 1.0, 0.01, 0.5))
+	panGroup := cs.controls.AddChild(controls.NewGroup("group.pan", "Pan"))
+	panGroup.AddControl(controls.NewSlider("voice.pan", "Pan", 0.0, 1.0, 0.01, 0.5))
 
-	ampEnvGroup := cs.controls.AddChild(control.NewGroup("group.ampEnv", "Amplitude ADSR"))
-	ampEnvGroup.AddControl(control.NewSlider("adsr.amplitude.attackLevel", "Attack Level", 0.0, 1.0, 0.01, 1.0))
-	ampEnvGroup.AddControl(control.NewSlider("adsr.amplitude.attackDuration", "Attack Duration (ms)", 2.0, 1000.0, 1.0, 25.0))
-	ampEnvGroup.AddControl(control.NewSlider("adsr.amplitude.decayLevel", "Decay Level", 0.0, 1.0, 0.01, 0.3))
-	ampEnvGroup.AddControl(control.NewSlider("adsr.amplitude.decayDuration", "Decay Duration (ms)", 2.0, 1000.0, 1.0, 80.0))
-	ampEnvGroup.AddControl(control.NewSlider("adsr.amplitude.releaseDuration", "Release Duration (ms)", 5.0, 4000.0, 1.0, 2000.0))
+	ampEnvGroup := cs.controls.AddChild(controls.NewGroup("group.ampEnv", "Amplitude ADSR"))
+	ampEnvGroup.AddControl(controls.NewSlider("adsr.amplitude.attackLevel", "Attack Level", 0.0, 1.0, 0.01, 1.0))
+	ampEnvGroup.AddControl(controls.NewSlider("adsr.amplitude.attackDuration", "Attack Duration (ms)", 2.0, 1000.0, 1.0, 25.0))
+	ampEnvGroup.AddControl(controls.NewSlider("adsr.amplitude.decayLevel", "Decay Level", 0.0, 1.0, 0.01, 0.3))
+	ampEnvGroup.AddControl(controls.NewSlider("adsr.amplitude.decayDuration", "Decay Duration (ms)", 2.0, 1000.0, 1.0, 80.0))
+	ampEnvGroup.AddControl(controls.NewSlider("adsr.amplitude.releaseDuration", "Release Duration (ms)", 5.0, 4000.0, 1.0, 2000.0))
 
-	filterEnvGroup := cs.controls.AddChild(control.NewGroup("group.filterEnv", "Filter ADSR"))
-	filterEnvGroup.AddControl(control.NewSlider("adsr.filter.attackLevel", "Attack Level", 0.0, 1.0, 0.01, 0.9))
-	filterEnvGroup.AddControl(control.NewSlider("adsr.filter.attackDuration", "Attack Duration (ms)", 2.0, 1000.0, 1.0, 25.0))
-	filterEnvGroup.AddControl(control.NewSlider("adsr.filter.decayLevel", "Decay Level", 0.0, 1.0, 0.01, 0.5))
-	filterEnvGroup.AddControl(control.NewSlider("adsr.filter.decayDuration", "Decay Duration (ms)", 2.0, 1000.0, 1.0, 80.0))
-	filterEnvGroup.AddControl(control.NewSlider("adsr.filter.releaseDuration", "Release Duration (ms)", 5.0, 4000.0, 1.0, 2000.0))
+	filterEnvGroup := cs.controls.AddChild(controls.NewGroup("group.filterEnv", "Filter ADSR"))
+	filterEnvGroup.AddControl(controls.NewSlider("adsr.filter.attackLevel", "Attack Level", 0.0, 1.0, 0.01, 0.9))
+	filterEnvGroup.AddControl(controls.NewSlider("adsr.filter.attackDuration", "Attack Duration (ms)", 2.0, 1000.0, 1.0, 25.0))
+	filterEnvGroup.AddControl(controls.NewSlider("adsr.filter.decayLevel", "Decay Level", 0.0, 1.0, 0.01, 0.5))
+	filterEnvGroup.AddControl(controls.NewSlider("adsr.filter.decayDuration", "Decay Duration (ms)", 2.0, 1000.0, 1.0, 80.0))
+	filterEnvGroup.AddControl(controls.NewSlider("adsr.filter.releaseDuration", "Release Duration (ms)", 5.0, 4000.0, 1.0, 2000.0))
 
 	cs.controls.AddListenerDeep(cs)
 }
 
-func (cs *ClassicSynth) ControlChanged(ctrl control.ControlProtocol, oldValue any, newValue any, setter any) {
+func (cs *ClassicSynth) ControlChanged(ctrl controls.Control, oldValue any, newValue any, setter any) {
 	id := ctrl.Identifier()
 	components := strings.Split(id, ".")
 
@@ -183,7 +183,7 @@ func (cs *ClassicSynth) ReceiveMessage(msg any) []*muse.Message {
 	for k, v := range content {
 		ctrl := cs.controls.ControlById(k)
 		if ctrl != nil {
-			if ctrl.Type() == control.SliderType {
+			if ctrl.Type() == controls.SliderType {
 				// Change control from message will take a lot of cpy because it updates fyne UI elements, which is really inefficient
 				// ctrl.(*control.SliderControl).Set(v.(float64), nil)
 				cs.ControlChanged(ctrl, 0, v.(float64), nil)

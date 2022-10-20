@@ -1,4 +1,4 @@
-package control
+package controls
 
 import (
 	"fmt"
@@ -12,14 +12,14 @@ import (
 type EntryTranformer func(string) any
 
 type Entry struct {
-	*Control
+	*BaseControl
 	text        string
 	transformer EntryTranformer
 }
 
 func NewEntry(id string, name string, text string, transformer EntryTranformer) *Entry {
 	return &Entry{
-		Control:     NewControl(id, name, EntryType),
+		BaseControl: NewBaseControl(id, name, EntryType),
 		text:        text,
 		transformer: transformer,
 	}
@@ -43,7 +43,7 @@ func (e *Entry) Get() any {
 
 func (e *Entry) AddListener(listener Listener) {
 	v := e.Get()
-	e.Control.AddListener(listener)
+	e.BaseControl.AddListener(listener)
 	listener.ControlChanged(e, v, v, e)
 }
 
@@ -67,7 +67,7 @@ func (e *Entry) UI() fyne.CanvasObject {
 		}
 	}
 
-	e.AddListener(NewChangeCallback(func(ctrl ControlProtocol, oldValue any, newValue any, setter any) {
+	e.AddListener(NewChangeCallback(func(ctrl Control, oldValue any, newValue any, setter any) {
 		if setter != entry {
 			entry.SetText(e.text)
 			saveButton.Disable()
