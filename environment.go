@@ -67,7 +67,6 @@ func (e *Environment) TerminateAudio() {
 }
 
 func (e *Environment) Synthesize() bool {
-	// e.RunMessengers()
 	e.PrepareSynthesis()
 	return e.BasePatch.Synthesize()
 }

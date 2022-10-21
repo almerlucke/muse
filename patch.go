@@ -17,7 +17,6 @@ type Patch interface {
 	OutputModuleAtIndex(index int) Module
 	SendMessage(*Message)
 	SendMessages([]*Message)
-	RunMessengers()
 	InternalInputControl() Control
 	InternalOutputControl() Control
 }
@@ -194,19 +193,6 @@ func (p *BasePatch) SendMessage(msg *Message) {
 func (p *BasePatch) SendMessages(msgs []*Message) {
 	for _, msg := range msgs {
 		p.SendMessage(msg)
-	}
-}
-
-func (p *BasePatch) RunMessengers() {
-	for _, msgr := range p.messengers {
-		p.SendMessages(msgr.Messages(p.timestamp, p.Config))
-	}
-
-	for _, sub := range p.subModules {
-		subPatch, ok := sub.(Patch)
-		if ok {
-			subPatch.RunMessengers()
-		}
 	}
 }
 
