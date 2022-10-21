@@ -11,6 +11,9 @@ type Step struct {
 	Shuffle     float64 `json:"shuffle"` // 0.0 - 1.0 -> (0.5 + shuffle * 0.35) * milliPerNote * 2.0  50% - 85%  --- 50, 54, 58, 62, 66, 70, 74, 78, 82, 86
 	ShuffleRand float64 `json:"shuffleRand"`
 	SkipFactor  float64 `json:"skipFactor"` // 0% - 90% chance of skipping
+	Multiply    float64 `json:"multiply"`
+	BurstFactor float64 `json:"burstFactor"`
+	NumBurst    int     `json:"numBurst"`
 }
 
 func (s *Step) shuffleNote(milliPerNote float64) float64 {
@@ -29,12 +32,19 @@ func (s *Step) shuffleNote(milliPerNote float64) float64 {
 	return (0.5 + finalShuffle*0.35) * milliPerNote * 2.0
 }
 
+func (s *Step) Burst() bool {
+	return rand.Float64() < s.BurstFactor
+}
+
 type Swing struct {
-	steps        value.Valuer[*Step]
-	bpm          int
-	noteDivision int
-	milliPerNote float64
-	delay        float64
+	steps         value.Valuer[*Step]
+	bpm           int
+	noteDivision  int
+	milliPerNote  float64
+	delay         float64
+	burstCount    int
+	burstMode     bool
+	burstDuration float64
 }
 
 func New(bpm int, noteDivision int, steps value.Valuer[*Step]) *Swing {
@@ -47,14 +57,37 @@ func New(bpm int, noteDivision int, steps value.Valuer[*Step]) *Swing {
 }
 
 func (sw *Swing) NextStep() float64 {
-	step := sw.steps.Value()
-
 	if sw.steps.Finished() {
 		sw.steps.Reset()
 	}
 
-	dur := step.shuffleNote(sw.milliPerNote)
-	delay := dur - sw.milliPerNote
+	if sw.burstMode {
+		sw.burstCount--
+		if sw.burstCount == 0 {
+			sw.burstMode = false
+		}
+
+		return sw.burstDuration
+	}
+
+	step := sw.steps.Value()
+	multiply := 1.0
+
+	if step.Multiply > 0.0 {
+		multiply = step.Multiply
+	}
+
+	milliPerNote := sw.milliPerNote * multiply
+
+	if step.Burst() {
+		sw.burstMode = true
+		sw.burstCount = step.NumBurst
+		sw.burstDuration = milliPerNote / float64(step.NumBurst)
+		return sw.NextStep()
+	}
+
+	dur := step.shuffleNote(milliPerNote)
+	delay := dur - milliPerNote
 	dur -= sw.delay
 	sw.delay = delay
 
