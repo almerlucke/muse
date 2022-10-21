@@ -86,13 +86,13 @@ func main() {
 	filterEnv.Steps[1] = adsr.Step{Level: 0.5, Duration: 80.0}
 	filterEnv.Steps[3] = adsr.Step{Duration: 2000.0}
 
-	bpm := 100.0
+	bpm := 100
 
 	synth := env.AddModule(classic.NewSynth(20, ampEnv, filterEnv, env.Config, "poly"))
 	synthAmp1 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, env.Config))
 	synthAmp2 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, env.Config))
-	allpass1 := env.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, env.Config, "allpass"))
-	allpass2 := env.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, env.Config, "allpass"))
+	allpass1 := env.AddModule(allpass.NewAllpass(2500.0, 60000.0/float64(bpm)*1.666, 0.5, env.Config, "allpass"))
+	allpass2 := env.AddModule(allpass.NewAllpass(2500.0, 60000.0/float64(bpm)*1.75, 0.4, env.Config, "allpass"))
 	allpassAmp1 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config))
 	allpassAmp2 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config))
 	chor1 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, env.Config, "chorus1"))
@@ -116,7 +116,7 @@ func main() {
 	}, "control"))
 
 	env.AddMessenger(stepper.NewStepper(
-		swing.New(value.NewConst(bpm), value.NewConst(2.0),
+		swing.New(bpm, 2,
 			value.NewSequence([]*swing.Step{{}, {Skip: true}}),
 		),
 		[]string{"control"}, "",

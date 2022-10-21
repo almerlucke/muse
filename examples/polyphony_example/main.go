@@ -111,16 +111,16 @@ func main() {
 		},
 	}, "prototype"))
 
-	bpm := 120.0
+	bpm := 120
 
 	env.AddMessenger(stepper.NewStepper(
-		swing.New(value.NewConst(bpm), value.NewConst(4.0), value.NewSequence([]*swing.Step{
+		swing.New(bpm, 4, value.NewSequence([]*swing.Step{
 			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipFactor: 0.3},
 		})),
 		[]string{"prototype"}, "",
 	))
 
-	milliPerBeat := 60000.0 / bpm / 4.0
+	milliPerBeat := 60000.0 / float64(bpm) / 4.0
 
 	paramVarTri1 := env.AddModule(vartri.NewVarTri(0.265, 0.0, 0.5, env.Config, "vartri1"))
 	paramVarTri2 := env.AddModule(vartri.NewVarTri(0.325, 0.0, 0.5, env.Config, "vartri2"))

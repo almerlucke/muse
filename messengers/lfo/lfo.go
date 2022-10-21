@@ -38,10 +38,40 @@ func (t *Target) Messages(value float64) []*muse.Message {
 
 type LFO struct {
 	*muse.BaseMessenger
-	phase   float64
-	delta   float64
-	speed   float64
-	targets []*Target
+	config     *muse.Configuration
+	phase      float64
+	delta      float64
+	speed      float64
+	min        float64
+	max        float64
+	shapeIndex int
+	shapes     []shaping.Shaper
+	targets    []*Target
+}
+
+func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shapes []shaping.Shaper, config *muse.Configuration, identifier string) *LFO {
+	sampleRate := config.SampleRate / float64(config.BufferSize)
+
+	if min > max {
+		tmp := min
+		min = max
+		max = tmp
+	}
+
+	return &LFO{
+		BaseMessenger: muse.NewBaseMessenger(identifier),
+		delta:         speed / sampleRate,
+		speed:         speed,
+		min:           min,
+		max:           max,
+		shapes:        shapes,
+		shapeIndex:    shapeIndex,
+		config:        config,
+	}
+}
+
+func NewBasicControlLFO(speed float64, min float64, max float64, config *muse.Configuration, identifier string) *LFO {
+	return NewControlLFO(speed, min, max, 0, []shaping.Shaper{lfoSineShaper}, config, identifier)
 }
 
 func NewLFO(speed float64, targets []*Target, config *muse.Configuration, identifier string) *LFO {
@@ -52,6 +82,10 @@ func NewLFO(speed float64, targets []*Target, config *muse.Configuration, identi
 		delta:         speed / sampleRate,
 		speed:         speed,
 		targets:       targets,
+		min:           0.0,
+		max:           1.0,
+		shapes:        []shaping.Shaper{lfoSineShaper},
+		config:        config,
 	}
 }
 
@@ -64,18 +98,125 @@ func NewBasicLFO(speed float64, scale float64, offset float64, addresses []strin
 	return NewLFO(speed, ts, config, "")
 }
 
+func (lfo *LFO) ReceiveControlValue(value any, index int) {
+	// Index == 0 -> speed (float)
+	// Index == 1 -> min (float)
+	// Index == 2 -> max (float)
+	// Index == 3 -> shape index (int or float)
+
+	switch index {
+	case 0: // speed
+		if speed, ok := value.(float64); ok {
+			lfo.SetSpeed(speed)
+		}
+	case 1: // min
+		if min, ok := value.(float64); ok {
+			lfo.SetMin(min)
+		}
+	case 2: // max
+		if max, ok := value.(float64); ok {
+			lfo.SetMax(max)
+		}
+	case 3: // shape index
+		lfo.SetShapeIndex(value)
+	}
+}
+
+func (lfo *LFO) ReceiveMessage(msg any) []*muse.Message {
+	content := msg.(map[string]any)
+
+	if speed, ok := content["speed"]; ok {
+		lfo.SetSpeed(speed.(float64))
+	}
+
+	if min, ok := content["min"]; ok {
+		lfo.SetMin(min.(float64))
+	}
+
+	if max, ok := content["max"]; ok {
+		lfo.SetMax(max.(float64))
+	}
+
+	if shapeIndex, ok := content["shapeIndex"]; ok {
+		lfo.SetShapeIndex(shapeIndex)
+	}
+
+	return nil
+}
+
 func (lfo *LFO) Speed() float64 {
 	return lfo.speed
 }
 
-func (lfo *LFO) SetSpeed(speed float64, config *muse.Configuration) {
-	sampleRate := config.SampleRate / float64(config.BufferSize)
+func (lfo *LFO) SetSpeed(speed float64) {
+	sampleRate := lfo.config.SampleRate / float64(lfo.config.BufferSize)
 	lfo.delta = speed / sampleRate
 	lfo.speed = speed
 }
 
+func (lfo *LFO) Min() float64 {
+	return lfo.min
+}
+
+func (lfo *LFO) SetMin(min float64) {
+	if min > lfo.max {
+		lfo.min = lfo.max
+		lfo.max = min
+	} else {
+		lfo.min = min
+	}
+}
+
+func (lfo *LFO) Max() float64 {
+	return lfo.max
+}
+
+func (lfo *LFO) SetMax(max float64) {
+	if max < lfo.min {
+		lfo.max = lfo.min
+		lfo.min = max
+	} else {
+		lfo.max = max
+	}
+}
+
+func (lfo *LFO) ShapeIndex() int {
+	return lfo.shapeIndex
+}
+
+func (lfo *LFO) SetShapeIndex(anyIndex any) {
+	index := lfo.shapeIndex
+
+	if newIndex, ok := anyIndex.(float64); ok {
+		index = int(newIndex)
+	} else if newIndex, ok := anyIndex.(int); ok {
+		index = newIndex
+	}
+
+	if index < len(lfo.shapes) {
+		lfo.shapeIndex = index
+	}
+}
+
+func (lfo *LFO) Tick(timestamp int64, config *muse.Configuration) {
+	out := (lfo.max-lfo.min)*lfo.shapes[lfo.shapeIndex].Shape(lfo.phase) + lfo.min
+
+	lfo.phase += lfo.delta
+
+	for lfo.phase >= 1.0 {
+		lfo.phase -= 1.0
+	}
+
+	for lfo.phase < 0.0 {
+		lfo.phase += 1.0
+	}
+
+	lfo.SendControlValue(out, 0)
+}
+
 func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Message {
 	out := lfo.phase
+	controlOut := (lfo.max-lfo.min)*lfo.shapes[lfo.shapeIndex].Shape(lfo.phase) + lfo.min
 
 	lfo.phase += lfo.delta
 
@@ -92,6 +233,8 @@ func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Me
 		targetMsgs := target.Messages(out)
 		msgs = append(msgs, targetMsgs...)
 	}
+
+	lfo.SendControlValue(controlOut, 0)
 
 	return msgs
 }

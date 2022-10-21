@@ -7,16 +7,17 @@ import (
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/controls/clog"
-	"github.com/almerlucke/muse/messengers/triggers/timer"
+	"github.com/almerlucke/muse/messengers/lfo"
 )
 
 func main() {
 	env := muse.NewEnvironment(0, 44100.0, 512)
 
-	timer := env.AddControl(timer.NewControlTimer(250.0, env.Config, "timer"))
+	// timer := env.AddControl(timer.NewControlTimer(250.0, env.Config, "timer"))
+	lfo := env.AddControl(lfo.NewBasicControlLFO(2.0, 10.0, 30.0, env.Config, "lfo"))
 	logger := clog.NewLog("test")
 
-	timer.ConnectToControl(0, logger, 0)
+	lfo.ConnectToControl(0, logger, 0)
 
 	stream, err := env.InitializeAudio()
 	if err != nil {

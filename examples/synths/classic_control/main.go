@@ -271,7 +271,7 @@ func main() {
 	}, "control"))
 
 	synth.AddMessenger(stepper.NewStepper(
-		swing.New(value.NewConst(bpm), value.NewConst(2.0),
+		swing.New(int(bpm), 2,
 			value.NewSequence([]*swing.Step{{}, {Skip: true}}),
 		),
 		[]string{"control"}, "",

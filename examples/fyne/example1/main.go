@@ -520,7 +520,7 @@ func (sc *SwingControl) Listen(state map[string]any) {
 }
 
 func (sc *SwingControl) Swing() *swing.Swing {
-	return swing.New(sc.bpm, sc.noteDivision, sc.stepSequence)
+	return swing.New(int(sc.bpm.Value()), int(sc.noteDivision.Value()), sc.stepSequence)
 }
 
 func (sc *SwingControl) UI() fyne.CanvasObject {

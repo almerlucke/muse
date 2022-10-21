@@ -111,7 +111,7 @@ func main() {
 		voices1 = append(voices1, voice)
 	}
 
-	bpm := 100.0
+	bpm := 100
 
 	// milliPerBeat := 60000.0 / bpm
 
@@ -175,7 +175,7 @@ func main() {
 	}, "template1"))
 
 	env.AddMessenger(stepper.NewStepper(
-		swing.New(value.NewConst(bpm), value.NewConst(2.0), value.NewSequence(
+		swing.New(bpm, 2, value.NewSequence(
 			[]*swing.Step{
 				{}, {}, {}, {}, {}, {}, {}, {Shuffle: 0.1}, {}, {}, {}, {}, {}, {}, {}, {Shuffle: 0.1, ShuffleRand: 0.05},
 			},
