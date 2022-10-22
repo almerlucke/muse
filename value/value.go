@@ -143,6 +143,12 @@ func (s *Sequence[T]) SetState(state map[string]any) {
 	s.continuous = state["continuous"].(bool)
 }
 
+func (s *Sequence[T]) Randomize() {
+	rand.Shuffle(len(s.values), func(i, j int) {
+		s.values[i], s.values[j] = s.values[j], s.values[i]
+	})
+}
+
 type Function[T any] struct {
 	f func() T
 }

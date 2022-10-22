@@ -8,14 +8,6 @@ import (
 	"github.com/almerlucke/muse/value/template"
 )
 
-type bang struct{ Bang string }
-
-var Bang = &bang{Bang: "bang"}
-
-func IsBang(msg any) bool {
-	return msg == Bang
-}
-
 type Banger interface {
 	muse.MessageReceiver
 	muse.ControlReceiver
@@ -37,7 +29,7 @@ func NewGenerator(banger Banger, identifier string) *Generator {
 
 func (g *Generator) ReceiveControlValue(value any, index int) {
 	if index == 0 {
-		if value == Bang {
+		if value == muse.Bang {
 			contents := g.banger.ControlBang()
 			for _, content := range contents {
 				g.SendControlValue(content, 0)
@@ -49,7 +41,7 @@ func (g *Generator) ReceiveControlValue(value any, index int) {
 }
 
 func (g *Generator) ReceiveMessage(msg any) []*muse.Message {
-	if msg == Bang {
+	if msg == muse.Bang {
 		msgsToSend := g.banger.MessageBang()
 		for _, msgToSend := range msgsToSend {
 			g.SendControlValue(msgToSend.Content, 0)

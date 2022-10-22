@@ -2,7 +2,6 @@ package stepper
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/value"
 )
 
@@ -62,7 +61,7 @@ func (s *Stepper) Tick(timestamp int64, config *muse.Configuration) {
 
 	if bang {
 		s.SendControlValue(duration, 1)
-		s.SendControlValue(banger.Bang, 0)
+		s.SendControlValue(muse.Bang, 0)
 	}
 }
 
@@ -72,12 +71,12 @@ func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.
 
 	if bang {
 		s.SendControlValue(duration, 1)
-		s.SendControlValue(banger.Bang, 0)
+		s.SendControlValue(muse.Bang, 0)
 
 		for _, address := range s.addresses {
 			messages = append(messages, &muse.Message{
 				Address: address,
-				Content: banger.Bang,
+				Content: muse.Bang,
 			})
 		}
 	}

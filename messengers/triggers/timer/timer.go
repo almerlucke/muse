@@ -2,7 +2,6 @@ package timer
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/messengers/banger"
 )
 
 type Timer struct {
@@ -75,7 +74,7 @@ func (t *Timer) Tick(timestamp int64, config *muse.Configuration) {
 
 	if bang {
 		t.SendControlValue(duration, 1)
-		t.SendControlValue(banger.Bang, 0)
+		t.SendControlValue(muse.Bang, 0)
 	}
 }
 
@@ -85,12 +84,12 @@ func (t *Timer) Messages(timestamp int64, config *muse.Configuration) []*muse.Me
 
 	if bang {
 		t.SendControlValue(duration, 1)
-		t.SendControlValue(banger.Bang, 0)
+		t.SendControlValue(muse.Bang, 0)
 
 		for _, address := range t.addresses {
 			messages = append(messages, &muse.Message{
 				Address: address,
-				Content: banger.Bang,
+				Content: muse.Bang,
 			})
 		}
 	}
