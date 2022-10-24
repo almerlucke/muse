@@ -256,15 +256,15 @@ func main() {
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 4, value.NewSequence(
-			[]*swing.Step{{}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {SkipFactor: 0.3},
-				{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {}, {SkipFactor: 0.3}, {SkipFactor: 0.3}},
+			[]*swing.Step{{}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {SkipChance: 0.3},
+				{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {}, {SkipChance: 0.3}, {SkipChance: 0.3}},
 		)),
 		[]string{"template1"}, "",
 	))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 2, value.NewSequence(
-			[]*swing.Step{{Skip: true}, {}, {}, {Skip: true}, {Skip: true}, {}, {}, {SkipFactor: 0.3}},
+			[]*swing.Step{{Skip: true}, {}, {}, {Skip: true}, {Skip: true}, {}, {}, {SkipChance: 0.3}},
 		)),
 		[]string{"template2"}, "",
 	))
@@ -279,15 +279,15 @@ func main() {
 	vocalSound, _ := io.NewSoundFileBuffer("resources/sounds/Cymatics - Blurry Vocal - 80 BPM F Min.wav")
 
 	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 8, 1.875, 2.125, 0.75, value.NewSequence([]*swing.Step{
-		{}, {Shuffle: 0.1}, {SkipFactor: 0.3, BurstFactor: 1.0, NumBurst: 3}, {}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipFactor: 0.4}, {Skip: true}, {Skip: true},
+		{}, {Shuffle: 0.1}, {SkipChance: 0.3, BurstChance: 1.0, NumBurst: 3}, {}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipChance: 0.4}, {Skip: true}, {Skip: true},
 	}))
 
 	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4, 0.875, 1.125, 1.0, value.NewSequence([]*swing.Step{
-		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {}, {Skip: true}, {Skip: true},
+		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {SkipChance: 0.4}, {}, {Skip: true}, {Skip: true},
 	}))
 
 	snarePlayer := addDrumTrack(env, "snare", snareSound, bpm, 2, 0.875, 1.125, 1.0, value.NewSequence([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {BurstFactor: 0.2, NumBurst: 2}, {Skip: true}, {Skip: true}, {Skip: true}, {},
+		{Skip: true}, {Skip: true}, {Skip: true}, {BurstChance: 0.2, NumBurst: 2}, {Skip: true}, {Skip: true}, {Skip: true}, {},
 	}))
 
 	bassPlayer := addDrumTrack(env, "bass", bassSound, bpm, 1, 0.875, 1.125, 1.0, value.NewSequence([]*swing.Step{
@@ -295,7 +295,7 @@ func main() {
 	}))
 
 	ridePlayer := addDrumTrack(env, "ride", rideSound, bpm, 2, 0.875, 1.25, 0.3, value.NewSequence([]*swing.Step{
-		{Skip: true}, {Skip: true}, {BurstFactor: 0.2, NumBurst: 4}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {BurstChance: 0.2, NumBurst: 4}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 	}))
 
 	waterPlayer := addDrumTrack(env, "water", waterSound, int(float64(bpm)*0.125), 2, 0.875, 1.25, 0.5, value.NewSequence([]*swing.Step{

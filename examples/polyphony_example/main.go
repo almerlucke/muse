@@ -115,7 +115,7 @@ func main() {
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 4, value.NewSequence([]*swing.Step{
-			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipFactor: 0.3},
+			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipChance: 0.3},
 		})),
 		[]string{"prototype"}, "",
 	))

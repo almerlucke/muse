@@ -13,9 +13,9 @@ type Step struct {
 	Skip        bool    `json:"skip"`
 	Shuffle     float64 `json:"shuffle"` // 0.0 - 1.0 -> (0.5 + shuffle * 0.35) * milliPerNote * 2.0  50% - 85%  --- 50, 54, 58, 62, 66, 70, 74, 78, 82, 86
 	ShuffleRand float64 `json:"shuffleRand"`
-	SkipFactor  float64 `json:"skipFactor"` // 0% - 90% chance of skipping
+	SkipChance  float64 `json:"skipChance"` // 0% - 90% chance of skipping
 	Multiply    float64 `json:"multiply"`
-	BurstFactor float64 `json:"burstFactor"`
+	BurstChance float64 `json:"burstChance"`
 	NumBurst    int     `json:"numBurst"`
 }
 
@@ -27,11 +27,11 @@ func (s *Step) shuffleDelay(milliPerNote float64) float64 {
 }
 
 func (s *Step) Burst() bool {
-	return rand.Float64() < s.BurstFactor
+	return rand.Float64() < s.BurstChance
 }
 
 func (s *Step) SkipStep() bool {
-	return s.Skip || rand.Float64() < s.SkipFactor
+	return s.Skip || rand.Float64() < s.SkipChance
 }
 
 type Swing struct {

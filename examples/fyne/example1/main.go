@@ -379,7 +379,7 @@ type SwingStepControl struct {
 	skipBinding        binding.Bool
 	shuffleBinding     binding.String
 	shuffleRandBinding binding.String
-	skipFactorBinding  binding.String
+	skipChanceBinding  binding.String
 	currentBinding     binding.Bool
 	index              int
 	isCurrent          bool
@@ -434,16 +434,16 @@ func (ssc *SwingStepControl) UI() fyne.CanvasObject {
 	shuffleRandEntry := widget.NewEntryWithData(ssc.shuffleRandBinding)
 	shuffleRandEntry.Validator = nil
 
-	ssc.skipFactorBinding = binding.NewString()
-	ssc.skipFactorBinding.Set(fmt.Sprintf("%.2f", ssc.step.SkipFactor))
-	ssc.skipFactorBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
-		v, err := ssc.skipFactorBinding.Get()
+	ssc.skipChanceBinding = binding.NewString()
+	ssc.skipChanceBinding.Set(fmt.Sprintf("%.2f", ssc.step.SkipChance))
+	ssc.skipChanceBinding.AddListener(ui.NewDelayedListener(1*time.Second, func() {
+		v, err := ssc.skipChanceBinding.Get()
 		if err == nil {
-			ssc.step.SkipFactor = parseFloatWithBounds(v, 0, 1)
+			ssc.step.SkipChance = parseFloatWithBounds(v, 0, 1)
 		}
 	}))
-	skipFactorEntry := widget.NewEntryWithData(ssc.skipFactorBinding)
-	skipFactorEntry.Validator = nil
+	skipChanceEntry := widget.NewEntryWithData(ssc.skipChanceBinding)
+	skipChanceEntry.Validator = nil
 
 	ssc.currentBinding = binding.NewBool()
 	ssc.currentBinding.Set(ssc.isCurrent)
@@ -454,7 +454,7 @@ func (ssc *SwingStepControl) UI() fyne.CanvasObject {
 		widget.NewFormItem(fmt.Sprintf("%d", ssc.index), skipCheck),
 		widget.NewFormItem("Swing", shuffleEntry),
 		widget.NewFormItem("Rand", shuffleRandEntry),
-		widget.NewFormItem("Skip", skipFactorEntry),
+		widget.NewFormItem("Skip", skipChanceEntry),
 		widget.NewFormItem("", currentCheck),
 	)
 }
@@ -464,7 +464,7 @@ func (ssc *SwingStepControl) ChangeStep(step *swing.Step) {
 	ssc.skipBinding.Set(!step.Skip)
 	ssc.shuffleBinding.Set(fmt.Sprintf("%.2f", step.Shuffle))
 	ssc.shuffleRandBinding.Set(fmt.Sprintf("%.2f", step.ShuffleRand))
-	ssc.skipFactorBinding.Set(fmt.Sprintf("%.2f", step.SkipFactor))
+	ssc.skipChanceBinding.Set(fmt.Sprintf("%.2f", step.SkipChance))
 }
 
 type SwingControlBank struct {
@@ -488,7 +488,7 @@ func NewSwingControlBank() *SwingControlBank {
 	b.Steps[3].ShuffleRand = 0.2
 	b.Steps[5].Shuffle = 0.3
 	b.Steps[6].Shuffle = 0.1
-	b.Steps[7].SkipFactor = 0.3
+	b.Steps[7].SkipChance = 0.3
 
 	return b
 }

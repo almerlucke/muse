@@ -201,19 +201,19 @@ func main() {
 
 	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 8, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
 		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
-			{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
+			{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipChance: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
 		}), 2, 3),
 		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
-			{}, {Shuffle: 0.3}, {Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {SkipFactor: 0.4}, {SkipFactor: 0.4}, {SkipFactor: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
+			{}, {Shuffle: 0.3}, {Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {SkipChance: 0.4}, {SkipChance: 0.4}, {SkipChance: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
 		}), 1, 2),
 	}, true))
 
 	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
 		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
-			{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
+			{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipChance: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
 		}), 2, 3),
 		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
-			{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {SkipFactor: 0.4}, {Skip: true}, {Skip: true}, {SkipFactor: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {Skip: true},
+			{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {SkipChance: 0.4}, {Skip: true}, {Skip: true}, {SkipChance: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {Skip: true},
 		}), 1, 2),
 	}, true))
 
