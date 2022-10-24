@@ -25,6 +25,10 @@ func NewWaveShaper(shaper shaping.Shaper, numParams int, paramMapper ParamMapFun
 	}
 }
 
+func (s *WaveShaper) ReceiveControlValue(value any, index int) {
+	s.paramMapper(index, value.(float64), s.shaper)
+}
+
 func (s *WaveShaper) ReceiveMessage(msg any) []*muse.Message {
 	if s.msgMapper != nil {
 		s.msgMapper(msg, s.shaper)

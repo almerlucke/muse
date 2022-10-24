@@ -28,11 +28,17 @@ func (p *StereoPan) SetPan(pan float64) {
 	p.pan = pan
 }
 
+func (p *StereoPan) ReceiveControlValue(value any, index int) {
+	if index == 0 {
+		p.SetPan(value.(float64))
+	}
+}
+
 func (p *StereoPan) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
 	if pan, ok := content["pan"]; ok {
-		p.pan = pan.(float64)
+		p.SetPan(pan.(float64))
 	}
 
 	return nil

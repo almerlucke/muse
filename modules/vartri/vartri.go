@@ -7,6 +7,7 @@ type VarTri struct {
 	phase float64
 	delta float64
 	w     float64
+	fc    float64
 }
 
 func NewVarTri(freq float64, phase float64, w float64, config *muse.Configuration, identifier string) *VarTri {
@@ -18,26 +19,56 @@ func NewVarTri(freq float64, phase float64, w float64, config *muse.Configuratio
 	}
 }
 
+func (vt *VarTri) DutyWidth() float64 {
+	return vt.w
+}
+
+func (vt *VarTri) SetDutyWidth(w float64) {
+	vt.w = w
+}
+
+func (vt *VarTri) Phase() float64 {
+	return vt.phase
+}
+
+func (vt *VarTri) SetPhase(ph float64) {
+	vt.phase = ph
+}
+
+func (vt *VarTri) Frequency() float64 {
+	return vt.fc
+}
+
+func (vt *VarTri) SetFrequency(fc float64) {
+	vt.delta = fc / vt.Config.SampleRate
+	vt.fc = fc
+}
+
+func (vt *VarTri) ReceiveControlValue(value any, index int) {
+	switch index {
+	case 0: // Frequency
+		vt.SetFrequency(value.(float64))
+	case 1: // Phase
+		vt.SetPhase(value.(float64))
+	case 2: // Duty Width
+		vt.SetDutyWidth(value.(float64))
+	}
+}
+
 func (vt *VarTri) ReceiveMessage(msg any) []*muse.Message {
 	params, ok := msg.(map[string]any)
 	if ok {
 		p, ok := params["phase"]
 		if ok {
-			vt.phase = p.(float64)
+			vt.SetPhase(p.(float64))
 		}
-		f, ok := params["frequency"]
+		fc, ok := params["frequency"]
 		if ok {
-			vt.delta = f.(float64) / vt.Config.SampleRate
+			vt.SetFrequency(fc.(float64))
 		}
 		w, ok := params["dutyWidth"]
 		if ok {
-			vt.w = w.(float64)
-			if vt.w > 1.0 {
-				vt.w = 1.0
-			}
-			if vt.w < 0.0 {
-				vt.w = 0.0
-			}
+			vt.SetDutyWidth(w.(float64))
 		}
 	}
 

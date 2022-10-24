@@ -12,6 +12,7 @@ type Player struct {
 	buffer  *io.SoundFileBuffer
 	phase   float64
 	inc     float64
+	speed   float64
 	amp     float64
 	oneShot bool
 	done    bool
@@ -19,13 +20,15 @@ type Player struct {
 
 func NewPlayer(buffer *io.SoundFileBuffer, speed float64, amp float64, oneShot bool, config *muse.Configuration, identifier string) *Player {
 	inc := (speed * buffer.SampleRate / config.SampleRate) / float64(buffer.NumFrames)
-	if oneShot && inc < 0 {
+
+	if oneShot {
 		inc = math.Abs(inc)
 	}
 
 	return &Player{
 		BaseModule: muse.NewBaseModule(0, len(buffer.Channels), config, identifier),
 		inc:        inc,
+		speed:      speed,
 		oneShot:    oneShot,
 		done:       oneShot,
 		buffer:     buffer,
@@ -33,16 +36,39 @@ func NewPlayer(buffer *io.SoundFileBuffer, speed float64, amp float64, oneShot b
 	}
 }
 
-func (p *Player) ReceiveMessage(msg any) []*muse.Message {
-	mp := msg.(map[string]any)
-	speed := mp["speed"].(float64)
+func (p *Player) Speed() float64 {
+	return p.speed
+}
 
+func (p *Player) SetSpeed(speed float64) {
 	p.inc = (speed * p.buffer.SampleRate / p.Config.SampleRate) / float64(p.buffer.NumFrames)
+	p.speed = speed
+}
 
+func (p *Player) Bang() {
 	if p.oneShot {
 		p.done = false
 		p.phase = 0.0
 	}
+}
+
+func (p *Player) ReceiveControlValue(value any, index int) {
+	switch index {
+	case 0: // Bang
+		if value == muse.Bang {
+			p.Bang()
+		}
+	case 1: // Speed
+		p.SetSpeed(value.(float64))
+	}
+}
+
+func (p *Player) ReceiveMessage(msg any) []*muse.Message {
+	mp := msg.(map[string]any)
+	speed := mp["speed"].(float64)
+
+	p.SetSpeed(speed)
+	p.Bang()
 
 	return nil
 }

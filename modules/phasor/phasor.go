@@ -6,6 +6,7 @@ type Phasor struct {
 	*muse.BaseModule
 	phase float64
 	delta float64
+	fc    float64
 }
 
 func NewPhasor(freq float64, phase float64, config *muse.Configuration, identifier string) *Phasor {
@@ -13,19 +14,46 @@ func NewPhasor(freq float64, phase float64, config *muse.Configuration, identifi
 		BaseModule: muse.NewBaseModule(2, 1, config, identifier),
 		phase:      phase,
 		delta:      freq / config.SampleRate,
+		fc:         freq,
+	}
+}
+
+func (p *Phasor) Phase() float64 {
+	return p.phase
+}
+
+func (p *Phasor) SetPhase(ph float64) {
+	p.phase = ph
+}
+
+func (p *Phasor) Frequency() float64 {
+	return p.fc
+}
+
+func (p *Phasor) SetFrequency(fc float64) {
+	p.delta = fc / p.Config.SampleRate
+	p.fc = fc
+}
+
+func (p *Phasor) ReceiveControlValue(value any, index int) {
+	switch index {
+	case 0:
+		p.SetFrequency(value.(float64))
+	case 1:
+		p.SetPhase(value.(float64))
 	}
 }
 
 func (p *Phasor) ReceiveMessage(msg any) []*muse.Message {
 	params, ok := msg.(map[string]any)
 	if ok {
-		f, ok := params["frequency"]
+		fc, ok := params["frequency"]
 		if ok {
-			p.delta = f.(float64) / p.Config.SampleRate
+			p.SetFrequency(fc.(float64))
 		}
 		phase, ok := params["phase"]
 		if ok {
-			p.phase = phase.(float64)
+			p.SetPhase(phase.(float64))
 		}
 	}
 
