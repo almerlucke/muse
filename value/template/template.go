@@ -80,7 +80,7 @@ func (t Template) intermediate() Template {
 }
 
 func (t Template) length() int {
-	max := 0
+	max := 1
 
 	for _, v := range t {
 		switch vt := v.(type) {

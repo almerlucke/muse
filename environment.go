@@ -1,6 +1,9 @@
 package muse
 
 import (
+	"bufio"
+	"os"
+
 	"github.com/almerlucke/muse/io"
 	"github.com/gordonklaus/portaudio"
 	"github.com/mkb218/gosndfile/sndfile"
@@ -64,6 +67,23 @@ func (e *Environment) TerminateAudio() {
 	}
 
 	portaudio.Terminate()
+}
+
+func (e *Environment) QuickPlayAudio() error {
+	stream, err := e.InitializeAudio()
+	if err != nil {
+		return err
+	}
+
+	defer e.TerminateAudio()
+
+	stream.Start()
+
+	reader := bufio.NewReader(os.Stdin)
+
+	reader.ReadString('\n')
+
+	return nil
 }
 
 func (e *Environment) Synthesize() bool {
