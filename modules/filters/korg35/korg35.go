@@ -93,15 +93,15 @@ type Korg35LPF struct {
 	nlp  bool
 }
 
-func NewKorg35LPF(fc float64, config *muse.Configuration, id string) *Korg35LPF {
+func NewKorg35LPF(fc float64, res float64, sat float64, config *muse.Configuration, id string) *Korg35LPF {
 	return &Korg35LPF{
-		BaseModule: muse.NewBaseModule(1, 1, config, id),
+		BaseModule: muse.NewBaseModule(4, 1, config, id),
 		lpf1:       newOnePole(fc, config.SampleRate),
 		lpf2:       newOnePole(fc, config.SampleRate),
 		hpf1:       newOnePole(fc, config.SampleRate),
 		fc:         fc,
-		k:          0.01,
-		sat:        1.0,
+		k:          res,
+		sat:        sat,
 		nlp:        true,
 	}
 }
@@ -164,7 +164,7 @@ func (klpf *Korg35LPF) ReceiveControlValue(value any, index int) {
 	}
 }
 
-func (klpf *Korg35LPF) ReceiveMessage(msg any) *muse.Message {
+func (klpf *Korg35LPF) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
 	if cutoff, ok := content["frequency"]; ok {
@@ -191,6 +191,18 @@ func (klpf *Korg35LPF) Synthesize() bool {
 	in := klpf.Inputs[0].Buffer
 
 	for i := 0; i < klpf.Config.BufferSize; i++ {
+		if klpf.Inputs[1].IsConnected() {
+			klpf.SetCutoff(klpf.Inputs[1].Buffer[i])
+		}
+
+		if klpf.Inputs[2].IsConnected() {
+			klpf.SetResonance(klpf.Inputs[2].Buffer[i])
+		}
+
+		if klpf.Inputs[3].IsConnected() {
+			klpf.SetSaturation(klpf.Inputs[3].Buffer[i])
+		}
+
 		y1 := klpf.lpf1.lpTick(in[i])
 		s35 := klpf.hpf1.getFeedbackOutput() + klpf.lpf2.getFeedbackOutput()
 		u := klpf.a * (y1 + s35)
@@ -212,30 +224,3 @@ func (klpf *Korg35LPF) Synthesize() bool {
 
 	return true
 }
-
-/*
-
-Korg35LPF.prototype.run = function(xn){
-  var y1 = this.lpf1.run(xn);
-  var S35 = this.hpf1.getFeedbackOutput() + this.lpf2.getFeedbackOutput();
-
-  var u = this.a * (y1 + S35);
-
-  if (this.nlp) {
-    u = tanh(this._sat * u);
-  }
-
-  var y = this.k * this.lpf2.run(u);
-
-  this.hpf1.run(y);
-
-  if (this.k > 0) y *= 1/this.k;
-
-  return y;
-};
-
-function tanh(x){
-  x = Math.exp(2 * x);
-  return (x - 1) / (x + 1);
-}
-*/

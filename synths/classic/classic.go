@@ -6,7 +6,7 @@ import (
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/blosc"
-	"github.com/almerlucke/muse/modules/filters/moog"
+	"github.com/almerlucke/muse/modules/filters/korg35"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/mixer"
 	"github.com/almerlucke/muse/modules/noise"
@@ -22,7 +22,7 @@ type Voice struct {
 	Osc2           *blosc.Osc
 	noiseGen       *noise.Noise
 	SourceMixer    *mixer.Mixer
-	filter         *moog.Moog
+	filter         *korg35.Korg35LPF
 	panner         *pan.StereoPan
 	ampEnvSteps    adsrc.StepProvider
 	filterEnvSteps adsrc.StepProvider
@@ -44,7 +44,7 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 		Osc2:           blosc.NewOsc(100.0, 0.5, config, "osc2"),
 		noiseGen:       noise.NewNoise(1, config),
 		SourceMixer:    mixer.NewMixer(3, config, "sourceMixer"),
-		filter:         moog.NewMoog(1500.0, 0.7, 1.0, config, "filter"),
+		filter:         korg35.NewKorg35LPF(1500.0, 0.7, 2.0, config, "filter"),
 		panner:         pan.NewStereoPan(0.5, config, "panner"),
 		ampEnvSteps:    ampEnvSteps,
 		filterEnvSteps: filterEnvSteps,

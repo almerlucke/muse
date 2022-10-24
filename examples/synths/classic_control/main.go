@@ -98,7 +98,7 @@ func (cs *ClassicSynth) SetupControls() {
 	filterGroup := cs.controls.AddChild(controls.NewGroup("group.filter", "Filter"))
 	filterGroup.AddControl(controls.NewSlider("voice.filterFcMin", "Filter Frequency Min", 50.0, 8000.0, 1.0, 50.0))
 	filterGroup.AddControl(controls.NewSlider("voice.filterFcMax", "Filter Frequency Max", 50.0, 8000.0, 1.0, 8000.0))
-	filterGroup.AddControl(controls.NewSlider("voice.filterResonance", "Resonance", 0.0, 1.0, 0.01, 0.7))
+	filterGroup.AddControl(controls.NewSlider("voice.filterResonance", "Resonance", 0.01, 2.0, 0.01, 0.7))
 
 	mixerGroup := cs.controls.AddChild(controls.NewGroup("group.mixer", "Mixer"))
 	mixerGroup.AddControl(controls.NewSlider("voice.osc1Mix", "Osc1 Mix", 0.0, 1.0, 0.01, 0.6))
@@ -247,11 +247,15 @@ func main() {
 
 	bpm := 100.0
 	synth := NewClassicSynth(bpm, env.Config)
+	amp1 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.6 }, env.Config))
+	amp2 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.6 }, env.Config))
 
 	env.AddModule(synth)
 
-	muse.Connect(synth, 0, env, 0)
-	muse.Connect(synth, 1, env, 1)
+	muse.Connect(synth, 0, amp1, 0)
+	muse.Connect(synth, 1, amp2, 0)
+	muse.Connect(amp1, 0, env, 0)
+	muse.Connect(amp2, 0, env, 1)
 
 	synth.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
 		"command":   "trigger",
@@ -285,11 +289,11 @@ func main() {
 		"voice.osc2PulseWidth": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.085, 0.6, 0.25, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.085, 0.8, 0.25, []string{"synth"}, env.Config, "val", template.Template{
 		"voice.filterResonance": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.115, 0.06, 4.0, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.115, 0.08, 4.0, []string{"synth"}, env.Config, "val", template.Template{
 		"voice.osc2Tuning": template.NewParameter("val", nil),
 	}))
 
@@ -307,6 +311,18 @@ func main() {
 
 	synth.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"synth"}, env.Config, "val", template.Template{
 		"voice.pan": template.NewParameter("val", nil),
+	}))
+
+	synth.AddMessenger(lfo.NewBasicLFO(0.0767, 20.0, 5.0, []string{"synth"}, env.Config, "val", template.Template{
+		"adsr.filter.attackDuration": template.NewParameter("val", nil),
+	}))
+
+	synth.AddMessenger(lfo.NewBasicLFO(0.0867, 0.2, 0.1, []string{"synth"}, env.Config, "val", template.Template{
+		"adsr.filter.decayLevel": template.NewParameter("val", nil),
+	}))
+
+	synth.AddMessenger(lfo.NewBasicLFO(0.0817, 120.0, 10.0, []string{"synth"}, env.Config, "val", template.Template{
+		"adsr.filter.decayDuration": template.NewParameter("val", nil),
 	}))
 
 	// synth.AddMessenger(lfo.NewBasicLFO(0.0569, 6800.0, 1200.0, []string{"synth"}, env.Config, "val", template.Template{
