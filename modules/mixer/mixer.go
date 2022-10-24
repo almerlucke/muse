@@ -36,6 +36,10 @@ func (m *Mixer) SetMix(mix []float64) {
 	m.mix = mix
 }
 
+func (m *Mixer) ReceiveControlValue(value any, index int) {
+	m.SetMixAt(index, value.(float64))
+}
+
 func (m *Mixer) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
@@ -50,9 +54,7 @@ func (m *Mixer) ReceiveMessage(msg any) []*muse.Message {
 		mix = rawMix.(float64)
 	}
 
-	if index >= 0 {
-		m.mix[index] = mix
-	}
+	m.SetMixAt(index, mix)
 
 	return nil
 }

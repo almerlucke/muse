@@ -279,7 +279,23 @@ func NewFreeVerb(config *muse.Configuration, identifier string) *FreeVerb {
 	return freeverb
 }
 
-// Message received
+func (freeVerb *FreeVerb) ReceiveControlValue(value any, index int) {
+	switch index {
+	case 0: // Wet
+		freeVerb.SetWet(value.(float64))
+	case 1: // Dry
+		freeVerb.SetDry(value.(float64))
+	case 2: // RoomSize
+		freeVerb.SetRoomSize(value.(float64))
+	case 3: // Damp
+		freeVerb.SetDamp(value.(float64))
+	case 4: // Width
+		freeVerb.SetWidth(value.(float64))
+	case 5: // Mode
+		freeVerb.SetMode(value.(float64))
+	}
+}
+
 func (freeverb *FreeVerb) ReceiveMessage(msg any) []*muse.Message {
 	if valueMap, ok := msg.(map[string]any); ok {
 		if wet, ok := valueMap["wet"].(float64); ok {

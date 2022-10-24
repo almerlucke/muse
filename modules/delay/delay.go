@@ -9,6 +9,7 @@ type Delay struct {
 	*muse.BaseModule
 	delay        *delayc.Delay
 	readLocation float64
+	readLocMS    float64
 }
 
 func NewDelay(length float64, location float64, config *muse.Configuration, identifier string) *Delay {
@@ -16,7 +17,34 @@ func NewDelay(length float64, location float64, config *muse.Configuration, iden
 		BaseModule:   muse.NewBaseModule(2, 1, config, identifier),
 		delay:        delayc.NewDelay(int(length * config.SampleRate * 0.001)),
 		readLocation: location * config.SampleRate * 0.001,
+		readLocMS:    location,
 	}
+}
+
+func (d *Delay) ReadLocationMS() float64 {
+	return d.readLocMS
+}
+
+func (d *Delay) SetReadLocationMS(readLocMS float64) {
+	d.readLocMS = readLocMS
+	d.readLocation = readLocMS * d.Config.SampleRate * 0.001
+}
+
+func (d *Delay) ReceiveControlValue(value any, index int) {
+	switch index {
+	case 0: // Read Location
+		d.SetReadLocationMS(value.(float64))
+	}
+}
+
+func (d *Delay) ReceiveMessage(msg any) []*muse.Message {
+	content := msg.(map[string]any)
+
+	if readLocMS, ok := content["location"]; ok {
+		d.SetReadLocationMS(readLocMS.(float64))
+	}
+
+	return nil
 }
 
 func (d *Delay) Synthesize() bool {
