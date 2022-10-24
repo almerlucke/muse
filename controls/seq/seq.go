@@ -10,12 +10,18 @@ type Seq[T any] struct {
 	sequence *value.Sequence[T]
 }
 
+func NewSeq[T any](s *value.Sequence[T], id string) *Seq[T] {
+	return &Seq[T]{
+		BaseControl: muse.NewBaseControl(id),
+		sequence:    s,
+	}
+}
+
 func (s *Seq[T]) ReceiveControlValue(value any, index int) {
 	if index == 0 && value == muse.Bang {
 		v := s.sequence.Value()
 
 		if s.sequence.Finished() {
-			s.sequence.Reset()
 			s.SendControlValue(muse.Bang, 1)
 		}
 

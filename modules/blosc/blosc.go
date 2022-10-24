@@ -46,6 +46,14 @@ func (o *Osc) SetMix(mix [4]float64) {
 	o.mix = mix
 }
 
+func (o *Osc) Phase() float64 {
+	return o.phase
+}
+
+func (o *Osc) SetPhase(ph float64) {
+	o.phase = ph
+}
+
 func (o *Osc) SetFrequency(fc float64) {
 	o.frequency = fc
 }
@@ -62,6 +70,67 @@ func (o *Osc) PulseWidth() float64 {
 	return o.pw
 }
 
+func (o *Osc) ReceiveControlValue(value any, index int) {
+	switch index {
+	case 0: // Frequency
+		o.SetFrequency(value.(float64))
+	case 1: // Phase
+		o.SetPhase(value.(float64))
+	case 2: // Pulse Width
+		o.SetPulseWidth(value.(float64))
+	case 3: // Mix Sine
+		o.SetMixAt(0, value.(float64))
+	case 4: // Mix Saw
+		o.SetMixAt(1, value.(float64))
+	case 5: // Mix Pulse
+		o.SetMixAt(2, value.(float64))
+	case 6: // Mix Tri
+		o.SetMixAt(3, value.(float64))
+	}
+}
+
+func (o *Osc) ReceiveMessage(msg any) []*muse.Message {
+	params, ok := msg.(map[string]any)
+	if ok {
+		f, ok := params["frequency"]
+		if ok {
+			o.SetFrequency(f.(float64))
+		}
+
+		ph, ok := params["phase"]
+		if ok {
+			o.SetPhase(ph.(float64))
+		}
+
+		pw, ok := params["pulseWidth"]
+		if ok {
+			o.SetPulseWidth(pw.(float64))
+		}
+
+		mix1, ok := params["mix1"]
+		if ok {
+			o.SetMixAt(0, mix1.(float64))
+		}
+
+		mix2, ok := params["mix2"]
+		if ok {
+			o.SetMixAt(1, mix2.(float64))
+		}
+
+		mix3, ok := params["mix3"]
+		if ok {
+			o.SetMixAt(2, mix3.(float64))
+		}
+
+		mix4, ok := params["mix4"]
+		if ok {
+			o.SetMixAt(3, mix4.(float64))
+		}
+	}
+
+	return nil
+}
+
 func polyBlep(t float64, dt float64) float64 {
 	if t < dt {
 		t /= dt
@@ -72,43 +141,6 @@ func polyBlep(t float64, dt float64) float64 {
 	}
 
 	return 0.0
-}
-
-func (o *Osc) ReceiveMessage(msg any) []*muse.Message {
-	params, ok := msg.(map[string]any)
-	if ok {
-		f, ok := params["frequency"]
-		if ok {
-			o.frequency = f.(float64)
-		}
-
-		pw, ok := params["pulseWidth"]
-		if ok {
-			o.pw = pw.(float64)
-		}
-
-		mix1, ok := params["mix1"]
-		if ok {
-			o.mix[0] = mix1.(float64)
-		}
-
-		mix2, ok := params["mix2"]
-		if ok {
-			o.mix[1] = mix2.(float64)
-		}
-
-		mix3, ok := params["mix3"]
-		if ok {
-			o.mix[2] = mix3.(float64)
-		}
-
-		mix4, ok := params["mix4"]
-		if ok {
-			o.mix[3] = mix4.(float64)
-		}
-	}
-
-	return nil
 }
 
 func (o *Osc) Synthesize() bool {

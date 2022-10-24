@@ -2,6 +2,7 @@ package muse
 
 import (
 	"bufio"
+	"log"
 	"os"
 
 	"github.com/almerlucke/muse/io"
@@ -78,6 +79,8 @@ func (e *Environment) QuickPlayAudio() error {
 	defer e.TerminateAudio()
 
 	stream.Start()
+
+	log.Printf("Press enter to quit...")
 
 	reader := bufio.NewReader(os.Stdin)
 
