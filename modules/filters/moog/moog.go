@@ -44,8 +44,8 @@ func NewMoog(fc float64, res float64, drive float64, config *muse.Configuration,
 	return m
 }
 
-func (m *Moog) SetResonance(res float64) {
-	m.res = res * 4.0
+func (m *Moog) Frequency() float64 {
+	return m.fc
 }
 
 func (m *Moog) SetFrequency(fc float64) {
@@ -54,8 +54,31 @@ func (m *Moog) SetFrequency(fc float64) {
 	m.g = 4.0 * math.Pi * VT * fc * (1.0 - m.x) / (1.0 + m.x)
 }
 
+func (m *Moog) Resonance() float64 {
+	return m.res
+}
+
+func (m *Moog) SetResonance(res float64) {
+	m.res = res * 4.0
+}
+
+func (m *Moog) Drive() float64 {
+	return m.drive
+}
+
 func (m *Moog) SetDrive(drive float64) {
 	m.drive = drive
+}
+
+func (m *Moog) ReceiveControlValue(value any, index int) {
+	switch index {
+	case 0: // Cutoff Frequency
+		m.SetFrequency(value.(float64))
+	case 1: // Resonance
+		m.SetResonance(value.(float64))
+	case 2: // Drive
+		m.SetDrive(value.(float64))
+	}
 }
 
 func (m *Moog) ReceiveMessage(msg any) []*muse.Message {

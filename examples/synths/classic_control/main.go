@@ -69,12 +69,12 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	synth.AddModule(synth.chorus1)
 	synth.AddModule(synth.chorus2)
 
-	synthAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, config))
-	synthAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, config))
+	synthAmp1 := synth.AddModule(functor.NewAmp(0.85, config))
+	synthAmp2 := synth.AddModule(functor.NewAmp(0.85, config))
 	allpass1 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, config, "allpass"))
 	allpass2 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, config, "allpass"))
-	allpassAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
-	allpassAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
+	allpassAmp1 := synth.AddModule(functor.NewAmp(0.5, config))
+	allpassAmp2 := synth.AddModule(functor.NewAmp(0.5, config))
 
 	muse.Connect(synth.poly, 0, synthAmp1, 0)
 	muse.Connect(synth.poly, 1, synthAmp2, 0)
@@ -247,8 +247,8 @@ func main() {
 
 	bpm := 100.0
 	synth := NewClassicSynth(bpm, env.Config)
-	amp1 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.6 }, env.Config))
-	amp2 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.6 }, env.Config))
+	amp1 := env.AddModule(functor.NewAmp(0.6, env.Config))
+	amp2 := env.AddModule(functor.NewAmp(0.6, env.Config))
 
 	env.AddModule(synth)
 

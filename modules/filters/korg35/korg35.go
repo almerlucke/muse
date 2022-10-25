@@ -127,11 +127,11 @@ func (klpf *Korg35LPF) update() {
 	klpf.a = 1 / (1 - k*G + k*G*G)
 }
 
-func (klpf *Korg35LPF) Cutoff() float64 {
+func (klpf *Korg35LPF) Frequency() float64 {
 	return klpf.fc
 }
 
-func (klpf *Korg35LPF) SetCutoff(fc float64) {
+func (klpf *Korg35LPF) SetFrequency(fc float64) {
 	klpf.fc = fc
 	klpf.update()
 }
@@ -156,7 +156,7 @@ func (klpf *Korg35LPF) SetSaturation(sat float64) {
 func (klpf *Korg35LPF) ReceiveControlValue(value any, index int) {
 	switch index {
 	case 0: // Cutoff Frequency
-		klpf.SetCutoff(value.(float64))
+		klpf.SetFrequency(value.(float64))
 	case 1: // Resonance (0.01 - 2.0)
 		klpf.SetResonance(value.(float64))
 	case 2: // Saturation
@@ -167,8 +167,8 @@ func (klpf *Korg35LPF) ReceiveControlValue(value any, index int) {
 func (klpf *Korg35LPF) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
-	if cutoff, ok := content["frequency"]; ok {
-		klpf.SetCutoff(cutoff.(float64))
+	if fc, ok := content["frequency"]; ok {
+		klpf.SetFrequency(fc.(float64))
 	}
 
 	if res, ok := content["resonance"]; ok {
@@ -192,7 +192,7 @@ func (klpf *Korg35LPF) Synthesize() bool {
 
 	for i := 0; i < klpf.Config.BufferSize; i++ {
 		if klpf.Inputs[1].IsConnected() {
-			klpf.SetCutoff(klpf.Inputs[1].Buffer[i])
+			klpf.SetFrequency(klpf.Inputs[1].Buffer[i])
 		}
 
 		if klpf.Inputs[2].IsConnected() {

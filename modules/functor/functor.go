@@ -22,6 +22,18 @@ func NewMult(numInputs int, config *muse.Configuration) *Functor {
 	return NewFunctor(numInputs, FunctorMult, config)
 }
 
+func NewScale(scale float64, offset float64, config *muse.Configuration) *Functor {
+	return NewFunctor(1, FunctorScale(scale, offset), config)
+}
+
+func NewAmp(amp float64, config *muse.Configuration) *Functor {
+	return NewFunctor(1, FunctorScale(amp, 0), config)
+}
+
+func NewBetween(min float64, max float64, config *muse.Configuration) *Functor {
+	return NewFunctor(1, FunctorBetween(min, max), config)
+}
+
 func FunctorMult(vec []float64) float64 {
 	if len(vec) == 0 {
 		return 0
@@ -34,6 +46,23 @@ func FunctorMult(vec []float64) float64 {
 	}
 
 	return mult
+}
+
+func FunctorScale(scale float64, offset float64) FunctorFunction {
+	return func(v []float64) float64 {
+		return v[0]*scale + offset
+	}
+}
+
+func FunctorBetween(min float64, max float64) FunctorFunction {
+	if min > max {
+		tmp := max
+		max = min
+		min = tmp
+	}
+	return func(v []float64) float64 {
+		return v[0]*(max-min) + min
+	}
 }
 
 func (f *Functor) Synthesize() bool {

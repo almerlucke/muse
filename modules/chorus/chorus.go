@@ -36,6 +36,7 @@ type Chorus struct {
 	mods        [4]*phasor.Phasor
 	modDepth    float64
 	modSpeed    float64
+	modRange    float64
 	mix         float64
 }
 
@@ -53,6 +54,7 @@ func NewChorus(stereo bool, delayCenter float64, delayRange float64, modDepth fl
 		modShaper:   modShaper,
 		modDepth:    modDepth,
 		modSpeed:    modSpeed,
+		modRange:    modDepth * delayRange * 0.5,
 		mix:         mix,
 	}
 
@@ -70,23 +72,59 @@ func NewChorus(stereo bool, delayCenter float64, delayRange float64, modDepth fl
 	return c
 }
 
+func (c *Chorus) ModSpeed() float64 {
+	return c.modSpeed
+}
+
+func (c *Chorus) SetModSpeed(modSpeed float64) {
+	c.modSpeed = modSpeed
+	c.mods[0].SetFrequency(c.modSpeed, c.Config.SampleRate)
+	c.mods[1].SetFrequency(c.modSpeed/mod2SpeedDiv, c.Config.SampleRate)
+	c.mods[2].SetFrequency(c.modSpeed/mod3SpeedDiv, c.Config.SampleRate)
+	c.mods[3].SetFrequency(c.modSpeed/mod4SpeedDiv, c.Config.SampleRate)
+}
+
+func (c *Chorus) ModDepth() float64 {
+	return c.modDepth
+}
+
+func (c *Chorus) SetModDepth(modDepth float64) {
+	c.modDepth = modDepth
+	c.modRange = modDepth * c.delayRange * 0.5
+}
+
+func (c *Chorus) Mix() float64 {
+	return c.mix
+}
+
+func (c *Chorus) SetMix(mix float64) {
+	c.mix = mix
+}
+
+func (c *Chorus) ReceiveControlValue(value any, index int) {
+	switch index {
+	case 0: // ModSpeed
+		c.SetModSpeed(value.(float64))
+	case 1: // ModDepth
+		c.SetModDepth(value.(float64))
+	case 2: // Mix
+		c.SetMix(value.(float64))
+	}
+}
+
 func (c *Chorus) ReceiveMessage(msg any) []*muse.Message {
 	m := msg.(map[string]any)
 
-	if modDepth, ok := m["modDepth"].(float64); ok {
-		c.modDepth = modDepth
+	if modSpeed, ok := m["modSpeed"].(float64); ok {
+		c.SetModSpeed(modSpeed)
 	}
 
-	if modSpeed, ok := m["modSpeed"].(float64); ok {
-		c.modSpeed = modSpeed
-		c.mods[0].SetFrequency(c.modSpeed, c.Config.SampleRate)
-		c.mods[1].SetFrequency(c.modSpeed/mod2SpeedDiv, c.Config.SampleRate)
-		c.mods[2].SetFrequency(c.modSpeed/mod3SpeedDiv, c.Config.SampleRate)
-		c.mods[3].SetFrequency(c.modSpeed/mod4SpeedDiv, c.Config.SampleRate)
+	if modDepth, ok := m["modDepth"].(float64); ok {
+		c.SetModDepth(modDepth)
 	}
 
 	if mix, ok := m["mix"].(float64); ok {
-		c.mix = mix
+		c.SetMix(mix)
 	}
 
 	return nil
@@ -109,30 +147,24 @@ func (c *Chorus) Synthesize() bool {
 	}
 
 	msSamps := c.Config.SampleRate * 0.001
-	modRange := c.modDepth * c.delayRange * 0.5
 
 	for i := 0; i < c.Config.BufferSize; i++ {
 		if c.Inputs[1].IsConnected() {
-			c.modDepth = c.Inputs[1].Buffer[i]
-			modRange = c.modDepth * c.delayRange * 0.5
+			c.SetModDepth(c.Inputs[1].Buffer[i])
 		}
 
 		if c.Inputs[2].IsConnected() {
-			c.modSpeed = c.Inputs[2].Buffer[i]
-			c.mods[0].SetFrequency(c.modSpeed, c.Config.SampleRate)
-			c.mods[1].SetFrequency(c.modSpeed/mod2SpeedDiv, c.Config.SampleRate)
-			c.mods[2].SetFrequency(c.modSpeed/mod3SpeedDiv, c.Config.SampleRate)
-			c.mods[3].SetFrequency(c.modSpeed/mod4SpeedDiv, c.Config.SampleRate)
+			c.SetModSpeed(c.Inputs[2].Buffer[i])
 		}
 
 		if c.Inputs[3].IsConnected() {
-			c.mix = c.Inputs[3].Buffer[i]
+			c.SetMix(c.Inputs[3].Buffer[i])
 		}
 
-		d1 := c.delayLine.Read(msSamps * (c.delayCenter + modRange*c.modShaper.Shape(c.mods[0].Tick())))
-		d2 := c.delayLine.Read(msSamps * (c.delayCenter + modRange*c.modShaper.Shape(c.mods[1].Tick())))
-		d3 := c.delayLine.Read(msSamps * (c.delayCenter + modRange*c.modShaper.Shape(c.mods[2].Tick())))
-		d4 := c.delayLine.Read(msSamps * (c.delayCenter + modRange*c.modShaper.Shape(c.mods[3].Tick())))
+		d1 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[0].Tick())))
+		d2 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[1].Tick())))
+		d3 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[2].Tick())))
+		d4 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[3].Tick())))
 
 		c.delayLine.Write(in[i])
 
