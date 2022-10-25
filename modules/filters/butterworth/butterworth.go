@@ -24,6 +24,47 @@ func NewButterworth(fc float64, q float64, config *muse.Configuration, identifie
 	return b
 }
 
+func (b *Butterworth) Frequency() float64 {
+	return b.fc
+}
+
+func (b *Butterworth) SetFrequency(fc float64) {
+	b.fc = fc
+	b.filter.Set(fc, b.q, b.Config.SampleRate)
+}
+
+func (b *Butterworth) Resonance() float64 {
+	return b.q
+}
+
+func (b *Butterworth) SetResonance(q float64) {
+	b.q = q
+	b.filter.Set(b.fc, b.q, b.Config.SampleRate)
+}
+
+func (b *Butterworth) ReceiveControlValue(value any, index int) {
+	switch index {
+	case 0: // Cutoff Frequency
+		b.SetFrequency(value.(float64))
+	case 1: // Resonance
+		b.SetResonance(value.(float64))
+	}
+}
+
+func (b *Butterworth) ReceiveMessage(msg any) []*muse.Message {
+	content := msg.(map[string]any)
+
+	if fc, ok := content["frequency"]; ok {
+		b.SetFrequency(fc.(float64))
+	}
+
+	if res, ok := content["resonance"]; ok {
+		b.SetResonance(res.(float64))
+	}
+
+	return nil
+}
+
 func (b *Butterworth) Synthesize() bool {
 	if !b.BaseModule.Synthesize() {
 		return false
