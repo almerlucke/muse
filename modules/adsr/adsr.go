@@ -10,23 +10,63 @@ type ADSR struct {
 	*muse.BaseModule
 	adsr     *adsrc.ADSR
 	maxLevel float64
+	duration float64
 }
 
 func NewADSR(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode adsrc.ReleaseMode, maxLevel float64, config *muse.Configuration, identifier string) *ADSR {
-	am := &ADSR{
+	a := &ADSR{
 		BaseModule: muse.NewBaseModule(0, 1, config, identifier),
 	}
 
-	am.maxLevel = maxLevel
-	am.adsr = &adsrc.ADSR{}
-	am.adsr.Initialize(steps, durationMode, releaseMode, config.SampleRate)
+	a.maxLevel = maxLevel
+	a.duration = 250.0
+	a.adsr = &adsrc.ADSR{}
+	a.adsr.Initialize(steps, durationMode, releaseMode, config.SampleRate)
 
-	return am
+	return a
+}
+
+func (a *ADSR) Bang() {
+	switch a.adsr.ReleaseMode() {
+	case adsrc.Duration:
+		a.adsr.TriggerWithDuration(a.duration, a.maxLevel)
+	case adsrc.Automatic:
+		a.adsr.Trigger(a.maxLevel)
+	}
+}
+
+func (a *ADSR) ReceiveControlValue(value any, index int) {
+	switch index {
+	case 0: // Bang
+		if value == muse.Bang {
+			a.Bang()
+		}
+	case 1: // MaxLevel
+		a.maxLevel = value.(float64)
+	case 2: // Duration
+		a.duration = value.(float64)
+	}
 }
 
 func (a *ADSR) ReceiveMessage(msg any) []*muse.Message {
 	if msg == muse.Bang {
-		a.adsr.Trigger(a.maxLevel)
+		a.Bang()
+	} else {
+		if content, ok := msg.(map[string]any); ok {
+			if duration, ok := content["duration"]; ok {
+				a.duration = duration.(float64)
+			}
+
+			if maxLevel, ok := content["maxLevel"]; ok {
+				a.maxLevel = maxLevel.(float64)
+			}
+
+			if bang, ok := content["bang"]; ok {
+				if bang.(bool) {
+					a.Bang()
+				}
+			}
+		}
 	}
 
 	return nil
@@ -56,7 +96,7 @@ func (a *ADSR) Synthesize() bool {
 	out := a.Outputs[0].Buffer
 
 	for i := 0; i < a.Config.BufferSize; i++ {
-		out[i] = a.adsr.Synthesize()
+		out[i] = a.adsr.Tick()
 	}
 
 	return true

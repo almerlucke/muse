@@ -30,7 +30,7 @@ func testRatioAuto() {
 	index := 0
 	for !adsrEnv.IsFinished() {
 		index++
-		log.Printf("out %v: %v", index, adsrEnv.Synthesize())
+		log.Printf("out %v: %v", index, adsrEnv.Tick())
 	}
 }
 
@@ -58,7 +58,7 @@ func testAbsoluteAuto() {
 	index := 0
 	for !adsrEnv.IsFinished() {
 		index++
-		log.Printf("out %v: %v", index, adsrEnv.Synthesize())
+		log.Printf("out %v: %v", index, adsrEnv.Tick())
 	}
 }
 
@@ -87,7 +87,7 @@ func testAbsoluteDuration() {
 	index := 0
 	for !adsrEnv.IsFinished() {
 		index++
-		log.Printf("out %v: %v", index, adsrEnv.Synthesize())
+		log.Printf("out %v: %v", index, adsrEnv.Tick())
 	}
 }
 

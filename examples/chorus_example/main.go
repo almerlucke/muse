@@ -1,10 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"log"
-	"os"
-
 	"github.com/almerlucke/muse"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/banger"
@@ -16,8 +12,6 @@ import (
 	"github.com/almerlucke/muse/utils/notes"
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/template"
-	"github.com/gordonklaus/portaudio"
-	"github.com/mkb218/gosndfile/sndfile"
 )
 
 func makeLFO(speed float64, targets []string, shaper shaping.Shaper, config *muse.Configuration, param string, templ template.Template) *lfo.LFO {
@@ -96,23 +90,25 @@ func main() {
 	muse.Connect(ch, 0, env, 0)
 	muse.Connect(ch, 0, env, 1)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 25.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	env.QuickPlayAudio()
 
-	portaudio.Initialize()
-	defer portaudio.Terminate()
+	// env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 25.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
-	stream, err := env.PortaudioStream()
-	if err != nil {
-		log.Fatalf("error opening portaudio stream, %v", err)
-	}
+	// portaudio.Initialize()
+	// defer portaudio.Terminate()
 
-	defer stream.Close()
+	// stream, err := env.PortaudioStream()
+	// if err != nil {
+	// 	log.Fatalf("error opening portaudio stream, %v", err)
+	// }
 
-	stream.Start()
+	// defer stream.Close()
 
-	reader := bufio.NewReader(os.Stdin)
+	// stream.Start()
 
-	reader.ReadString('\n')
+	// reader := bufio.NewReader(os.Stdin)
+
+	// reader.ReadString('\n')
 
 	// env := muse.NewEnvironment(1, 44100, 128)
 

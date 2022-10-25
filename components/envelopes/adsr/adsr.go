@@ -165,7 +165,15 @@ func (adsr *ADSR) IsFinished() bool {
 	return adsr.stage == Idle
 }
 
-func (adsr *ADSR) Synthesize() float64 {
+func (adsr *ADSR) DurationMode() DurationMode {
+	return adsr.durationMode
+}
+
+func (adsr *ADSR) ReleaseMode() ReleaseMode {
+	return adsr.releaseMode
+}
+
+func (adsr *ADSR) Tick() float64 {
 	if adsr.stage == Idle {
 		adsr.lastOut = 0.0
 		return 0.0

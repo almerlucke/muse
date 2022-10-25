@@ -170,6 +170,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{moduleName}, template.Template{
 		"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
+		"bang":  true,
 	}, identifier))
 
 	return env.AddModule(player.NewPlayer(soundBuffer, 1.0, 1.0, true, env.Config, moduleName))

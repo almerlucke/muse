@@ -64,11 +64,21 @@ func (p *Player) ReceiveControlValue(value any, index int) {
 }
 
 func (p *Player) ReceiveMessage(msg any) []*muse.Message {
-	mp := msg.(map[string]any)
-	speed := mp["speed"].(float64)
+	if msg == muse.Bang {
+		p.Bang()
+	} else {
+		content := msg.(map[string]any)
 
-	p.SetSpeed(speed)
-	p.Bang()
+		if speed, ok := content["speed"]; ok {
+			p.SetSpeed(speed.(float64))
+		}
+
+		if bang, ok := content["bang"]; ok {
+			if bang.(bool) {
+				p.Bang()
+			}
+		}
+	}
 
 	return nil
 }
