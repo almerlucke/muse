@@ -54,7 +54,9 @@ func (m *Mixer) ReceiveMessage(msg any) []*muse.Message {
 		mix = rawMix.(float64)
 	}
 
-	m.SetMixAt(index, mix)
+	if index > -1 {
+		m.SetMixAt(index, mix)
+	}
 
 	return nil
 }

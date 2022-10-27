@@ -44,7 +44,7 @@ func (s *Scheduler) Merge(events []*Event) {
 }
 
 func (s *Scheduler) Messages(timestamp int64, config *muse.Configuration) []*muse.Message {
-	time := float64(timestamp) / config.SampleRate
+	time := (float64(timestamp) / config.SampleRate) * 1000.0 // time in milliseconds
 	numEvents := len(s.events)
 	messages := []*muse.Message{}
 

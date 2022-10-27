@@ -1,5 +1,7 @@
 package delay
 
+import "github.com/almerlucke/muse/utils/float"
+
 // Delay structure
 type Delay struct {
 	Buffer    []float64
@@ -31,7 +33,7 @@ func (delay *Delay) Read(location float64) float64 {
 	// 	location = float64(buflen - 1)
 	// }
 
-	sampleLocation := float64(delay.WriteHead) - location
+	sampleLocation := float.ZeroIfSmall(float64(delay.WriteHead) - location)
 
 	for sampleLocation < 0.0 {
 		sampleLocation += float64(buflen)

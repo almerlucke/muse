@@ -187,14 +187,29 @@ const (
 )
 
 var CMajor = Chord{C0, E0, G0}
+var CMajorInv1 = Chord{E0, G0, C1}
+var CMajor7 = Chord{C0, E0, G0, Bb0}
+var CMajor7_3 = Chord{C0, E0, Bb0}
 var CMinor = Chord{C0, Eb0, G0}
 var DMajor = Chord{D0, Gb0, A0}
-var EMinor = Chord{E0, G0, B1}
+var EMinor = Chord{E0, G0, B0}
+var EMajor = Chord{E0, Gs0, B0}
+var EMajorInv1 = Chord{Gs0, B0, E1}
+var EMajor7 = Chord{E0, Gs0, B0, D1}
+var EMajor7_3 = Chord{E0, Gs0, D1}
+var FMajor = Chord{F0, A0, C1}
+var FMajorInv1 = Chord{A0, C1, F1}
 var GMajor = Chord{G0, B0, D1}
+var GMajorInv1 = Chord{B0, D1, G1}
+var GMajor7 = Chord{G0, B0, D1, F1}
+var GMajor7_3 = Chord{G0, B0, F1}
 var AMinor = Chord{A0, C1, E1}
+var AMinorInv1 = Chord{C0, E0, A0}
 var AMajor7 = Chord{A0, Db1, E1, G1}
+var AMajor7_3 = Chord{A0, Db1, G1}
 var BMinor = Chord{B0, D1, Gb1}
 var DMajor7 = Chord{D0, Gb0, A0, C1}
+var DMajor7_3 = Chord{D0, Gb0, C1}
 
 func (c Chord) Freq(transpose Note) []float64 {
 	f := make([]float64, len(c))

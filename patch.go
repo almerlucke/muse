@@ -8,7 +8,10 @@ import (
 type Patch interface {
 	Module
 	AddMessenger(Messenger) Messenger
+	RemoveMessenger(Messenger)
+	RemoveMessengerByID(string)
 	AddMessageReceiver(MessageReceiver, string)
+	RemoveMessageReceiverByID(string)
 	AddModule(Module) Module
 	AddControl(Control) Control
 	Contains(Module) bool
@@ -78,12 +81,58 @@ func (p *BasePatch) AddMessageReceiver(rcvr MessageReceiver, identifier string) 
 	}
 }
 
+func (p *BasePatch) RemoveMessageReceiverByID(id string) {
+	if _, ok := p.receivers[id]; ok {
+		delete(p.receivers, id)
+	}
+}
+
 func (p *BasePatch) AddMessenger(msgr Messenger) Messenger {
 	p.messengers = append(p.messengers, msgr)
 
 	p.AddMessageReceiver(msgr, msgr.Identifier())
 
 	return msgr
+}
+
+func (p *BasePatch) RemoveMessenger(msgr Messenger) {
+	removeIndex := -1
+	for index, otherMsgr := range p.messengers {
+		if otherMsgr == msgr {
+			removeIndex = index
+			break
+		}
+	}
+
+	if removeIndex > -1 {
+		msgr := p.messengers[removeIndex]
+		p.messengers = append(p.messengers[:removeIndex], p.messengers[removeIndex+1:]...)
+		if receiver, ok := p.receivers[msgr.Identifier()]; ok {
+			if receiver == msgr {
+				delete(p.receivers, msgr.Identifier())
+			}
+		}
+	}
+}
+
+func (p *BasePatch) RemoveMessengerByID(id string) {
+	removeIndex := -1
+	for index, msgr := range p.messengers {
+		if msgr.Identifier() == id {
+			removeIndex = index
+			break
+		}
+	}
+
+	if removeIndex > -1 {
+		msgr := p.messengers[removeIndex]
+		p.messengers = append(p.messengers[:removeIndex], p.messengers[removeIndex+1:]...)
+		if receiver, ok := p.receivers[id]; ok {
+			if receiver == msgr {
+				delete(p.receivers, id)
+			}
+		}
+	}
 }
 
 func (p *BasePatch) AddModule(m Module) Module {
@@ -181,6 +230,29 @@ func (p *BasePatch) Synthesize() bool {
 	p.timestamp += int64(p.Config.BufferSize)
 
 	return true
+}
+
+func (p *BasePatch) ReceiveMessage(msg any) []*Message {
+	content := msg.(map[string]any)
+
+	if command, ok := content["command"]; ok {
+		switch command.(string) {
+		case "AddMessenger":
+			if messenger, ok := content["messenger"]; ok {
+				p.AddMessenger(messenger.(Messenger))
+			}
+		case "RemoveMessenger":
+			if messenger, ok := content["messenger"]; ok {
+				p.RemoveMessenger(messenger.(Messenger))
+			}
+		case "RemoveMessengerByID":
+			if messenger, ok := content["messenger"]; ok {
+				p.RemoveMessengerByID(messenger.(string))
+			}
+		}
+	}
+
+	return nil
 }
 
 func (p *BasePatch) SendMessage(msg *Message) {

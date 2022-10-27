@@ -1,6 +1,8 @@
 package allpass
 
 import (
+	"log"
+
 	"github.com/almerlucke/muse"
 	allpassc "github.com/almerlucke/muse/components/allpass"
 )
@@ -65,10 +67,12 @@ func (a *Allpass) Synthesize() bool {
 
 	for i := 0; i < a.Config.BufferSize; i++ {
 		if a.Inputs[1].IsConnected() {
+			log.Printf("input 1 is connected")
 			a.SetReadLocation(a.Inputs[1].Buffer[i])
 		}
 
 		if a.Inputs[2].IsConnected() {
+			log.Printf("input 2 is connected")
 			a.SetFeedback(a.Inputs[2].Buffer[i])
 		}
 

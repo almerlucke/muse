@@ -1,24 +1,60 @@
 package main
 
-import (
-	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/controls/clog"
-	"github.com/almerlucke/muse/controls/seq"
-	"github.com/almerlucke/muse/messengers/triggers/timer"
-	"github.com/almerlucke/muse/value"
-)
+import "log"
 
 func main() {
-	env := muse.NewEnvironment(0, 44100.0, 512)
+	/*Read(location float64) float64 {
+	buffer := delay.Buffer
+	buflen := len(buffer)
 
-	logger := clog.NewLog("test")
-	timer := env.AddControl(timer.NewControlTimer(250.0, env.Config, "timer"))
-	s := env.AddControl(seq.NewSeq(value.NewSequenceNC([]float64{1.0, 2.0, 3.0, 4.0}), ""))
+	// if location >= float64(buflen) {
+	// 	location = float64(buflen - 1)
+	// }
 
-	timer.ConnectToControl(0, s, 0)
-	s.ConnectToControl(1, s, 2)
-	s.ConnectToControl(1, s, 1)
-	s.ConnectToControl(0, logger, 0)
+	sampleLocation := float64(delay.WriteHead) - location
 
-	env.QuickPlayAudio()
+	for sampleLocation < 0.0 {
+		sampleLocation += float64(buflen)
+	}
+
+	firstIndex := int(sampleLocation)
+	fraction := sampleLocation - float64(firstIndex)
+	secondIndex := firstIndex + 1
+
+	if secondIndex >= buflen {
+		secondIndex -= buflen
+	}
+
+	v1 := buffer[firstIndex]
+
+	return v1 + (buffer[secondIndex]-v1)*fraction
+	*/
+
+	location := 44100.0 * 60000.0 / 105.0 * 1.25 * 0.001
+	buflen := int(5000.0 * 44100.0 * 0.001)
+
+	log.Printf("buflen %d", buflen)
+
+	writeHead := 31500
+	sampleLocation := float64(writeHead) - location
+
+	log.Printf("location %f", location)
+
+	log.Printf("sampleLocation1 %f", sampleLocation)
+
+	for sampleLocation < 0.0 {
+		sampleLocation += float64(buflen)
+	}
+
+	firstIndex := int(sampleLocation)
+	fraction := sampleLocation - float64(firstIndex)
+	secondIndex := firstIndex + 1
+
+	if secondIndex >= buflen {
+		secondIndex -= buflen
+	}
+
+	log.Printf("firstIndex %d", firstIndex)
+	log.Printf("fraction %f", fraction)
+	log.Printf("secondIndex %d", secondIndex)
 }
