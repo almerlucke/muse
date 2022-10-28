@@ -92,7 +92,7 @@ func createScheduler(bass muse.Messenger, kick muse.Messenger, snare muse.Messen
 	bassDelay := 32.0 * 60000.0 / bpm
 	kickDelay := 64.0 * 60000.0 / bpm
 	hihatDelay := 96.0 * 60000.0 / bpm
-	removeDrumDelay := 170000.0
+	removeDrumDelay := 180000.0
 
 	bassEvent := &scheduler.Event{
 		Time: bassDelay,
@@ -175,8 +175,8 @@ func main() {
 
 	env.AddMessageReceiver(env, "env")
 
-	guitarBuffer, _ := io.NewSoundFileBuffer("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_guitar.wav")
-	singBuffer, _ := io.NewSoundFileBuffer("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_voice.wav")
+	guitarBuffer, _ := io.NewSoundFileBuffer("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_guitar.aiff")
+	singBuffer, _ := io.NewSoundFileBuffer("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_voice.aiff")
 
 	hihatSound, _ := io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
 	kickSound, _ := io.NewSoundFileBuffer("resources/drums/kick/Cymatics - Humble Sit Down Kick - D.wav")
@@ -248,8 +248,8 @@ func main() {
 	leftMixer := env.AddModule(mixer.NewMixer(4, env.Config, "leftMixer")).(*mixer.Mixer)
 	rightMixer := env.AddModule(mixer.NewMixer(4, env.Config, "rightMixer")).(*mixer.Mixer)
 
-	leftMixer.SetMix([]float64{0.6, 0.6, 0.2, 0.2})
-	rightMixer.SetMix([]float64{0.6, 0.6, 0.2, 0.2})
+	leftMixer.SetMix([]float64{0.7, 0.6, 0.2, 0.2})
+	rightMixer.SetMix([]float64{0.7, 0.6, 0.2, 0.2})
 
 	once := env.AddControl(once.NewControlOnce())
 	once.ConnectToControl(0, guitarPlayer, 0)

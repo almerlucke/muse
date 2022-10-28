@@ -6,6 +6,16 @@ type Note int
 
 type Chord []Note
 
+type Scale []int
+
+var Major = Scale{0, 2, 4, 5, 7, 9, 11}
+var NaturalMinor = Scale{0, 2, 3, 5, 7, 8, 10}
+var HarmonicMinor = Scale{0, 2, 3, 5, 7, 8, 11}
+var MelodicMinor = Scale{0, 2, 3, 5, 7, 9, 11}
+var HungarianMinor = Scale{0, 2, 3, 6, 7, 8, 11}
+var PhrygianDominant = Scale{0, 1, 4, 5, 7, 8, 10}
+var Persian = Scale{0, 1, 4, 5, 6, 8, 11}
+
 const (
 	C0  Note = 12
 	Cs0 Note = 13
@@ -210,6 +220,14 @@ var AMajor7_3 = Chord{A0, Db1, G1}
 var BMinor = Chord{B0, D1, Gb1}
 var DMajor7 = Chord{D0, Gb0, A0, C1}
 var DMajor7_3 = Chord{D0, Gb0, C1}
+
+func (s Scale) Note(root Note, index int) Note {
+	return root + Note(s[index]%len(s))
+}
+
+func (s Scale) Chord(root Note, index int) Chord {
+	return Chord{root + Note(s[index]%len(s)), root + Note(s[(index+2)%len(s)]), root + Note(s[(index+4)%len(s)])}
+}
 
 func (c Chord) Freq(transpose Note) []float64 {
 	f := make([]float64, len(c))
