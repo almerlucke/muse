@@ -252,8 +252,9 @@ func main() {
 	rightMixer.SetMix([]float64{0.7, 0.6, 0.2, 0.2})
 
 	once := env.AddControl(once.NewControlOnce())
-	once.ConnectToControl(0, guitarPlayer, 0)
-	once.ConnectToControl(0, singPlayer, 0)
+
+	muse.ConnectControl(once, 0, guitarPlayer, 0)
+	muse.ConnectControl(once, 0, singPlayer, 0)
 
 	muse.Connect(guitarPlayer, 0, guitarChorus, 0)
 	muse.Connect(singPlayer, 0, singChorus, 0)

@@ -304,6 +304,10 @@ func (p *BasePatch) ReceiveControlValue(value any, index int) {
 	p.internalInputControl.ReceiveControlValue(value, index)
 }
 
-func (p *BasePatch) ConnectToControl(outputIndex int, receiver ControlReceiver, inputIndex int) {
-	p.internalOutputControl.ConnectToControl(outputIndex, receiver, inputIndex)
+func (p *BasePatch) AddControlInputConnection(inputIndex int, sender Control, outputIndex int) {
+	p.internalInputControl.AddControlInputConnection(inputIndex, sender, outputIndex)
+}
+
+func (p *BasePatch) AddControlOutputConnection(outputIndex int, receiver Control, inputIndex int) {
+	p.internalOutputControl.AddControlOutputConnection(outputIndex, receiver, inputIndex)
 }
