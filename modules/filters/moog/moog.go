@@ -41,6 +41,8 @@ func NewMoog(fc float64, res float64, drive float64, config *muse.Configuration,
 	m.SetResonance(res)
 	m.SetFrequency(fc)
 
+	m.SetSelf(m)
+
 	return m
 }
 

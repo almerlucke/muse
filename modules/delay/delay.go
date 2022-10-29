@@ -13,12 +13,16 @@ type Delay struct {
 }
 
 func NewDelay(length float64, location float64, config *muse.Configuration, identifier string) *Delay {
-	return &Delay{
+	d := &Delay{
 		BaseModule:     muse.NewBaseModule(2, 1, config, identifier),
 		delay:          delayc.NewDelay(int(length * config.SampleRate * 0.001)),
 		readLocation:   location * config.SampleRate * 0.001,
 		readLocationMS: location,
 	}
+
+	d.SetSelf(d)
+
+	return d
 }
 
 func (d *Delay) ReadLocation() float64 {

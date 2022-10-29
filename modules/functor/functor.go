@@ -11,11 +11,15 @@ type Functor struct {
 }
 
 func NewFunctor(numInputs int, f FunctorFunction, config *muse.Configuration) *Functor {
-	return &Functor{
+	fctr := &Functor{
 		BaseModule: muse.NewBaseModule(numInputs, 1, config, ""),
 		f:          f,
 		inVec:      make([]float64, numInputs),
 	}
+
+	fctr.SetSelf(fctr)
+
+	return fctr
 }
 
 func NewMult(numInputs int, config *muse.Configuration) *Functor {

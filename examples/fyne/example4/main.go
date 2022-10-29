@@ -60,6 +60,8 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 		shaper:             shaping.NewSoftSyncTriangle(),
 	}
 
+	testVoice.SetSelf(testVoice)
+
 	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampAdsr"))
 	filterEnv := testVoice.AddModule(adsr.NewADSR(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "filterAdsr"))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
@@ -68,13 +70,13 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.5, 1, config, "filter"))
 	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config, "shaper"))
 
-	muse.Connect(osc, 0, shape, 0)
-	muse.Connect(shape, 0, multiplier, 0)
-	muse.Connect(ampEnv, 0, multiplier, 1)
-	muse.Connect(multiplier, 0, filter, 0)
-	muse.Connect(filterEnv, 0, filterEnvScaler, 0)
-	muse.Connect(filterEnvScaler, 0, filter, 1)
-	muse.Connect(filter, 0, testVoice, 0)
+	osc.Connect(0, shape, 0)
+	shape.Connect(0, multiplier, 0)
+	ampEnv.Connect(0, multiplier, 1)
+	multiplier.Connect(0, filter, 0)
+	filterEnv.Connect(0, filterEnvScaler, 0)
+	filterEnvScaler.Connect(0, filter, 1)
+	filter.Connect(0, testVoice, 0)
 
 	testVoice.ampEnv = ampEnv.(*adsr.ADSR)
 	testVoice.filterEnv = filterEnv.(*adsr.ADSR)
@@ -315,21 +317,21 @@ func main() {
 
 	chor1 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.9, 1.3, 0.3, waveshaping.NewSineTable(512), env.Config, ""))
 
-	muse.Connect(kickPlayer, 0, mult, 0)
-	muse.Connect(hihatPlayer, 0, mult, 0)
-	muse.Connect(snarePlayer, 0, mult, 0)
-	muse.Connect(bassPlayer, 0, mult, 0)
-	muse.Connect(ridePlayer, 0, mult, 0)
-	muse.Connect(waterPlayer, 0, mult, 0)
-	muse.Connect(swirlPlayer, 0, mult, 0)
-	muse.Connect(vocalPlayer, 0, mult, 0)
+	kickPlayer.Connect(0, mult, 0)
+	hihatPlayer.Connect(0, mult, 0)
+	snarePlayer.Connect(0, mult, 0)
+	bassPlayer.Connect(0, mult, 0)
+	ridePlayer.Connect(0, mult, 0)
+	waterPlayer.Connect(0, mult, 0)
+	swirlPlayer.Connect(0, mult, 0)
+	vocalPlayer.Connect(0, mult, 0)
 
-	muse.Connect(poly, 0, chor1, 0)
-	muse.Connect(chor1, 0, allpass, 0)
-	muse.Connect(chor1, 0, env, 0)
-	muse.Connect(mult, 0, env, 0)
-	muse.Connect(mult, 0, env, 1)
-	muse.Connect(allpass, 0, env, 1)
+	poly.Connect(0, chor1, 0)
+	chor1.Connect(0, allpass, 0)
+	chor1.Connect(0, env, 0)
+	mult.Connect(0, env, 0)
+	mult.Connect(0, env, 1)
+	allpass.Connect(0, env, 1)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()

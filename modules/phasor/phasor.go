@@ -10,12 +10,16 @@ type Phasor struct {
 }
 
 func NewPhasor(freq float64, phase float64, config *muse.Configuration, identifier string) *Phasor {
-	return &Phasor{
+	p := &Phasor{
 		BaseModule: muse.NewBaseModule(2, 1, config, identifier),
 		phase:      phase,
 		delta:      freq / config.SampleRate,
 		fc:         freq,
 	}
+
+	p.SetSelf(p)
+
+	return p
 }
 
 func (p *Phasor) Phase() float64 {

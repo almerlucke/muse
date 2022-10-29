@@ -21,13 +21,17 @@ func NewMonitor(width int, height int, config *muse.Configuration) *Monitor {
 	raster := canvas.NewRasterFromImage(ctx.Image())
 	raster.ScaleMode = canvas.ImageScaleFastest
 
-	return &Monitor{
+	m := &Monitor{
 		BaseModule: muse.NewBaseModule(1, 0, config, ""),
 		context:    ctx,
 		raster:     raster,
 		width:      width,
 		height:     height,
 	}
+
+	m.SetSelf(m)
+
+	return m
 }
 
 func (m *Monitor) MustSynthesize() bool {

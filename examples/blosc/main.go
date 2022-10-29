@@ -26,13 +26,13 @@ func main() {
 	env.AddMessenger(banger.NewValueGenerator(sequence, "sequencer"))
 
 	env.AddMessenger(stepper.NewStepper(
-		stepper.NewValueStepper(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
+		stepper.NewValueStepProvider(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
 		[]string{"sequencer"}, "",
 	))
 
 	osc := env.AddModule(blosc.NewOsc(100.0, 0.0, env.Config, "osc"))
 
-	muse.Connect(osc, 3, env, 0)
+	osc.Connect(3, env, 0)
 
 	env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 10.0, env.Config.SampleRate, false, sndfile.SF_FORMAT_AIFF)
 

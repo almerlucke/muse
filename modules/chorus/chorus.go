@@ -69,6 +69,8 @@ func NewChorus(stereo bool, delayCenter float64, delayRange float64, modDepth fl
 		c.mods[i] = phasor.NewPhasor(speed[i], config.SampleRate, phase[i])
 	}
 
+	c.SetSelf(c)
+
 	return c
 }
 

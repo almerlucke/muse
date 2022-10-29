@@ -63,9 +63,9 @@ func main() {
 		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {BurstChance: 0.6, NumBurst: 3}, {Skip: true},
 	}))
 
-	muse.Connect(kickPlayer, 0, env, 0)
-	muse.Connect(hihatPlayer, 0, env, 0)
-	muse.Connect(snarePlayer, 0, env, 0)
+	kickPlayer.Connect(0, env, 0)
+	hihatPlayer.Connect(0, env, 0)
+	snarePlayer.Connect(0, env, 0)
 
 	env.QuickPlayAudio()
 }

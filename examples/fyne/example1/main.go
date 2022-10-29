@@ -61,15 +61,17 @@ func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *Te
 		stepProvider: stepProvider,
 	}
 
+	testVoice.SetSelf(testVoice)
+
 	adsrEnv := testVoice.AddModule(adsr.NewADSR(stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	shape := testVoice.AddModule(waveshaper.NewWaveShaper(shaping.NewSineTable(512), 0, nil, nil, config, "shaper"))
 
-	muse.Connect(osc, 0, shape, 0)
-	muse.Connect(shape, 0, multiplier, 0)
-	muse.Connect(adsrEnv, 0, multiplier, 1)
-	muse.Connect(multiplier, 0, testVoice, 0)
+	osc.Connect(0, shape, 0)
+	shape.Connect(0, multiplier, 0)
+	adsrEnv.Connect(0, multiplier, 1)
+	multiplier.Connect(0, testVoice, 0)
 
 	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
 	testVoice.Shaper = shape.(*waveshaper.WaveShaper)
@@ -712,7 +714,7 @@ func main() {
 	// allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.1, env.Config, "allpass"))
 
 	// muse.Connect(voicePlayer, 0, allpass, 0)
-	muse.Connect(poly, 0, env, 0)
+	poly.Connect(0, env, 0)
 	// muse.Connect(allpass, 0, env, 1)
 
 	portaudio.Initialize()

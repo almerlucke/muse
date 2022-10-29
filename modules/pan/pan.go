@@ -14,10 +14,14 @@ type StereoPan struct {
 }
 
 func NewStereoPan(pan float64, config *muse.Configuration, identifier string) *StereoPan {
-	return &StereoPan{
+	p := &StereoPan{
 		BaseModule: muse.NewBaseModule(2, 2, config, identifier),
 		pan:        pan,
 	}
+
+	p.SetSelf(p)
+
+	return p
 }
 
 func (p *StereoPan) Pan() float64 {

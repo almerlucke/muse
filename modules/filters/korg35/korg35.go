@@ -94,7 +94,7 @@ type Korg35LPF struct {
 }
 
 func NewKorg35LPF(fc float64, res float64, sat float64, config *muse.Configuration, id string) *Korg35LPF {
-	return &Korg35LPF{
+	korg := &Korg35LPF{
 		BaseModule: muse.NewBaseModule(4, 1, config, id),
 		lpf1:       newOnePole(fc, config.SampleRate),
 		lpf2:       newOnePole(fc, config.SampleRate),
@@ -104,6 +104,10 @@ func NewKorg35LPF(fc float64, res float64, sat float64, config *muse.Configurati
 		sat:        sat,
 		nlp:        true,
 	}
+
+	korg.SetSelf(korg)
+
+	return korg
 }
 
 func (klpf *Korg35LPF) reset() {

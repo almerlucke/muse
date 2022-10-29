@@ -21,13 +21,17 @@ func NewOsc(frequency float64, phase float64, config *muse.Configuration, identi
 }
 
 func NewOscX(frequency float64, phase float64, pw float64, mix [4]float64, config *muse.Configuration, identifier string) *Osc {
-	return &Osc{
+	osc := &Osc{
 		BaseModule: muse.NewBaseModule(3, 5, config, identifier),
 		frequency:  frequency,
 		phase:      phase,
 		pw:         pw,
 		mix:        mix,
 	}
+
+	osc.SetSelf(osc)
+
+	return osc
 }
 
 func (o *Osc) MixAt(i int) float64 {

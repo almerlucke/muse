@@ -20,18 +20,20 @@ type Polyphony struct {
 }
 
 func NewPolyphony(numChannels int, voices []Voice, config *muse.Configuration, identifier string) *Polyphony {
-	player := &Polyphony{
+	poly := &Polyphony{
 		BaseModule: muse.NewBaseModule(1, numChannels, config, identifier),
 	}
 
-	player.freePool = pool.NewPool[Voice]()
-	player.activePool = pool.NewPool[Voice]()
+	poly.freePool = pool.NewPool[Voice]()
+	poly.activePool = pool.NewPool[Voice]()
 
 	for _, voice := range voices {
-		player.freePool.Push(&pool.Element[Voice]{Value: voice})
+		poly.freePool.Push(&pool.Element[Voice]{Value: voice})
 	}
 
-	return player
+	poly.SetSelf(poly)
+
+	return poly
 }
 
 func (p *Polyphony) noteOff(identifier string) {

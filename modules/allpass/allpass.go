@@ -15,12 +15,16 @@ type Allpass struct {
 }
 
 func NewAllpass(length float64, location float64, feedback float64, config *muse.Configuration, identifier string) *Allpass {
-	return &Allpass{
+	all := &Allpass{
 		BaseModule:     muse.NewBaseModule(3, 1, config, identifier),
 		allpass:        allpassc.NewAllpass(int(config.SampleRate*length*0.001), feedback),
 		readLocation:   config.SampleRate * location * 0.001,
 		readLocationMS: location,
 	}
+
+	all.SetSelf(all)
+
+	return all
 }
 
 func (a *Allpass) Feedback() float64 {

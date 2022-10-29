@@ -276,6 +276,8 @@ func NewFreeVerb(config *muse.Configuration, identifier string) *FreeVerb {
 	freeverb.SetWidth(initialwidth)
 	freeverb.SetMode(initialmode)
 
+	freeverb.SetSelf(freeverb)
+
 	return freeverb
 }
 

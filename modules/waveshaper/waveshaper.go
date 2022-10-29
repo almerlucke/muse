@@ -17,12 +17,16 @@ type WaveShaper struct {
 }
 
 func NewWaveShaper(shaper shaping.Shaper, numParams int, paramMapper ParamMapFunction, msgMapper MessageMapFunction, config *muse.Configuration, identifier string) *WaveShaper {
-	return &WaveShaper{
+	w := &WaveShaper{
 		BaseModule:  muse.NewBaseModule(numParams+1, 1, config, identifier),
 		shaper:      shaper,
 		paramMapper: paramMapper,
 		msgMapper:   msgMapper,
 	}
+
+	w.SetSelf(w)
+
+	return w
 }
 
 func (s *WaveShaper) ReceiveControlValue(value any, index int) {

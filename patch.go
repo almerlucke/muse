@@ -64,6 +64,8 @@ func NewPatch(numInputs int, numOutputs int, config *Configuration, identifier s
 		receivers:             map[string]MessageReceiver{},
 	}
 
+	p.SetSelf(p)
+
 	return p
 }
 

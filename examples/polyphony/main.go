@@ -63,11 +63,11 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 	shape := testVoice.AddModule(waveshaper.NewWaveShaper(shaping.NewSuperSaw(), 1, paramMapper, nil, config, "shaper"))
 	filter := testVoice.AddModule(moog.NewMoog(1700.0, 0.48, 1.0, config, "filter"))
 
-	muse.Connect(osc, 0, shape, 0)
-	muse.Connect(shape, 0, multiplier, 0)
-	muse.Connect(adsrEnv, 0, multiplier, 1)
-	muse.Connect(multiplier, 0, filter, 0)
-	muse.Connect(filter, 0, testVoice, 0)
+	osc.Connect(0, shape, 0)
+	shape.Connect(0, multiplier, 0)
+	adsrEnv.Connect(0, multiplier, 1)
+	multiplier.Connect(0, filter, 0)
+	filter.Connect(0, testVoice, 0)
 
 	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
 	testVoice.Shaper = shape.(*waveshaper.WaveShaper)
@@ -132,8 +132,8 @@ func main() {
 		voice := NewTestVoice(env.Config)
 		voices = append(voices, voice)
 		// connect lfo to voices
-		muse.Connect(superSawDrive, 0, voice.Shaper, 1)
-		muse.Connect(filterCutOff, 0, voice.Filter, 1)
+		superSawDrive.Connect(0, voice.Shaper, 1)
+		filterCutOff.Connect(0, voice.Filter, 1)
 	}
 
 	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
@@ -149,17 +149,17 @@ func main() {
 
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
-	muse.Connect(superSawDrive, 0, poly, 0)
-	muse.Connect(filterCutOff, 0, poly, 0)
+	superSawDrive.Connect(0, poly, 0)
+	filterCutOff.Connect(0, poly, 0)
 
-	muse.Connect(paramVarTri1, 0, superSawDrive, 0)
-	muse.Connect(paramVarTri2, 0, filterCutOff, 0)
-	muse.Connect(poly, 0, allpass, 0)
-	muse.Connect(allpass, 0, allpassAmp, 0)
-	muse.Connect(poly, 0, reverb, 0)
-	muse.Connect(allpassAmp, 0, reverb, 1)
-	muse.Connect(reverb, 0, env, 0)
-	muse.Connect(reverb, 1, env, 1)
+	paramVarTri1.Connect(0, superSawDrive, 0)
+	paramVarTri2.Connect(0, filterCutOff, 0)
+	poly.Connect(0, allpass, 0)
+	allpass.Connect(0, allpassAmp, 0)
+	poly.Connect(0, reverb, 0)
+	allpassAmp.Connect(0, reverb, 1)
+	reverb.Connect(0, env, 0)
+	reverb.Connect(1, env, 1)
 
 	env.SynthesizeToFile("/Users/almerlucke/Desktop/voices.aiff", 24.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

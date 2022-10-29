@@ -53,6 +53,8 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 		filterFcMax:    8000,
 	}
 
+	voice.SetSelf(voice)
+
 	voice.SourceMixer.SetMix([]float64{osc1Mix, osc2Mix, noiseMix})
 
 	voice.AddModule(voice.ampEnv)
@@ -77,17 +79,17 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 
 	ampVCA := voice.AddModule(functor.NewMult(2, config))
 
-	muse.Connect(voice.Osc1, 4, voice.SourceMixer, 0)
-	muse.Connect(voice.Osc2, 4, voice.SourceMixer, 1)
-	muse.Connect(voice.noiseGen, 0, voice.SourceMixer, 2)
-	muse.Connect(voice.SourceMixer, 0, voice.filter, 0)
-	muse.Connect(voice.filterEnv, 0, filterScaler, 0)
-	muse.Connect(filterScaler, 0, voice.filter, 1)
-	muse.Connect(voice.filter, 0, ampVCA, 0)
-	muse.Connect(voice.ampEnv, 0, ampVCA, 1)
-	muse.Connect(ampVCA, 0, voice.panner, 0)
-	muse.Connect(voice.panner, 0, voice, 0)
-	muse.Connect(voice.panner, 1, voice, 1)
+	voice.Osc1.Connect(4, voice.SourceMixer, 0)
+	voice.Osc2.Connect(4, voice.SourceMixer, 1)
+	voice.noiseGen.Connect(0, voice.SourceMixer, 2)
+	voice.SourceMixer.Connect(0, voice.filter, 0)
+	voice.filterEnv.Connect(0, filterScaler, 0)
+	filterScaler.Connect(0, voice.filter, 1)
+	voice.filter.Connect(0, ampVCA, 0)
+	voice.ampEnv.Connect(0, ampVCA, 1)
+	ampVCA.Connect(0, voice.panner, 0)
+	voice.panner.Connect(0, voice, 0)
+	voice.panner.Connect(1, voice, 1)
 
 	return voice
 }

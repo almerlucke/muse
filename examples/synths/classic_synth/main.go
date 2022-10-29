@@ -47,6 +47,8 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 		controls:  controls.NewGroup("group.main", "Classic Synth"),
 	}
 
+	synth.SetSelf(synth)
+
 	// Add self as receiver
 	synth.AddMessageReceiver(synth, "synth")
 
@@ -77,18 +79,18 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	allpassAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
 	allpassAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
 
-	muse.Connect(synth.Poly, 0, synthAmp1, 0)
-	muse.Connect(synth.Poly, 1, synthAmp2, 0)
-	muse.Connect(synthAmp1, 0, synth.chorus1, 0)
-	muse.Connect(synthAmp2, 0, synth.chorus2, 0)
-	muse.Connect(synthAmp1, 0, allpass1, 0)
-	muse.Connect(synthAmp2, 0, allpass2, 0)
-	muse.Connect(allpass1, 0, allpassAmp1, 0)
-	muse.Connect(allpass2, 0, allpassAmp2, 0)
-	muse.Connect(allpassAmp1, 0, synth.chorus1, 0)
-	muse.Connect(allpassAmp2, 0, synth.chorus2, 0)
-	muse.Connect(synth.chorus1, 0, synth, 0)
-	muse.Connect(synth.chorus2, 0, synth, 1)
+	synth.Poly.Connect(0, synthAmp1, 0)
+	synth.Poly.Connect(1, synthAmp2, 0)
+	synthAmp1.Connect(0, synth.chorus1, 0)
+	synthAmp2.Connect(0, synth.chorus2, 0)
+	synthAmp1.Connect(0, allpass1, 0)
+	synthAmp2.Connect(0, allpass2, 0)
+	allpass1.Connect(0, allpassAmp1, 0)
+	allpass2.Connect(0, allpassAmp2, 0)
+	allpassAmp1.Connect(0, synth.chorus1, 0)
+	allpassAmp2.Connect(0, synth.chorus2, 0)
+	synth.chorus1.Connect(0, synth, 0)
+	synth.chorus2.Connect(0, synth, 1)
 
 	return synth
 }
@@ -218,8 +220,8 @@ func main() {
 
 	env.AddModule(synth)
 
-	muse.Connect(synth, 0, env, 0)
-	muse.Connect(synth, 1, env, 1)
+	synth.Connect(0, env, 0)
+	synth.Connect(1, env, 1)
 
 	// synth.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
 	// 	"command":   "trigger",

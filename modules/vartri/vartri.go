@@ -11,12 +11,16 @@ type VarTri struct {
 }
 
 func NewVarTri(freq float64, phase float64, w float64, config *muse.Configuration, identifier string) *VarTri {
-	return &VarTri{
+	v := &VarTri{
 		BaseModule: muse.NewBaseModule(3, 1, config, identifier),
 		phase:      phase,
 		delta:      freq / config.SampleRate,
 		w:          w,
 	}
+
+	v.SetSelf(v)
+
+	return v
 }
 
 func (vt *VarTri) DutyWidth() float64 {

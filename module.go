@@ -15,6 +15,7 @@ type Module interface {
 	DidSynthesize() bool
 	MustSynthesize() bool
 	PrepareSynthesis()
+	Connect(int, Module, int)
 	Synthesize() bool
 }
 
@@ -74,6 +75,32 @@ func (m *BaseModule) AddInputConnection(inputIndex int, conn *Connection) {
 
 func (m *BaseModule) AddOutputConnection(outputIndex int, conn *Connection) {
 	m.Outputs[outputIndex].AddConnection(conn)
+}
+
+func (m *BaseModule) Connect(outIndex int, to Module, inIndex int) {
+	from := m.Self().(Module)
+
+	p, ok := from.(Patch)
+	if ok {
+		if p.Contains(to) {
+			from = p.InputModuleAtIndex(outIndex)
+			outIndex = 0
+		}
+	}
+
+	p, ok = to.(Patch)
+	if ok {
+		if p.Contains(from) {
+			to = p.OutputModuleAtIndex(inIndex)
+			inIndex = 0
+		} else {
+			to = p.InputModuleAtIndex(inIndex)
+			inIndex = 0
+		}
+	}
+
+	from.AddOutputConnection(outIndex, &Connection{Module: to, Index: inIndex})
+	to.AddInputConnection(inIndex, &Connection{Module: from, Index: outIndex})
 }
 
 func (m *BaseModule) DidSynthesize() bool {

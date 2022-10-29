@@ -21,6 +21,8 @@ func NewButterworth(fc float64, q float64, config *muse.Configuration, identifie
 
 	b.filter.Set(fc, q, config.SampleRate)
 
+	b.SetSelf(b)
+
 	return b
 }
 

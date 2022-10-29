@@ -13,12 +13,16 @@ type RBJFilter struct {
 }
 
 func NewRBJFilter(filterType rbjc.RBJFilterType, fc float64, q float64, config *muse.Configuration, identifier string) *RBJFilter {
-	return &RBJFilter{
+	rbj := &RBJFilter{
 		BaseModule: muse.NewBaseModule(3, 1, config, identifier),
 		filter:     rbjc.NewRBJFilter(filterType, fc, q, 0, false, config.SampleRate),
 		fc:         fc,
 		q:          q,
 	}
+
+	rbj.SetSelf(rbj)
+
+	return rbj
 }
 
 func (r *RBJFilter) Resonance() float64 {

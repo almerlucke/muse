@@ -23,6 +23,8 @@ func NewADSR(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode ad
 	a.adsr = &adsrc.ADSR{}
 	a.adsr.Initialize(steps, durationMode, releaseMode, config.SampleRate)
 
+	a.SetSelf(a)
+
 	return a
 }
 

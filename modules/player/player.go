@@ -25,7 +25,7 @@ func NewPlayer(buffer *io.SoundFileBuffer, speed float64, amp float64, oneShot b
 		inc = math.Abs(inc)
 	}
 
-	return &Player{
+	p := &Player{
 		BaseModule: muse.NewBaseModule(0, len(buffer.Channels), config, identifier),
 		inc:        inc,
 		speed:      speed,
@@ -34,6 +34,10 @@ func NewPlayer(buffer *io.SoundFileBuffer, speed float64, amp float64, oneShot b
 		buffer:     buffer,
 		amp:        amp,
 	}
+
+	p.SetSelf(p)
+
+	return p
 }
 
 func (p *Player) Speed() float64 {

@@ -59,10 +59,10 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
 	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config, "shaper"))
 
-	muse.Connect(osc, 0, shape, 0)
-	muse.Connect(shape, 0, multiplier, 0)
-	muse.Connect(ampEnv, 0, multiplier, 1)
-	muse.Connect(multiplier, 0, testVoice, 0)
+	osc.Connect(0, shape, 0)
+	shape.Connect(0, multiplier, 0)
+	ampEnv.Connect(0, multiplier, 1)
+	multiplier.Connect(0, testVoice, 0)
 
 	testVoice.ampEnv = ampEnv.(*adsr.ADSR)
 	testVoice.phasor = osc.(*phasor.Phasor)
@@ -183,9 +183,9 @@ func main() {
 		[]string{"template1"}, "",
 	))
 
-	muse.Connect(poly1, 0, chor, 0)
-	muse.Connect(chor, 0, env, 0)
-	muse.Connect(chor, 1, env, 1)
+	poly1.Connect(0, chor, 0)
+	chor.Connect(0, env, 0)
+	chor.Connect(1, env, 1)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()

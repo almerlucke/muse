@@ -44,7 +44,7 @@ func main() {
 	env.AddMessenger(banger.NewValueGenerator(sequence, "sequencer1"))
 
 	env.AddMessenger(stepper.NewStepper(
-		stepper.NewValueStepper(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
+		stepper.NewValueStepProvider(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
 		[]string{"sequencer1", "adsr1"}, "",
 	))
 
@@ -76,20 +76,20 @@ func main() {
 	reverb.(*freeverb.FreeVerb).SetRoomSize(0.8)
 	reverb.(*freeverb.FreeVerb).SetWidth(0.8)
 
-	muse.Connect(paramVarTri1, 0, superSawParam, 0)
-	muse.Connect(paramVarTri2, 0, filterParam, 0)
-	muse.Connect(osc1, 0, shaper1, 0)
-	muse.Connect(superSawParam, 0, shaper1, 1)
-	muse.Connect(shaper1, 0, mult1, 0)
-	muse.Connect(adsrEnv1, 0, mult1, 1)
-	muse.Connect(mult1, 0, filter, 0)
-	muse.Connect(filterParam, 0, filter, 1)
-	muse.Connect(filter, 0, allpass, 0)
-	muse.Connect(allpass, 0, allpassAmp, 0)
-	muse.Connect(filter, 0, reverb, 0)
-	muse.Connect(allpassAmp, 0, reverb, 1)
-	muse.Connect(reverb, 0, env, 0)
-	muse.Connect(reverb, 1, env, 1)
+	paramVarTri1.Connect(0, superSawParam, 0)
+	paramVarTri2.Connect(0, filterParam, 0)
+	osc1.Connect(0, shaper1, 0)
+	superSawParam.Connect(0, shaper1, 1)
+	shaper1.Connect(0, mult1, 0)
+	adsrEnv1.Connect(0, mult1, 1)
+	mult1.Connect(0, filter, 0)
+	filterParam.Connect(0, filter, 1)
+	filter.Connect(0, allpass, 0)
+	allpass.Connect(0, allpassAmp, 0)
+	filter.Connect(0, reverb, 0)
+	allpassAmp.Connect(0, reverb, 1)
+	reverb.Connect(0, env, 0)
+	reverb.Connect(1, env, 1)
 
 	env.SynthesizeToFile("/Users/almerlucke/Desktop/shaper.aiff", 24.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

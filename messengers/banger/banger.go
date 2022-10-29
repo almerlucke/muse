@@ -25,7 +25,9 @@ func NewGenerator(banger Banger, identifier string) *Generator {
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		banger:        banger,
 	}
+
 	g.SetSelf(g)
+
 	return g
 }
 

@@ -17,6 +17,8 @@ func NewMixer(numInputs int, config *muse.Configuration, identifier string) *Mix
 		m.mix[i] = 0.0
 	}
 
+	m.SetSelf(m)
+
 	return m
 }
 

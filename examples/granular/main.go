@@ -171,7 +171,7 @@ func main() {
 	gr := env.AddModule(granular.NewGranulator(numChannels, &SFSourceFactory{Samples: sfb}, &granular.DefaultEnvelopeFactory{}, 400, &SFParameterGenerator{}, env.Config, "granulator"))
 
 	for i := 0; i < numChannels; i++ {
-		muse.Connect(gr, i, env, i)
+		gr.Connect(i, env, i)
 	}
 
 	env.SynthesizeToFile("/Users/almerlucke/Desktop/john.aiff", 34.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)

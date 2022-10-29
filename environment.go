@@ -19,10 +19,14 @@ type Environment struct {
 func NewEnvironment(numOutputs int, sampleRate float64, bufferSize int) *Environment {
 	config := &Configuration{SampleRate: sampleRate, BufferSize: bufferSize}
 
-	return &Environment{
+	e := &Environment{
 		BasePatch: NewPatch(0, numOutputs, config, "environment"),
 		Config:    config,
 	}
+
+	e.SetSelf(e)
+
+	return e
 }
 
 func (e *Environment) PortaudioStream() (*portaudio.Stream, error) {

@@ -101,6 +101,8 @@ func NewGranulator(numOutputs int, sf utils.Factory[Source], ef utils.Factory[En
 
 	gl.nextParameter, gl.interOnset = paramGen.Next(0, config)
 
+	gl.SetSelf(gl)
+
 	return gl
 }
 

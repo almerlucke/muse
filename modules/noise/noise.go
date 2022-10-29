@@ -12,10 +12,14 @@ type Noise struct {
 }
 
 func NewNoise(seed uint64, config *muse.Configuration) *Noise {
-	return &Noise{
+	n := &Noise{
 		BaseModule: muse.NewBaseModule(0, 1, config, ""),
 		r:          rand.NewRandWithSeed(seed),
 	}
+
+	n.SetSelf(n)
+
+	return n
 }
 
 func (n *Noise) Synthesize() bool {
