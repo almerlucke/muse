@@ -9,7 +9,9 @@ type Msg struct {
 }
 
 func NewMsg(sender muse.Patch, addresses []string, id string) *Msg {
-	return &Msg{BaseControl: muse.NewBaseControl(id), sender: sender, addresses: addresses}
+	m := &Msg{BaseControl: muse.NewBaseControl(id), sender: sender, addresses: addresses}
+	m.SetSelf(m)
+	return m
 }
 
 func (msg *Msg) ReceiveControlValue(value any, index int) {

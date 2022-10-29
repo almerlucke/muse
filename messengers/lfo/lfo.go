@@ -58,7 +58,7 @@ func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shap
 		max = tmp
 	}
 
-	return &LFO{
+	lfo := &LFO{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		delta:         speed / sampleRate,
 		speed:         speed,
@@ -68,6 +68,10 @@ func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shap
 		shapeIndex:    shapeIndex,
 		config:        config,
 	}
+
+	lfo.SetSelf(lfo)
+
+	return lfo
 }
 
 func NewBasicControlLFO(speed float64, min float64, max float64, config *muse.Configuration, identifier string) *LFO {
@@ -77,7 +81,7 @@ func NewBasicControlLFO(speed float64, min float64, max float64, config *muse.Co
 func NewLFO(speed float64, targets []*Target, config *muse.Configuration, identifier string) *LFO {
 	sampleRate := config.SampleRate / float64(config.BufferSize)
 
-	return &LFO{
+	lfo := &LFO{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		delta:         speed / sampleRate,
 		speed:         speed,
@@ -87,6 +91,10 @@ func NewLFO(speed float64, targets []*Target, config *muse.Configuration, identi
 		shapes:        []shaping.Shaper{lfoSineShaper},
 		config:        config,
 	}
+
+	lfo.SetSelf(lfo)
+
+	return lfo
 }
 
 func NewBasicLFO(speed float64, scale float64, offset float64, addresses []string, config *muse.Configuration, param string, templ template.Template) *LFO {

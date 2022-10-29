@@ -11,10 +11,12 @@ type Seq[T any] struct {
 }
 
 func NewSeq[T any](s *value.Sequence[T], id string) *Seq[T] {
-	return &Seq[T]{
+	sq := &Seq[T]{
 		BaseControl: muse.NewBaseControl(id),
 		sequence:    s,
 	}
+	sq.SetSelf(sq)
+	return sq
 }
 
 func (s *Seq[T]) ReceiveControlValue(value any, index int) {

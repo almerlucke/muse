@@ -7,7 +7,9 @@ type Rcv struct {
 }
 
 func NewRcv(id string) *Rcv {
-	return &Rcv{BaseControl: muse.NewBaseControl(id)}
+	r := &Rcv{BaseControl: muse.NewBaseControl(id)}
+	r.SetSelf(r)
+	return r
 }
 
 func (r *Rcv) ReceiveMessage(msg any) []*muse.Message {

@@ -30,10 +30,14 @@ func NewSchedulerWithJSONData(data []byte, identifier string) (*Scheduler, error
 }
 
 func NewSchedulerWithEvents(events []*Event, identifier string) *Scheduler {
-	return &Scheduler{
+	s := &Scheduler{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		events:        events,
 	}
+
+	s.SetSelf(s)
+
+	return s
 }
 
 func (s *Scheduler) Merge(events []*Event) {

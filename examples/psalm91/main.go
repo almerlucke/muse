@@ -253,8 +253,8 @@ func main() {
 
 	once := env.AddControl(once.NewControlOnce())
 
-	muse.ConnectControl(once, 0, guitarPlayer, 0)
-	muse.ConnectControl(once, 0, singPlayer, 0)
+	once.CtrlConnect(0, guitarPlayer, 0)
+	once.CtrlConnect(0, singPlayer, 0)
 
 	muse.Connect(guitarPlayer, 0, guitarChorus, 0)
 	muse.Connect(singPlayer, 0, singChorus, 0)

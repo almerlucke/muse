@@ -11,7 +11,10 @@ type Log struct {
 }
 
 func NewLog(id string) *Log {
-	return &Log{BaseControl: muse.NewBaseControl(id)}
+	l := &Log{BaseControl: muse.NewBaseControl(id)}
+	// Always set self so we can reference embedding struct from base control
+	l.SetSelf(l)
+	return l
 }
 
 func (l *Log) ReceiveControlValue(v any, i int) {

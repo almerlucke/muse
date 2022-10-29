@@ -35,7 +35,7 @@ func main() {
 	}, "sequencer2"))
 
 	env.AddMessenger(stepper.NewStepper(
-		stepper.NewValueStepper(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
+		stepper.NewValueStepProvider(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
 		[]string{"sequencer", "sequencer2"}, "",
 	))
 

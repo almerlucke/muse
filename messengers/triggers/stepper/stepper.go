@@ -18,19 +18,19 @@ type Stepper struct {
 }
 
 func NewStepper(provider StepProvider, addresses []string, identifier string) *Stepper {
-	return &Stepper{
+	s := &Stepper{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		addresses:     addresses,
 		provider:      provider,
 	}
+
+	s.SetSelf(s)
+
+	return s
 }
 
 func NewControlStepper(provider StepProvider, identifier string) *Stepper {
-	return &Stepper{
-		BaseMessenger: muse.NewBaseMessenger(identifier),
-		addresses:     nil,
-		provider:      provider,
-	}
+	return NewStepper(provider, nil, identifier)
 }
 
 func (s *Stepper) tick(timestamp int64, config *muse.Configuration) (bool, float64) {
@@ -84,17 +84,17 @@ func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.
 	return messages
 }
 
-type ValueStepper struct {
+type ValueStepProvider struct {
 	value value.Valuer[float64]
 }
 
-func NewValueStepper(val value.Valuer[float64]) *ValueStepper {
-	return &ValueStepper{
+func NewValueStepProvider(val value.Valuer[float64]) *ValueStepProvider {
+	return &ValueStepProvider{
 		value: val,
 	}
 }
 
-func (vs *ValueStepper) NextStep() float64 {
+func (vs *ValueStepProvider) NextStep() float64 {
 	v := vs.value.Value()
 	if vs.value.Finished() {
 		vs.value.Reset()
@@ -102,10 +102,10 @@ func (vs *ValueStepper) NextStep() float64 {
 	return v
 }
 
-func (vs *ValueStepper) GetState() map[string]any {
+func (vs *ValueStepProvider) GetState() map[string]any {
 	return vs.value.GetState()
 }
 
-func (vs *ValueStepper) SetState(state map[string]any) {
+func (vs *ValueStepProvider) SetState(state map[string]any) {
 	vs.value.SetState(state)
 }

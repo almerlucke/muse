@@ -15,12 +15,14 @@ func NewControlDelay(control muse.Control, delay float64, config *muse.Configura
 }
 
 func NewDelay(messenger muse.Messenger, control muse.Control, delay float64, config *muse.Configuration) *Delay {
-	return &Delay{
+	d := &Delay{
 		BaseMessenger: muse.NewBaseMessenger(""),
 		control:       control,
 		messenger:     messenger,
 		delay:         int64(delay * config.SampleRate * 0.001),
 	}
+	d.SetSelf(d)
+	return d
 }
 
 func (d *Delay) Tick(timestamp int64, config *muse.Configuration) {

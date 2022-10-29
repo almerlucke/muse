@@ -8,22 +8,16 @@ type ControlSender interface {
 	SendControlValue(any, int)
 }
 
-type ControlConnector interface {
-	AddControlInputConnection(int, Control, int)
-	AddControlOutputConnection(int, Control, int)
-}
-
-type ControlTicker interface {
+type Control interface {
+	Selfie
 	Identifiable
 	MessageReceiver
-	Tick(int64, *Configuration)
-}
-
-type Control interface {
 	ControlReceiver
 	ControlSender
-	ControlConnector
-	ControlTicker
+	AddControlInputConnection(int, Control, int)
+	AddControlOutputConnection(int, Control, int)
+	CtrlConnect(int, Control, int)
+	Tick(int64, *Configuration)
 }
 
 type ControlConnection struct {
@@ -34,16 +28,21 @@ type ControlConnection struct {
 // Control acts at control rate (once every audio frame) instead of audio rate
 type BaseControl struct {
 	identifier     string
+	self           any
 	inConnections  map[int][]*ControlConnection
 	outConnections map[int][]*ControlConnection
 }
 
 func NewBaseControl(id string) *BaseControl {
-	return &BaseControl{
+	bc := &BaseControl{
 		inConnections:  map[int][]*ControlConnection{},
 		outConnections: map[int][]*ControlConnection{},
 		identifier:     id,
 	}
+
+	bc.self = bc
+
+	return bc
 }
 
 func (c *BaseControl) Identifier() string {
@@ -52,6 +51,14 @@ func (c *BaseControl) Identifier() string {
 
 func (c *BaseControl) SetIdentifier(id string) {
 	c.identifier = id
+}
+
+func (c *BaseControl) Self() any {
+	return c.self
+}
+
+func (c *BaseControl) SetSelf(self any) {
+	c.self = self
 }
 
 func (c *BaseControl) Tick(timestamp int64, config *Configuration) {
@@ -98,9 +105,10 @@ func (c *BaseControl) AddControlOutputConnection(outputIndex int, receiver Contr
 	c.outConnections[outputIndex] = connections
 }
 
-func ConnectControl(sender Control, outIndex int, receiver Control, inIndex int) {
-	sender.AddControlOutputConnection(outIndex, receiver, inIndex)
-	receiver.AddControlInputConnection(inIndex, sender, outIndex)
+func (c *BaseControl) CtrlConnect(outIndex int, receiver Control, inIndex int) {
+	self := c.Self().(Control)
+	self.AddControlOutputConnection(outIndex, receiver, inIndex)
+	receiver.AddControlInputConnection(inIndex, self, outIndex)
 }
 
 type ControlThru struct {

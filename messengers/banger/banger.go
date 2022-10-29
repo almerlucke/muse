@@ -21,10 +21,12 @@ type Generator struct {
 }
 
 func NewGenerator(banger Banger, identifier string) *Generator {
-	return &Generator{
+	g := &Generator{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		banger:        banger,
 	}
+	g.SetSelf(g)
+	return g
 }
 
 func (g *Generator) ReceiveControlValue(value any, index int) {

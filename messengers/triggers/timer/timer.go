@@ -14,22 +14,21 @@ type Timer struct {
 }
 
 func NewTimer(intervalMilli float64, addresses []string, config *muse.Configuration, identifier string) *Timer {
-	return &Timer{
+	t := &Timer{
 		BaseMessenger: muse.NewBaseMessenger(identifier),
 		addresses:     addresses,
 		interval:      intervalMilli * 0.001 * config.SampleRate,
 		intervalMilli: intervalMilli,
 		sampleRate:    config.SampleRate,
 	}
+
+	t.SetSelf(t)
+
+	return t
 }
 
 func NewControlTimer(intervalMilli float64, config *muse.Configuration, identifier string) *Timer {
-	return &Timer{
-		BaseMessenger: muse.NewBaseMessenger(identifier),
-		interval:      intervalMilli * 0.001 * config.SampleRate,
-		intervalMilli: intervalMilli,
-		sampleRate:    config.SampleRate,
-	}
+	return NewTimer(intervalMilli, nil, config, identifier)
 }
 
 func (t *Timer) ReceiveControlValue(value any, index int) {

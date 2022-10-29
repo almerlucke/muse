@@ -9,11 +9,13 @@ type Once struct {
 }
 
 func NewOnce(addresses []string) *Once {
-	return &Once{BaseMessenger: muse.NewBaseMessenger(""), addresses: addresses}
+	o := &Once{BaseMessenger: muse.NewBaseMessenger(""), addresses: addresses}
+	o.SetSelf(o)
+	return o
 }
 
 func NewControlOnce() *Once {
-	return &Once{BaseMessenger: muse.NewBaseMessenger("")}
+	return NewOnce(nil)
 }
 
 func (o *Once) Tick(int64, *muse.Configuration) {

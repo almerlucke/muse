@@ -16,9 +16,9 @@ func main() {
 
 	lfo := env.AddControl(lfo.NewBasicControlLFO(0.1, 50.0, 4000.0, env.Config, ""))
 
-	muse.ConnectControl(lfo, 0, filter, 0)
-	muse.Connect(noise, 0, filter, 0)
-	muse.Connect(filter, 0, env, 0)
+	lfo.CtrlConnect(0, filter, 0)
+	noise.CtrlConnect(0, filter, 0)
+	filter.CtrlConnect(0, env, 0)
 
 	env.QuickPlayAudio()
 }
