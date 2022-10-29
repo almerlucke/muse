@@ -39,7 +39,11 @@ type BaseControl struct {
 }
 
 func NewBaseControl(id string) *BaseControl {
-	return &BaseControl{outConnections: map[int][]*ControlConnection{}, identifier: id}
+	return &BaseControl{
+		inConnections:  map[int][]*ControlConnection{},
+		outConnections: map[int][]*ControlConnection{},
+		identifier:     id,
+	}
 }
 
 func (c *BaseControl) Identifier() string {
