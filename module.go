@@ -5,9 +5,9 @@ type Module interface {
 	MessageReceiver
 	Identifiable
 	Stater
+	Configuration() *Configuration
 	NumInputs() int
 	NumOutputs() int
-	Configuration() *Configuration
 	InputAtIndex(int) *Socket
 	OutputAtIndex(int) *Socket
 	AddInputConnection(int, *Connection)
@@ -17,9 +17,9 @@ type Module interface {
 	DidSynthesize() bool
 	MustSynthesize() bool
 	PrepareSynthesis()
+	Synthesize() bool
 	Connect(int, Module, int)
 	Disconnect()
-	Synthesize() bool
 }
 
 type BaseModule struct {

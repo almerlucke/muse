@@ -118,6 +118,8 @@ func (p *BasePatch) RemoveMessenger(msgr Messenger) {
 			}
 		}
 	}
+
+	msgr.CtrlDisconnect()
 }
 
 func (p *BasePatch) RemoveMessengerByID(id string) {
@@ -137,6 +139,8 @@ func (p *BasePatch) RemoveMessengerByID(id string) {
 				delete(p.receivers, id)
 			}
 		}
+
+		msgr.CtrlDisconnect()
 	}
 }
 
@@ -167,6 +171,7 @@ func (p *BasePatch) RemoveModule(m Module) {
 	}
 
 	m.Disconnect()
+	m.CtrlDisconnect()
 }
 
 func (p *BasePatch) RemoveModuleByID(id string) {
@@ -186,7 +191,9 @@ func (p *BasePatch) RemoveModuleByID(id string) {
 				delete(p.receivers, id)
 			}
 		}
+
 		m.Disconnect()
+		m.CtrlDisconnect()
 	}
 }
 
@@ -387,6 +394,14 @@ func (p *BasePatch) AddInputConnection(inputIndex int, conn *Connection) {
 
 func (p *BasePatch) AddOutputConnection(outputIndex int, conn *Connection) {
 	p.outputModules[outputIndex].AddOutputConnection(0, conn)
+}
+
+func (p *BasePatch) RemoveInputConnection(inputIndex int, sender Module, outputIndex int) {
+	p.inputModules[inputIndex].RemoveInputConnection(0, sender, outputIndex)
+}
+
+func (p *BasePatch) RemoveOutputConnection(outputIndex int, receiver Module, inputIndex int) {
+	p.outputModules[outputIndex].RemoveOutputConnection(0, receiver, inputIndex)
 }
 
 func (p *BasePatch) InputModuleAtIndex(index int) Module {
