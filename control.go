@@ -16,7 +16,10 @@ type Control interface {
 	ControlSender
 	AddControlInputConnection(int, Control, int)
 	AddControlOutputConnection(int, Control, int)
+	RemoveControlInputConnection(int, Control, int)
+	RemoveControlOutputConnection(int, Control, int)
 	CtrlConnect(int, Control, int)
+	CtrlDisconnect()
 	Tick(int64, *Configuration)
 }
 
@@ -109,6 +112,54 @@ func (c *BaseControl) CtrlConnect(outIndex int, receiver Control, inIndex int) {
 	self := c.Self().(Control)
 	self.AddControlOutputConnection(outIndex, receiver, inIndex)
 	receiver.AddControlInputConnection(inIndex, self, outIndex)
+}
+
+func (c *BaseControl) RemoveControlInputConnection(inputIndex int, sender Control, outputIndex int) {
+	conns := c.inConnections[inputIndex]
+
+	removeIndex := -1
+	for index, conn := range conns {
+		if conn.Control == sender && conn.Index == outputIndex {
+			removeIndex = index
+			break
+		}
+	}
+
+	if removeIndex > -1 {
+		c.inConnections[inputIndex] = append(conns[:removeIndex], conns[removeIndex+1:]...)
+	}
+}
+
+func (c *BaseControl) RemoveControlOutputConnection(outputIndex int, receiver Control, inputIndex int) {
+	conns := c.outConnections[outputIndex]
+
+	removeIndex := -1
+	for index, conn := range conns {
+		if conn.Control == receiver && conn.Index == inputIndex {
+			removeIndex = index
+			break
+		}
+	}
+
+	if removeIndex > -1 {
+		c.outConnections[outputIndex] = append(conns[:removeIndex], conns[removeIndex+1:]...)
+	}
+}
+
+func (c *BaseControl) CtrlDisconnect() {
+	self := c.Self().(Control)
+
+	for inIndex, inConns := range c.inConnections {
+		for _, inConn := range inConns {
+			inConn.Control.RemoveControlOutputConnection(inConn.Index, self, inIndex)
+		}
+	}
+
+	for outIndex, outConns := range c.outConnections {
+		for _, outConn := range outConns {
+			outConn.Control.RemoveControlInputConnection(outConn.Index, self, outIndex)
+		}
+	}
 }
 
 type ControlThru struct {

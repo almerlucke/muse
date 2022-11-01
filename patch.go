@@ -14,6 +14,8 @@ type Patch interface {
 	RemoveMessageReceiverByID(string)
 	AddModule(Module) Module
 	AddControl(Control) Control
+	RemoveControl(Control)
+	RemoveControlByID(string)
 	Contains(Module) bool
 	Lookup(string) MessageReceiver
 	InputModuleAtIndex(index int) Module
@@ -107,7 +109,6 @@ func (p *BasePatch) RemoveMessenger(msgr Messenger) {
 	}
 
 	if removeIndex > -1 {
-		msgr := p.messengers[removeIndex]
 		p.messengers = append(p.messengers[:removeIndex], p.messengers[removeIndex+1:]...)
 		if receiver, ok := p.receivers[msgr.Identifier()]; ok {
 			if receiver == msgr {
@@ -151,6 +152,48 @@ func (p *BasePatch) AddControl(ct Control) Control {
 	p.AddMessageReceiver(ct, ct.Identifier())
 
 	return ct
+}
+
+func (p *BasePatch) RemoveControl(ct Control) {
+	removeIndex := -1
+	for index, otherControl := range p.controls {
+		if otherControl == ct {
+			removeIndex = index
+			break
+		}
+	}
+
+	if removeIndex > -1 {
+		p.controls = append(p.controls[:removeIndex], p.controls[removeIndex+1:]...)
+		if receiver, ok := p.receivers[ct.Identifier()]; ok {
+			if receiver == ct {
+				delete(p.receivers, ct.Identifier())
+			}
+		}
+	}
+
+	ct.CtrlDisconnect()
+}
+
+func (p *BasePatch) RemoveControlByID(id string) {
+	removeIndex := -1
+	for index, otherControl := range p.controls {
+		if otherControl.Identifier() == id {
+			removeIndex = index
+			break
+		}
+	}
+
+	if removeIndex > -1 {
+		ct := p.controls[removeIndex]
+		p.controls = append(p.controls[:removeIndex], p.controls[removeIndex+1:]...)
+		if receiver, ok := p.receivers[id]; ok {
+			if receiver == ct {
+				delete(p.receivers, id)
+			}
+		}
+		ct.CtrlDisconnect()
+	}
 }
 
 func (p *BasePatch) Contains(m Module) bool {
@@ -250,6 +293,18 @@ func (p *BasePatch) ReceiveMessage(msg any) []*Message {
 		case "RemoveMessengerByID":
 			if messenger, ok := content["messenger"]; ok {
 				p.RemoveMessengerByID(messenger.(string))
+			}
+		case "AddControl":
+			if control, ok := content["control"]; ok {
+				p.AddControl(control.(Control))
+			}
+		case "RemoveControl":
+			if control, ok := content["control"]; ok {
+				p.RemoveControl(control.(Control))
+			}
+		case "RemoveControlByID":
+			if control, ok := content["control"]; ok {
+				p.RemoveControlByID(control.(string))
 			}
 		}
 	}
