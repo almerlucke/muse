@@ -8,14 +8,17 @@ type Module interface {
 	NumInputs() int
 	NumOutputs() int
 	Configuration() *Configuration
-	InputAtIndex(index int) *Socket
-	OutputAtIndex(index int) *Socket
-	AddInputConnection(inputIndex int, conn *Connection)
-	AddOutputConnection(outputIndex int, conn *Connection)
+	InputAtIndex(int) *Socket
+	OutputAtIndex(int) *Socket
+	AddInputConnection(int, *Connection)
+	AddOutputConnection(int, *Connection)
+	RemoveInputConnection(int, Module, int)
+	RemoveOutputConnection(int, Module, int)
 	DidSynthesize() bool
 	MustSynthesize() bool
 	PrepareSynthesis()
 	Connect(int, Module, int)
+	Disconnect()
 	Synthesize() bool
 }
 
@@ -77,6 +80,34 @@ func (m *BaseModule) AddOutputConnection(outputIndex int, conn *Connection) {
 	m.Outputs[outputIndex].AddConnection(conn)
 }
 
+func (m *BaseModule) RemoveInputConnection(inputIndex int, sender Module, outputIndex int) {
+	removeIndex := -1
+	conns := m.Inputs[inputIndex].Connections
+	for index, conn := range conns {
+		if conn.Index == outputIndex && conn.Module == sender {
+			removeIndex = index
+			break
+		}
+	}
+	if removeIndex > -1 {
+		m.Inputs[inputIndex].Connections = append(conns[:removeIndex], conns[removeIndex+1:]...)
+	}
+}
+
+func (m *BaseModule) RemoveOutputConnection(outputIndex int, receiver Module, inputIndex int) {
+	removeIndex := -1
+	conns := m.Outputs[outputIndex].Connections
+	for index, conn := range conns {
+		if conn.Index == inputIndex && conn.Module == receiver {
+			removeIndex = index
+			break
+		}
+	}
+	if removeIndex > -1 {
+		m.Outputs[outputIndex].Connections = append(conns[:removeIndex], conns[removeIndex+1:]...)
+	}
+}
+
 func (m *BaseModule) Connect(outIndex int, to Module, inIndex int) {
 	from := m.Self().(Module)
 
@@ -101,6 +132,22 @@ func (m *BaseModule) Connect(outIndex int, to Module, inIndex int) {
 
 	from.AddOutputConnection(outIndex, &Connection{Module: to, Index: inIndex})
 	to.AddInputConnection(inIndex, &Connection{Module: from, Index: outIndex})
+}
+
+func (m *BaseModule) Disconnect() {
+	self := m.Self().(Module)
+
+	for inIndex, socket := range m.Inputs {
+		for _, conn := range socket.Connections {
+			conn.Module.RemoveOutputConnection(conn.Index, self, inIndex)
+		}
+	}
+
+	for outIndex, socket := range m.Outputs {
+		for _, conn := range socket.Connections {
+			conn.Module.RemoveInputConnection(conn.Index, self, outIndex)
+		}
+	}
 }
 
 func (m *BaseModule) DidSynthesize() bool {

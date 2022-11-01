@@ -13,6 +13,8 @@ type Patch interface {
 	AddMessageReceiver(MessageReceiver, string)
 	RemoveMessageReceiverByID(string)
 	AddModule(Module) Module
+	RemoveModule(Module)
+	RemoveModuleByID(string)
 	AddControl(Control) Control
 	RemoveControl(Control)
 	RemoveControlByID(string)
@@ -20,10 +22,10 @@ type Patch interface {
 	Lookup(string) MessageReceiver
 	InputModuleAtIndex(index int) Module
 	OutputModuleAtIndex(index int) Module
-	SendMessage(*Message)
-	SendMessages([]*Message)
 	InternalInputControl() Control
 	InternalOutputControl() Control
+	SendMessage(*Message)
+	SendMessages([]*Message)
 }
 
 type BasePatch struct {
@@ -144,6 +146,48 @@ func (p *BasePatch) AddModule(m Module) Module {
 	p.AddMessageReceiver(m, m.Identifier())
 
 	return m
+}
+
+func (p *BasePatch) RemoveModule(m Module) {
+	removeIndex := -1
+	for index, otherModule := range p.subModules {
+		if otherModule == m {
+			removeIndex = index
+			break
+		}
+	}
+
+	if removeIndex > -1 {
+		p.subModules = append(p.subModules[:removeIndex], p.subModules[removeIndex+1:]...)
+		if receiver, ok := p.receivers[m.Identifier()]; ok {
+			if receiver == m {
+				delete(p.receivers, m.Identifier())
+			}
+		}
+	}
+
+	m.Disconnect()
+}
+
+func (p *BasePatch) RemoveModuleByID(id string) {
+	removeIndex := -1
+	for index, otherModule := range p.subModules {
+		if otherModule.Identifier() == id {
+			removeIndex = index
+			break
+		}
+	}
+
+	if removeIndex > -1 {
+		m := p.subModules[removeIndex]
+		p.subModules = append(p.subModules[:removeIndex], p.subModules[removeIndex+1:]...)
+		if receiver, ok := p.receivers[id]; ok {
+			if receiver == m {
+				delete(p.receivers, id)
+			}
+		}
+		m.Disconnect()
+	}
 }
 
 func (p *BasePatch) AddControl(ct Control) Control {
@@ -305,6 +349,18 @@ func (p *BasePatch) ReceiveMessage(msg any) []*Message {
 		case "RemoveControlByID":
 			if control, ok := content["control"]; ok {
 				p.RemoveControlByID(control.(string))
+			}
+		case "AddModule":
+			if module, ok := content["module"]; ok {
+				p.AddModule(module.(Module))
+			}
+		case "RemoveModule":
+			if module, ok := content["module"]; ok {
+				p.RemoveModule(module.(Module))
+			}
+		case "RemoveModuleByID":
+			if module, ok := content["module"]; ok {
+				p.RemoveModuleByID(module.(string))
 			}
 		}
 	}

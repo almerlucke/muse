@@ -108,12 +108,6 @@ func (c *BaseControl) AddControlOutputConnection(outputIndex int, receiver Contr
 	c.outConnections[outputIndex] = connections
 }
 
-func (c *BaseControl) CtrlConnect(outIndex int, receiver Control, inIndex int) {
-	self := c.Self().(Control)
-	self.AddControlOutputConnection(outIndex, receiver, inIndex)
-	receiver.AddControlInputConnection(inIndex, self, outIndex)
-}
-
 func (c *BaseControl) RemoveControlInputConnection(inputIndex int, sender Control, outputIndex int) {
 	conns := c.inConnections[inputIndex]
 
@@ -144,6 +138,12 @@ func (c *BaseControl) RemoveControlOutputConnection(outputIndex int, receiver Co
 	if removeIndex > -1 {
 		c.outConnections[outputIndex] = append(conns[:removeIndex], conns[removeIndex+1:]...)
 	}
+}
+
+func (c *BaseControl) CtrlConnect(outIndex int, receiver Control, inIndex int) {
+	self := c.Self().(Control)
+	self.AddControlOutputConnection(outIndex, receiver, inIndex)
+	receiver.AddControlInputConnection(inIndex, self, outIndex)
 }
 
 func (c *BaseControl) CtrlDisconnect() {
