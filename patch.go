@@ -404,6 +404,21 @@ func (p *BasePatch) RemoveOutputConnection(outputIndex int, receiver Module, inp
 	p.outputModules[outputIndex].RemoveOutputConnection(0, receiver, inputIndex)
 }
 
+func (p *BasePatch) CtrlDisconnect() {
+	p.internalInputControl.CtrlDisconnect()
+	p.internalOutputControl.CtrlDisconnect()
+}
+
+func (p *BasePatch) Disconnect() {
+	for _, mod := range p.inputModules {
+		mod.Disconnect()
+	}
+
+	for _, mod := range p.outputModules {
+		mod.Disconnect()
+	}
+}
+
 func (p *BasePatch) InputModuleAtIndex(index int) Module {
 	return p.inputModules[index]
 }
