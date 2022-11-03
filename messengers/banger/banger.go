@@ -11,7 +11,7 @@ import (
 type Banger interface {
 	muse.MessageReceiver
 	muse.ControlReceiver
-	MessageBang() []*muse.Message
+	MessageBang(msg any) []*muse.Message
 	ControlBang() []any
 }
 
@@ -45,8 +45,8 @@ func (g *Generator) ReceiveControlValue(value any, index int) {
 }
 
 func (g *Generator) ReceiveMessage(msg any) []*muse.Message {
-	if msg == muse.Bang {
-		msgsToSend := g.banger.MessageBang()
+	if muse.IsBang(msg) {
+		msgsToSend := g.banger.MessageBang(msg)
 		for _, msgToSend := range msgsToSend {
 			g.SendControlValue(msgToSend.Content, 0)
 		}
@@ -80,7 +80,7 @@ func (vb *ValueBang) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (vb *ValueBang) MessageBang() []*muse.Message {
+func (vb *ValueBang) MessageBang(msg any) []*muse.Message {
 	msgs := vb.value.Value()
 
 	if vb.value.Finished() {
@@ -145,7 +145,7 @@ func (d *templateDestination) resolveParams() {
 	d.template.SetParameters(params)
 }
 
-func (d *templateDestination) MessageBang() []*muse.Message {
+func (d *templateDestination) MessageBang(msg any) []*muse.Message {
 	allMessages := []*muse.Message{}
 
 	d.resolveParams()

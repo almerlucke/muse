@@ -51,24 +51,18 @@ func (a *ADSR) ReceiveControlValue(value any, index int) {
 }
 
 func (a *ADSR) ReceiveMessage(msg any) []*muse.Message {
-	if msg == muse.Bang {
-		a.Bang()
-	} else {
-		if content, ok := msg.(map[string]any); ok {
-			if duration, ok := content["duration"]; ok {
-				a.duration = duration.(float64)
-			}
-
-			if maxLevel, ok := content["maxLevel"]; ok {
-				a.maxLevel = maxLevel.(float64)
-			}
-
-			if bang, ok := content["bang"]; ok {
-				if bang.(bool) {
-					a.Bang()
-				}
-			}
+	if content, ok := msg.(map[string]any); ok {
+		if duration, ok := content["duration"]; ok {
+			a.duration = duration.(float64)
 		}
+
+		if maxLevel, ok := content["maxLevel"]; ok {
+			a.maxLevel = maxLevel.(float64)
+		}
+	}
+
+	if muse.IsBang(msg) {
+		a.Bang()
 	}
 
 	return nil
