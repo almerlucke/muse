@@ -8,10 +8,14 @@ type XFade struct {
 }
 
 func NewXFade(fade float64, config *muse.Configuration, id string) *XFade {
-	return &XFade{
+	xf := &XFade{
 		BaseModule: muse.NewBaseModule(3, 1, config, id),
 		fade:       fade,
 	}
+
+	xf.SetSelf(xf)
+
+	return xf
 }
 
 func (x *XFade) ReceiveControlValue(value any, index int) {
@@ -48,7 +52,7 @@ func (x *XFade) Synthesize() bool {
 			fade = x.Inputs[2].Buffer[i]
 		}
 
-		out[i] = (1.0-fade)*in1[i] + fade*in2[i]
+		out[i] = in1[i] + (in2[i]-in1[i])*fade
 	}
 
 	return true

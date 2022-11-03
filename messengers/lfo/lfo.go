@@ -6,7 +6,7 @@ import (
 	"github.com/almerlucke/muse/value/template"
 )
 
-var lfoSineShaper = shaping.NewNormalizedSineTable(128.0)
+var lfoSineShaper = shaping.NewNormalizedSineTable(512.0)
 
 type Target struct {
 	Address   string

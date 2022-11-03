@@ -29,6 +29,46 @@ func NewEnvironment(numOutputs int, sampleRate float64, bufferSize int) *Environ
 	return e
 }
 
+func (e *Environment) Synthesize() bool {
+	e.PrepareSynthesis()
+	return e.BasePatch.Synthesize()
+}
+
+func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64, outputSampleRate float64, normalizeOutput bool, format sndfile.Format) error {
+	numChannels := e.NumOutputs()
+
+	swr := io.NewSoundWriter(numChannels, int(e.Config.SampleRate), int(outputSampleRate), normalizeOutput)
+
+	interleaveBuffer := make([]float64, e.NumOutputs()*e.Config.BufferSize)
+
+	framesToProduce := int64(e.Config.SampleRate * numSeconds)
+
+	for framesToProduce > 0 {
+		e.Synthesize()
+
+		interleaveIndex := 0
+
+		numFrames := e.Config.BufferSize
+
+		if framesToProduce <= int64(e.Config.BufferSize) {
+			numFrames = int(framesToProduce)
+		}
+
+		for i := 0; i < numFrames; i++ {
+			for c := 0; c < numChannels; c++ {
+				interleaveBuffer[interleaveIndex] = e.OutputAtIndex(c).Buffer[i]
+				interleaveIndex++
+			}
+		}
+
+		swr.WriteFrames(interleaveBuffer[:numFrames*numChannels])
+
+		framesToProduce -= int64(numFrames)
+	}
+
+	return swr.Finish(filePath, format)
+}
+
 func (e *Environment) PortaudioStream() (*portaudio.Stream, error) {
 	return portaudio.OpenDefaultStream(
 		1,
@@ -93,42 +133,32 @@ func (e *Environment) QuickPlayAudio() error {
 	return nil
 }
 
-func (e *Environment) Synthesize() bool {
-	e.PrepareSynthesis()
-	return e.BasePatch.Synthesize()
-}
+func (e *Environment) PlotControl(ctrl Control, outIndex int, frames int, w float64, h float64, filePath string) error {
+	pm := NewPlotModule(frames, e.Config)
 
-func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64, outputSampleRate float64, normalizeOutput bool, format sndfile.Format) error {
-	numChannels := e.NumOutputs()
+	ctrl.CtrlConnect(outIndex, pm, 0)
 
-	swr := io.NewSoundWriter(numChannels, int(e.Config.SampleRate), int(outputSampleRate), normalizeOutput)
-
-	interleaveBuffer := make([]float64, e.NumOutputs()*e.Config.BufferSize)
-
-	framesToProduce := int64(e.Config.SampleRate * numSeconds)
-
-	for framesToProduce > 0 {
+	for i := 0; i < frames; i++ {
 		e.Synthesize()
-
-		interleaveIndex := 0
-
-		numFrames := e.Config.BufferSize
-
-		if framesToProduce <= int64(e.Config.BufferSize) {
-			numFrames = int(framesToProduce)
-		}
-
-		for i := 0; i < numFrames; i++ {
-			for c := 0; c < numChannels; c++ {
-				interleaveBuffer[interleaveIndex] = e.OutputAtIndex(c).Buffer[i]
-				interleaveIndex++
-			}
-		}
-
-		swr.WriteFrames(interleaveBuffer[:numFrames*numChannels])
-
-		framesToProduce -= int64(numFrames)
 	}
 
-	return swr.Finish(filePath, format)
+	pm.CtrlDisconnect()
+
+	return pm.Save(w, h, true, filePath)
+}
+
+func (e *Environment) PlotModule(module Module, outIndex int, frames int, w float64, h float64, filePath string) error {
+	pm := NewPlotModule(frames*e.Config.BufferSize, e.Config)
+
+	e.AddModule(pm)
+
+	module.Connect(outIndex, pm, 0)
+
+	for i := 0; i < frames; i++ {
+		e.Synthesize()
+	}
+
+	e.RemoveModule(pm)
+
+	return pm.Save(w, h, false, filePath)
 }
