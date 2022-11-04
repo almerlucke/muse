@@ -65,6 +65,16 @@ func NewProbabilityTransitioner[T any](transitions []*ProbabilityTransition[T]) 
 	return pt
 }
 
+func NewProbabilityTransitionerVariadic[T any](states ...any) *ProbabilityTransitioner[T] {
+	trans := []*ProbabilityTransition[T]{}
+
+	for i := 0; i < len(states); i += 2 {
+		trans = append(trans, NewProbabilityTransition(states[i].(*State[T]), states[i+1].(float64)))
+	}
+
+	return NewProbabilityTransitioner(trans)
+}
+
 func (pt *ProbabilityTransitioner[T]) Transition(m *Markov[T]) *State[T] {
 	r := rand.Float64() * pt.Total
 	acc := 0.0

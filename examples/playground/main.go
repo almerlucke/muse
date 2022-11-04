@@ -11,46 +11,19 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
+	var stopState *markov.State[int]
+
 	state1 := markov.NewState(1, nil)
 	state2 := markov.NewState(2, nil)
 	state3 := markov.NewState(3, nil)
 	state4 := markov.NewState(4, nil)
 	state5 := markov.NewState(5, nil)
 
-	state1.Transitioner = markov.NewProbabilityTransitioner(
-		[]*markov.ProbabilityTransition[int]{
-			markov.NewProbabilityTransition(state2, 1),
-			markov.NewProbabilityTransition(state3, 1),
-		},
-	)
-
-	state2.Transitioner = markov.NewProbabilityTransitioner(
-		[]*markov.ProbabilityTransition[int]{
-			markov.NewProbabilityTransition(state3, 1),
-			markov.NewProbabilityTransition(state4, 1),
-		},
-	)
-
-	state3.Transitioner = markov.NewProbabilityTransitioner(
-		[]*markov.ProbabilityTransition[int]{
-			markov.NewProbabilityTransition(state4, 1),
-			markov.NewProbabilityTransition(state5, 1),
-		},
-	)
-
-	state4.Transitioner = markov.NewProbabilityTransitioner(
-		[]*markov.ProbabilityTransition[int]{
-			markov.NewProbabilityTransition(state5, 1),
-			markov.NewProbabilityTransition(state1, 1),
-		},
-	)
-
-	state5.Transitioner = markov.NewProbabilityTransitioner(
-		[]*markov.ProbabilityTransition[int]{
-			markov.NewProbabilityTransition(state1, 1),
-			markov.NewProbabilityTransition[int](nil, 1),
-		},
-	)
+	state1.Transitioner = markov.NewProbabilityTransitionerVariadic[int](state2, 1.0, state3, 1.0)
+	state2.Transitioner = markov.NewProbabilityTransitionerVariadic[int](state3, 1.0, state4, 1.0)
+	state3.Transitioner = markov.NewProbabilityTransitionerVariadic[int](state4, 1.0, state5, 1.0)
+	state4.Transitioner = markov.NewProbabilityTransitionerVariadic[int](state5, 1.0, state1, 1.0)
+	state5.Transitioner = markov.NewProbabilityTransitionerVariadic[int](state1, 1.0, stopState, 1.0)
 
 	m := markov.NewMarkov[int](markov.NewStateStarter(state1), 3)
 
