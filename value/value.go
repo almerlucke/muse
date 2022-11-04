@@ -178,58 +178,8 @@ func (f *Function[T]) GetState() map[string]any {
 func (f *Function[T]) SetState(state map[string]any) {
 }
 
-type Ramp struct {
-	current    float64
-	increment  float64
-	continuous bool
-}
-
-func NewRamp(increment float64, continuous bool) *Ramp {
-	return &Ramp{
-		current:    0,
-		increment:  increment,
-		continuous: continuous,
-	}
-}
-
-func (r *Ramp) Value() float64 {
-	if r.current >= 1.0 {
-		return 0
-	}
-	v := r.current
-	r.current += r.increment
-	if r.current >= 1.0 {
-		if r.continuous {
-			r.current -= 1.0
-		}
-	}
-	return v
-}
-
-func (r *Ramp) Continuous() bool {
-	return r.continuous
-}
-
-func (r *Ramp) Reset() {
-	r.current = 0
-}
-
-func (r *Ramp) Finished() bool {
-	return !r.continuous && r.current >= 1.0
-}
-
-func (r *Ramp) GetState() map[string]any {
-	return map[string]any{"current": r.current, "increment": r.increment, "continuous": r.continuous}
-}
-
-func (r *Ramp) SetState(state map[string]any) {
-	r.current = state["current"].(float64)
-	r.increment = state["increment"].(float64)
-	r.continuous = state["continuous"].(bool)
-}
-
 // Repeat can make a continous generator non-continous by only repeating Next() n times,
-// or can extend a non-continuos generator by repeating it n times
+// or can extend a non-continuous generator by repeating it n times
 type Repeat[T any] struct {
 	value Valuer[T]
 	min   int
@@ -465,6 +415,57 @@ func (o *Or[T]) SetState(state map[string]any) {
 	if state["isCurrentSet"].(bool) {
 		o.current = o.values[o.index]
 	}
+}
+
+// Flatten flattens a Valuer that generates slices of a certain type
+type Flatten[T any] struct {
+	sliceGenerator Valuer[[]T]
+	currentSlice   []T
+	currentIndex   int
+}
+
+func NewFlatten[T any](sliceGen Valuer[[]T]) *Flatten[T] {
+	return &Flatten[T]{sliceGenerator: sliceGen}
+}
+
+func (f *Flatten[T]) Value() T {
+	var null T
+
+	if f.Finished() {
+		return null
+	}
+
+	if f.currentSlice == nil || f.currentIndex >= len(f.currentSlice) {
+		f.currentSlice = f.sliceGenerator.Value()
+		f.currentIndex = 0
+	}
+
+	v := f.currentSlice[f.currentIndex]
+
+	f.currentIndex++
+
+	return v
+}
+
+func (f *Flatten[T]) Continuous() bool {
+	return f.sliceGenerator.Continuous()
+}
+
+func (f *Flatten[T]) Reset() {
+	f.sliceGenerator.Reset()
+	f.currentSlice = nil
+}
+
+func (f *Flatten[T]) Finished() bool {
+	return f.sliceGenerator.Finished() && (f.currentSlice == nil || f.currentIndex >= len(f.currentSlice))
+}
+
+func (f *Flatten[T]) GetState() map[string]any {
+	return map[string]any{}
+}
+
+func (f *Flatten[T]) SetState(state map[string]any) {
+
 }
 
 // Transform transforms the output of a value with a transformer
