@@ -10,14 +10,15 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/synths/drums"
+	"github.com/almerlucke/muse/utils"
 
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/markov"
 	"github.com/almerlucke/muse/value/template"
 )
 
-func addDrumTrack(env *muse.Environment, polyName string, sound string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) {
-	identifier := sound + "Drum"
+func addDrumTrack(env *muse.Environment, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) {
+	identifier := sounds[0] + "Drum"
 
 	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
 
@@ -27,7 +28,7 @@ func addDrumTrack(env *muse.Environment, polyName string, sound string, tempo in
 		"amplitude": amp,
 		"message": template.Template{
 			"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
-			"sound": sound,
+			"sound": value.NewSequence(utils.ToAnySlice(sounds)),
 		},
 	}, identifier))
 }
@@ -106,6 +107,37 @@ func snareRhythm() value.Valuer[*swing.Step] {
 	return value.NewFlatten[*swing.Step](m)
 }
 
+func bassRhythm() value.Valuer[*swing.Step] {
+	rhythm1 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm2 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm3 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm4 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
+		{Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {},
+	}, nil)
+
+	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 3.0, rhythm4, 2.0, rhythm1, 1.0)
+	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 4.0, rhythm1, 2.0, rhythm2, 1.0)
+
+	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
+
+	return value.NewFlatten[*swing.Step](m)
+}
+
 func hihatRhythm() value.Valuer[*swing.Step] {
 	rhythm1 := markov.NewState([]*swing.Step{
 		{}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true},
@@ -149,17 +181,20 @@ func main() {
 
 	soundBank["hihat"], _ = io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
 	soundBank["kick"], _ = io.NewSoundFileBuffer("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
-	soundBank["snap1"], _ = io.NewSoundFileBuffer("resources/drums/shots/Cymatics - Orchid Snap - Single.wav")
-	soundBank["snap2"], _ = io.NewSoundFileBuffer("resources/drums/shots/Cymatics - Orchid Snap - Cream.wav")
+	soundBank["snare"], _ = io.NewSoundFileBuffer("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
+	soundBank["808_1"], _ = io.NewSoundFileBuffer("resources/drums/808/Cymatics - Humble 808 4 - F.wav")
+	soundBank["808_2"], _ = io.NewSoundFileBuffer("resources/drums/808/Cymatics - Humble 808 3 - F.wav")
+	soundBank["808_3"], _ = io.NewSoundFileBuffer("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav")
+	soundBank["808_4"], _ = io.NewSoundFileBuffer("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
 	soundBank["shaker"], _ = io.NewSoundFileBuffer("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
 
 	drums := env.AddModule(drums.NewDrums(soundBank, 20, env.Config, "drums"))
 
-	addDrumTrack(env, "drums", "hihat", bpm, 4, 0.875, 1.125, 0.6, hihatRhythm())
-	addDrumTrack(env, "drums", "kick", bpm, 8, 0.875, 1.125, 1.0, kickRhythm())
-	addDrumTrack(env, "drums", "snap1", bpm, 8, 1.0, 1.0, 1.0, snareRhythm())
-	addDrumTrack(env, "drums", "snap2", bpm, 2, 1.0, 1.0, 1.0, snareRhythm())
-	addDrumTrack(env, "drums", "shaker", bpm, 2, 1.0, 1.0, 1.0, kickRhythm())
+	addDrumTrack(env, "drums", []string{"hihat"}, bpm, 8, 0.875, 1.125, 0.6, hihatRhythm())
+	addDrumTrack(env, "drums", []string{"kick"}, bpm, 8, 0.875, 1.125, 1.0, kickRhythm())
+	addDrumTrack(env, "drums", []string{"snare"}, bpm, 8, 1.0, 1.0, 0.7, snareRhythm())
+	addDrumTrack(env, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, bpm, 2, 1.0, 1.0, 0.3, bassRhythm())
+	addDrumTrack(env, "drums", []string{"shaker"}, bpm, 2, 1.0, 1.0, 1.0, kickRhythm())
 
 	drums.Connect(0, env, 0)
 	drums.Connect(1, env, 1)

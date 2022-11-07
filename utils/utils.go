@@ -5,6 +5,15 @@ import (
 	"os"
 )
 
+func ToAnySlice[T any](s []T) []any {
+	as := make([]any, len(s))
+	for i, e := range s {
+		as[i] = e
+	}
+
+	return as
+}
+
 type Factory[T any] interface {
 	New() T
 }
