@@ -9,13 +9,14 @@ import (
 
 type Player struct {
 	*muse.BaseModule
-	buffer  *io.SoundFileBuffer
-	phase   float64
-	inc     float64
-	speed   float64
-	amp     float64
-	oneShot bool
-	done    bool
+	buffer    *io.SoundFileBuffer
+	phase     float64
+	inc       float64
+	speed     float64
+	amp       float64
+	oneShot   bool
+	done      bool
+	soundBank io.SoundBank
 }
 
 func NewPlayer(buffer *io.SoundFileBuffer, speed float64, amp float64, oneShot bool, config *muse.Configuration, identifier string) *Player {
@@ -38,6 +39,23 @@ func NewPlayer(buffer *io.SoundFileBuffer, speed float64, amp float64, oneShot b
 	p.SetSelf(p)
 
 	return p
+}
+
+func (p *Player) SetSoundBank(soundBank io.SoundBank) {
+	p.soundBank = soundBank
+}
+
+func (p *Player) SetSound(sound string) {
+	if p.soundBank != nil {
+		if buffer, ok := p.soundBank[sound]; ok {
+			p.SetBuffer(buffer)
+		}
+	}
+}
+
+func (p *Player) SetBuffer(buffer *io.SoundFileBuffer) {
+	p.buffer = buffer
+	p.inc = (p.speed * p.buffer.SampleRate / p.Config.SampleRate) / float64(p.buffer.NumFrames)
 }
 
 func (p *Player) Speed() float64 {
@@ -79,6 +97,37 @@ func (p *Player) ReceiveMessage(msg any) []*muse.Message {
 	}
 
 	return nil
+}
+
+func (p *Player) NoteOn(amplitude float64, message any, config *muse.Configuration) {
+	p.activate(amplitude, message, config)
+}
+
+func (p *Player) Note(duration float64, amplitude float64, message any, config *muse.Configuration) {
+	p.activate(amplitude, message, config)
+}
+
+func (p *Player) NoteOff() {}
+
+func (p *Player) activate(amplitude float64, message any, config *muse.Configuration) {
+	content := message.(map[string]any)
+
+	p.amp = amplitude
+
+	speed := p.speed
+
+	if sound, ok := content["sound"]; ok {
+		p.SetSound(sound.(string))
+	}
+
+	if newSpeed, ok := content["speed"]; ok {
+		speed = newSpeed.(float64)
+	}
+
+	p.SetSpeed(speed)
+
+	p.done = false
+	p.phase = 0.0
 }
 
 func (p *Player) IsActive() bool {

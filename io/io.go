@@ -123,6 +123,8 @@ type SoundFileBuffer struct {
 	Duration float64
 }
 
+type SoundBank map[string]*SoundFileBuffer
+
 // NewSoundFileBuffer load sound file from disk deinterleaved
 func NewSoundFileBuffer(filePath string) (*SoundFileBuffer, error) {
 	info := sndfile.Info{}
