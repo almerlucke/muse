@@ -13,6 +13,7 @@ import (
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/envelopes/adsr"
+	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -22,11 +23,14 @@ import (
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/synths/classic"
+	"github.com/almerlucke/muse/synths/drums"
 	"github.com/almerlucke/muse/ui/controls"
 	"github.com/almerlucke/muse/ui/theme"
+	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/utils/notes"
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/arpeggio"
+	"github.com/almerlucke/muse/value/markov"
 	"github.com/almerlucke/muse/value/template"
 )
 
@@ -242,20 +246,196 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 		}, true)
 }
 
+func addDrumTrack(env *muse.Environment, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) {
+	identifier := sounds[0] + "Drum"
+
+	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
+
+	env.AddMessenger(banger.NewTemplateGenerator([]string{polyName}, template.Template{
+		"command":   "trigger",
+		"duration":  0.0,
+		"amplitude": amp,
+		"message": template.Template{
+			"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
+			"sound": value.NewSequence(utils.ToAnySlice(sounds)),
+		},
+	}, identifier))
+}
+
+func kickRhythm() value.Valuer[*swing.Step] {
+	rhythm1 := markov.NewState([]*swing.Step{
+		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm2 := markov.NewState([]*swing.Step{
+		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm3 := markov.NewState([]*swing.Step{
+		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
+	}, nil)
+
+	rhythm4 := markov.NewState([]*swing.Step{
+		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
+		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
+	}, nil)
+
+	rhythm5 := markov.NewState([]*swing.Step{
+		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {}, {Skip: true},
+		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
+	}, nil)
+
+	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
+	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
+	rhythm5.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
+
+	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
+
+	return value.NewFlatten[*swing.Step](m)
+}
+
+func snareRhythm() value.Valuer[*swing.Step] {
+	rhythm1 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm2 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm3 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {BurstChance: 0.5, NumBurst: 3}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm4 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {BurstChance: 0.5, NumBurst: 3}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm5 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {BurstChance: 0.5, NumBurst: 3},
+		{Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {},
+	}, nil)
+
+	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
+	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
+	rhythm5.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
+
+	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
+
+	return value.NewFlatten[*swing.Step](m)
+}
+
+func bassRhythm() value.Valuer[*swing.Step] {
+	rhythm1 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm2 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm3 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
+	}, nil)
+
+	rhythm4 := markov.NewState([]*swing.Step{
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
+		{Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {},
+	}, nil)
+
+	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 3.0, rhythm4, 2.0, rhythm1, 1.0)
+	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 4.0, rhythm1, 2.0, rhythm2, 1.0)
+
+	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
+
+	return value.NewFlatten[*swing.Step](m)
+}
+
+func hihatRhythm() value.Valuer[*swing.Step] {
+	rhythm1 := markov.NewState([]*swing.Step{
+		{}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true},
+	}, nil)
+
+	rhythm2 := markov.NewState([]*swing.Step{
+		{BurstChance: 0.5, NumBurst: 3}, {Shuffle: 0.1}, {}, {Skip: true}, {}, {Shuffle: 0.1}, {}, {Skip: true},
+	}, nil)
+
+	rhythm3 := markov.NewState([]*swing.Step{
+		{BurstChance: 0.5, NumBurst: 3}, {Shuffle: 0.1}, {Skip: true}, {Shuffle: 0.1}, {}, {Shuffle: 0.1}, {Skip: true}, {Shuffle: 0.1},
+	}, nil)
+
+	rhythm4 := markov.NewState([]*swing.Step{
+		{BurstChance: 0.5, NumBurst: 3}, {Skip: true}, {}, {Shuffle: 0.1}, {}, {Skip: true}, {}, {Shuffle: 0.1},
+	}, nil)
+
+	rhythm5 := markov.NewState([]*swing.Step{
+		{}, {Shuffle: 0.1}, {}, {Shuffle: 0.1}, {}, {Shuffle: 0.1}, {BurstChance: 0.5, NumBurst: 3}, {Shuffle: 0.1},
+	}, nil)
+
+	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 2.0, rhythm2, 1.0, rhythm3, 1.0)
+	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 2.0, rhythm3, 1.0, rhythm4, 1.0)
+	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 2.0, rhythm4, 1.0, rhythm5, 1.0)
+	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 3.0, rhythm5, 1.0, rhythm1, 1.0)
+	rhythm5.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm5, 3.0, rhythm1, 1.0, rhythm2, 1.0)
+
+	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
+
+	return value.NewFlatten[*swing.Step](m)
+}
+
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100.0, 2048)
+	env := muse.NewEnvironment(2, 44100.0, 256)
 
-	bpm := 100.0
+	bpm := 80.0
 	synth := NewClassicSynth(bpm, env.Config)
-	amp1 := env.AddModule(functor.NewAmp(0.6, env.Config))
-	amp2 := env.AddModule(functor.NewAmp(0.6, env.Config))
+	amp1 := env.AddModule(functor.NewAmp(0.5, env.Config))
+	amp2 := env.AddModule(functor.NewAmp(0.5, env.Config))
 
 	env.AddModule(synth)
 
+	soundBank := io.SoundBank{}
+
+	soundBank["hihat"], _ = io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
+	soundBank["kick"], _ = io.NewSoundFileBuffer("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
+	soundBank["snare"], _ = io.NewSoundFileBuffer("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
+	soundBank["808_1"], _ = io.NewSoundFileBuffer("resources/drums/808/Cymatics - Humble 808 4 - F.wav")
+	soundBank["808_2"], _ = io.NewSoundFileBuffer("resources/drums/808/Cymatics - Humble 808 3 - F.wav")
+	soundBank["808_3"], _ = io.NewSoundFileBuffer("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav")
+	soundBank["808_4"], _ = io.NewSoundFileBuffer("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
+	soundBank["shaker"], _ = io.NewSoundFileBuffer("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
+
+	drumMachine := env.AddModule(drums.NewDrums(soundBank, 20, env.Config, "drums"))
+
+	addDrumTrack(env, "drums", []string{"hihat"}, int(bpm), 8, 0.875, 1.125, 0.6, hihatRhythm())
+	addDrumTrack(env, "drums", []string{"kick"}, int(bpm), 8, 0.875, 1.125, 1.0, kickRhythm())
+	addDrumTrack(env, "drums", []string{"snare"}, int(bpm), 8, 1.0, 1.0, 0.7, snareRhythm())
+	addDrumTrack(env, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, int(bpm), 2, 1.0, 1.0, 0.7, bassRhythm())
+	addDrumTrack(env, "drums", []string{"shaker"}, int(bpm), 2, 1.0, 1.0, 1.0, kickRhythm())
+
+	drumMachine.Connect(0, env, 0)
+	drumMachine.Connect(1, env, 1)
+
 	synth.Connect(0, amp1, 0)
 	synth.Connect(1, amp2, 0)
+
 	amp1.Connect(0, env, 0)
 	amp2.Connect(0, env, 1)
 
@@ -277,7 +457,7 @@ func main() {
 	}, "control"))
 
 	synth.AddMessenger(stepper.NewStepper(
-		swing.New(int(bpm), 2,
+		swing.New(int(bpm), 4,
 			value.NewSequence([]*swing.Step{{}, {Skip: true}}),
 		),
 		[]string{"control"}, "",
