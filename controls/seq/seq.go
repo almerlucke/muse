@@ -15,7 +15,9 @@ func NewSeq[T any](s *value.Sequence[T], id string) *Seq[T] {
 		BaseControl: muse.NewBaseControl(id),
 		sequence:    s,
 	}
+
 	sq.SetSelf(sq)
+
 	return sq
 }
 
