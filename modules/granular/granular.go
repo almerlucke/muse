@@ -14,6 +14,8 @@ type Parameter interface {
 }
 
 type ParameterGenerator interface {
+	muse.MessageReceiver
+	muse.ControlReceiver
 	Next(int64, *muse.Configuration) (Parameter, int64)
 }
 
@@ -104,6 +106,14 @@ func NewGranulator(numOutputs int, sf utils.Factory[Source], ef utils.Factory[En
 	gl.SetSelf(gl)
 
 	return gl
+}
+
+func (gl *Granulator) ReceiveControlValue(value any, index int) {
+	gl.paramGen.ReceiveControlValue(value, index)
+}
+
+func (gl *Granulator) ReceiveMessage(msg any) []*muse.Message {
+	return gl.paramGen.ReceiveMessage(msg)
 }
 
 func (gl *Granulator) synthesizePool(p *pool.Pool[*grain], out [][]float64, bufSize int) {
