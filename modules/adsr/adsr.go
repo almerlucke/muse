@@ -28,6 +28,10 @@ func NewADSR(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode ad
 	return a
 }
 
+func (a *ADSR) SetDuration(duration float64) {
+	a.duration = duration
+}
+
 func (a *ADSR) Bang() {
 	switch a.adsr.ReleaseMode() {
 	case adsrc.Duration:

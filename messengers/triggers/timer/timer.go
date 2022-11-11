@@ -9,7 +9,7 @@ type Timer struct {
 	addresses     []string
 	interval      float64
 	intervalMilli float64
-	lastMultiple  int64
+	accum         float64
 	sampleRate    float64
 }
 
@@ -32,10 +32,12 @@ func NewControlTimer(intervalMilli float64, config *muse.Configuration, identifi
 }
 
 func (t *Timer) ReceiveControlValue(value any, index int) {
-	if intervalMilli, ok := value.(float64); ok {
-		if intervalMilli > 0 {
-			t.intervalMilli = intervalMilli
-			t.interval = intervalMilli * 0.001 * t.sampleRate
+	if index == 0 {
+		if intervalMilli, ok := value.(float64); ok {
+			if intervalMilli > 0 {
+				t.intervalMilli = intervalMilli
+				t.interval = intervalMilli * 0.001 * t.sampleRate
+			}
 		}
 	}
 }
@@ -57,13 +59,14 @@ func (t *Timer) ReceiveMessage(msg any) []*muse.Message {
 func (t *Timer) tick(timestamp int64, config *muse.Configuration) (bool, float64) {
 	bang := false
 
-	multiple := int64(float64(timestamp) / t.interval)
+	floatTimestamp := float64(timestamp)
 
-	if timestamp == 0 || multiple != t.lastMultiple {
+	if floatTimestamp > t.accum {
 		bang = true
+		for t.accum <= floatTimestamp {
+			t.accum += t.interval
+		}
 	}
-
-	t.lastMultiple = multiple
 
 	return bang, t.intervalMilli
 }

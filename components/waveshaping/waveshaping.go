@@ -10,6 +10,10 @@ type Shaper interface {
 
 type ShapeFunction func(float64) float64
 
+type Any struct {
+	F ShapeFunction
+}
+
 type Chain struct {
 	Shapers []Shaper
 }
@@ -158,10 +162,6 @@ func NewBipolar() *Linear {
 
 func NewUnipolar() *Linear {
 	return &Linear{Scale: 0.5, Shift: 0.5}
-}
-
-type Any struct {
-	F ShapeFunction
 }
 
 func (a *Any) Shape(signal float64) float64 {
