@@ -92,6 +92,7 @@ type ADSR struct {
 	ramp         float64
 	increment    float64
 	lastOut      float64
+	outVector    [1]float64
 }
 
 func (adsr *ADSR) durationRatioToSamps(ratio float64) int64 {
@@ -173,10 +174,15 @@ func (adsr *ADSR) ReleaseMode() ReleaseMode {
 	return adsr.releaseMode
 }
 
-func (adsr *ADSR) Tick() float64 {
+func (adsr *ADSR) NumDimensions() int {
+	return 1
+}
+
+func (adsr *ADSR) Tick() []float64 {
 	if adsr.stage == Idle {
 		adsr.lastOut = 0.0
-		return 0.0
+		adsr.outVector[0] = 0.0
+		return adsr.outVector[:]
 	}
 
 	if adsr.releaseMode == Duration && adsr.releaseCnt > 0 {
@@ -188,7 +194,8 @@ func (adsr *ADSR) Tick() float64 {
 
 	if (adsr.releaseMode == NoteOff || adsr.releaseMode == Duration) && adsr.stage == Sustain {
 		adsr.lastOut = adsr.from
-		return adsr.from
+		adsr.outVector[0] = adsr.from
+		return adsr.outVector[:]
 	}
 
 	out := adsr.from + math.Pow(adsr.ramp, adsr.exponent)*(adsr.to-adsr.from)
@@ -220,5 +227,6 @@ func (adsr *ADSR) Tick() float64 {
 		}
 	}
 
-	return out
+	adsr.outVector[0] = out
+	return adsr.outVector[:]
 }

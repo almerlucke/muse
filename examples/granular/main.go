@@ -9,10 +9,10 @@ import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/lfo"
-	"github.com/almerlucke/muse/modules/freeverb"
 	"github.com/almerlucke/muse/modules/granular"
 	"github.com/almerlucke/muse/utils/float"
 	museRand "github.com/almerlucke/muse/utils/rand"
+	"github.com/mkb218/gosndfile/sndfile"
 )
 
 type LookupMode int
@@ -82,10 +82,13 @@ type SFSource struct {
 	buffer     *io.SoundFileBuffer
 	phase      float64
 	delta      float64
+	panLeft    float64
+	panRight   float64
 	lookupMode LookupMode
 }
 
 func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
+	pan := [2]float64{s.panLeft, s.panRight}
 
 	for i := 0; i < bufSize; i++ {
 		lookupf := s.phase * float64(s.buffer.NumFrames)
@@ -122,7 +125,7 @@ func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
 		for outIndex, outBuf := range outBuffers {
 			out := s.buffer.Channels[outIndex][lookup1]
 
-			outBuf[i] = out + (s.buffer.Channels[outIndex][lookup2]-out)*fraction
+			outBuf[i] = pan[outIndex] * (out + (s.buffer.Channels[outIndex][lookup2]-out)*fraction)
 		}
 	}
 }
@@ -136,6 +139,14 @@ func (s *SFSource) Activate(p granular.Parameter, c *muse.Configuration) {
 	s.phase = sfp.offset
 	s.delta = (sfp.speed * s.buffer.SampleRate / c.SampleRate) / float64(s.buffer.NumFrames)
 	s.lookupMode = sfp.lookupMode
+
+	if len(s.buffer.Channels) == 2 {
+		s.panLeft = math.Cos(sfp.panning * math.Pi / 2.0)
+		s.panRight = math.Sin(sfp.panning * math.Pi / 2.0)
+	} else {
+		s.panLeft = 1.0
+		s.panRight = 1.0
+	}
 
 	if s.phase >= 1.0 {
 		s.phase = 0.9999
@@ -171,6 +182,7 @@ type SFParameterGenerator struct {
 	speedClustering     *museRand.ClusterRand
 	durationClustering  *museRand.ClusterRand
 	onsetClustering     *museRand.ClusterRand
+	panClustering       *museRand.ClusterRand
 	reversePlayChance   float64
 }
 
@@ -187,6 +199,9 @@ func (pgen *SFParameterGenerator) ReceiveControlValue(value any, index int) {
 	} else if index == 3 {
 		pgen.speedClustering.SetCenter(value.(float64))
 		pgen.speedClustering.Update()
+	} else if index == 4 {
+		pgen.panClustering.SetCenter(value.(float64))
+		pgen.panClustering.Update()
 	}
 }
 
@@ -201,6 +216,7 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 	param.amplitude = pgen.amplitudeClustering.Rand()
 	param.speed = pgen.speedClustering.Rand()
 	param.offset = pgen.offsetClustering.Rand()
+	param.panning = pgen.panClustering.Rand()
 	param.lookupMode = Wrap
 
 	if rand.Float64() < pgen.reversePlayChance {
@@ -213,7 +229,7 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	sfb, err := io.NewSoundFileBuffer("resources/sounds/mixkit-angelical-choir-654.wav")
+	sfb, err := io.NewSoundFileBuffer("resources/sounds/mixkit-laughing-children-indoors-427.wav")
 	if err != nil {
 		log.Fatalf("fatal err: %v", err)
 	}
@@ -225,10 +241,11 @@ func main() {
 	paramGen := &SFParameterGenerator{}
 
 	paramGen.speedClustering = museRand.NewClusterRand(1.0, 0.1, 0.2, 0.1, 0.5)
-	paramGen.amplitudeClustering = museRand.NewClusterRand(0.5, 0.2, 0.3, 0.3, 0.3)
+	paramGen.amplitudeClustering = museRand.NewClusterRand(0.2, 0.1, 0.3, 0.3, 0.3)
 	paramGen.durationClustering = museRand.NewClusterRand(400.0, 5.0, 0.2, 0.01, 0.2)
 	paramGen.offsetClustering = museRand.NewClusterRand(0.6, 0.1, 0.8, 0.03, 0.5)
-	paramGen.onsetClustering = museRand.NewClusterRand(20.0, 4.5, 0.4, 0.2, 0.2)
+	paramGen.onsetClustering = museRand.NewClusterRand(20.0, 4.5, 0.4, 0.8, 0.8)
+	paramGen.panClustering = museRand.NewClusterRand(0.5, 0.3, 0.3, 0.2, 0.5)
 	paramGen.reversePlayChance = 0.0
 
 	gr := env.AddModule(granular.NewGranulator(numChannels, &SFSourceFactory{Samples: sfb}, &granular.DefaultEnvelopeFactory{}, 400, paramGen, env.Config, "granulator"))
@@ -239,26 +256,20 @@ func main() {
 	offsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.04, 0.1, 0.9, env.Config, ""))
 	offsetLfo.CtrlConnect(0, gr, 0)
 
-	onsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.031, 5.2, 50.8, env.Config, ""))
+	onsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.031, 5.2, 40.8, env.Config, ""))
 	onsetLfo.CtrlConnect(0, gr, 1)
 
-	durationLfo := env.AddControl(lfo.NewBasicControlLFO(0.021, 45.2, 450.8, env.Config, ""))
+	durationLfo := env.AddControl(lfo.NewBasicControlLFO(0.021, 135.2, 450.8, env.Config, ""))
 	durationLfo.CtrlConnect(0, gr, 2)
 
-	reverb := freeverb.NewFreeVerb(env.Config, "")
-	reverb.SetDamp(0.2)
-	reverb.SetWet(0.5)
-	reverb.SetDry(0.3)
-	reverb.SetRoomSize(0.8)
-	reverb.SetWidth(0.8)
-	env.AddModule(reverb)
+	panLfo := env.AddControl(lfo.NewBasicControlLFO(0.011, 0.3, 0.7, env.Config, ""))
+	panLfo.CtrlConnect(0, gr, 4)
 
 	for i := 0; i < numChannels; i++ {
-		gr.Connect(i, reverb, i)
-		reverb.Connect(i, env, i)
+		gr.Connect(i, env, i)
 	}
 
-	env.QuickPlayAudio()
+	// env.QuickPlayAudio()
 
-	// env.SynthesizeToFile("/Users/almerlucke/Desktop/john.aiff", 34.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/children.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

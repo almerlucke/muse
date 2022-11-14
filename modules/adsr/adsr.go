@@ -96,7 +96,7 @@ func (a *ADSR) Synthesize() bool {
 	out := a.Outputs[0].Buffer
 
 	for i := 0; i < a.Config.BufferSize; i++ {
-		out[i] = a.adsr.Tick()
+		out[i] = a.adsr.Tick()[0]
 	}
 
 	return true

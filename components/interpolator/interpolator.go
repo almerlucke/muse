@@ -9,24 +9,51 @@ const (
 	Cubic
 )
 
+type interpolationHistory [4]float64
+
+func (h interpolationHistory) interpolateLinear(t float64) float64 {
+	return h[0] + (h[1]-h[0])*t
+}
+
+func (h interpolationHistory) interpolateCubic(t float64) float64 {
+	t2 := t * t
+	t3 := t * t2
+	return (2*t3-3*t2+1)*h[1] + (t3-2*t2+t)*h[0] + (-2*t3+3*t2)*h[2] + (t3-t2)*h[3]
+}
+
 type Interpolator struct {
-	generator    generator.Generator
-	numCycles    int
-	currentCycle int
-	method       Method
-	history      [4]float64
+	generator     generator.Generator
+	numCycles     int
+	currentCycle  int
+	method        Method
+	numDimensions int
+	history       []interpolationHistory
+	outVector     []float64
 }
 
 func NewInterpolator(generator generator.Generator, method Method, numCycles int) *Interpolator {
+	numDimensions := generator.NumDimensions()
+
 	interpol := &Interpolator{
-		generator: generator,
-		numCycles: numCycles,
-		method:    method,
+		numDimensions: numDimensions,
+		generator:     generator,
+		numCycles:     numCycles,
+		method:        method,
+		history:       make([]interpolationHistory, numDimensions),
+		outVector:     make([]float64, numDimensions),
+	}
+
+	for dim := 0; dim < numDimensions; dim++ {
+		interpol.history[dim] = interpolationHistory{}
 	}
 
 	interpol.initialize()
 
 	return interpol
+}
+
+func (inter *Interpolator) NumDimensions() int {
+	return inter.generator.NumDimensions()
 }
 
 func (inter *Interpolator) SetNumCycles(n int) {
@@ -39,44 +66,59 @@ func (inter *Interpolator) SetNumCycles(n int) {
 func (inter *Interpolator) initialize() {
 	switch inter.method {
 	case Linear:
-		inter.history[0] = inter.generator.Tick()
-		inter.history[1] = inter.generator.Tick()
+		for dim, v := range inter.generator.Tick() {
+			inter.history[dim][0] = v
+		}
+		for dim, v := range inter.generator.Tick() {
+			inter.history[dim][1] = v
+		}
 	case Cubic:
-		inter.history[1] = inter.generator.Tick()
-		inter.history[2] = inter.generator.Tick()
-		inter.history[3] = inter.generator.Tick()
-		inter.history[0] = inter.history[1]
+		for dim, v := range inter.generator.Tick() {
+			inter.history[dim][0] = v
+			inter.history[dim][1] = v
+		}
+		for dim, v := range inter.generator.Tick() {
+			inter.history[dim][2] = v
+		}
+		for dim, v := range inter.generator.Tick() {
+			inter.history[dim][3] = v
+		}
 	}
 }
 
 func (inter *Interpolator) updateHistory() {
 	switch inter.method {
 	case Linear:
-		inter.history[0] = inter.history[1]
-		inter.history[1] = inter.generator.Tick()
+		for dim, v := range inter.generator.Tick() {
+			inter.history[dim][0] = inter.history[dim][1]
+			inter.history[dim][1] = v
+		}
 	case Cubic:
-		inter.history[0] = inter.history[1]
-		inter.history[1] = inter.history[2]
-		inter.history[2] = inter.history[3]
-		inter.history[3] = inter.generator.Tick()
+		for dim, v := range inter.generator.Tick() {
+			inter.history[dim][0] = inter.history[dim][1]
+			inter.history[dim][1] = inter.history[dim][2]
+			inter.history[dim][2] = inter.history[dim][3]
+			inter.history[dim][3] = v
+		}
 	}
 }
 
-func (inter *Interpolator) interpolate(t float64) float64 {
-	out := 0.0
+func (inter *Interpolator) interpolate(t float64) []float64 {
 	switch inter.method {
 	case Linear:
-		out = inter.history[0] + (inter.history[1]-inter.history[0])*t
+		for dim := 0; dim < inter.numDimensions; dim++ {
+			inter.outVector[dim] = inter.history[dim].interpolateLinear(t)
+		}
 	case Cubic:
-		t2 := t * t
-		t3 := t * t2
-		out = (2*t3-3*t2+1)*inter.history[1] + (t3-2*t2+t)*inter.history[0] + (-2*t3+3*t2)*inter.history[2] + (t3-t2)*inter.history[3]
+		for dim := 0; dim < inter.numDimensions; dim++ {
+			inter.outVector[dim] = inter.history[dim].interpolateCubic(t)
+		}
 	}
 
-	return out
+	return inter.outVector
 }
 
-func (inter *Interpolator) Tick() float64 {
+func (inter *Interpolator) Tick() []float64 {
 	if inter.currentCycle >= inter.numCycles {
 		inter.currentCycle = 0
 		inter.updateHistory()

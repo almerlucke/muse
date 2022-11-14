@@ -1,8 +1,9 @@
 package phasor
 
 type Phasor struct {
-	phase float64
-	inc   float64
+	phase     float64
+	inc       float64
+	outVector [1]float64
 }
 
 func NewPhasor(fc float64, fs float64, phase float64) *Phasor {
@@ -24,7 +25,11 @@ func (p *Phasor) SetFrequency(fc float64, fs float64) {
 	p.inc = fc / fs
 }
 
-func (p *Phasor) Tick() float64 {
+func (p *Phasor) NumDimensions() int {
+	return 1
+}
+
+func (p *Phasor) Tick() []float64 {
 	out := p.phase
 
 	p.phase += p.inc
@@ -37,5 +42,6 @@ func (p *Phasor) Tick() float64 {
 		p.phase += 1.0
 	}
 
-	return out
+	p.outVector[0] = out
+	return p.outVector[:]
 }

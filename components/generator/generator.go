@@ -1,5 +1,6 @@
 package generator
 
 type Generator interface {
-	Tick() float64
+	NumDimensions() int
+	Tick() []float64
 }

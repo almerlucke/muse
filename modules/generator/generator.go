@@ -55,7 +55,7 @@ func (gen *Generator) Synthesize() bool {
 	out := gen.Outputs[0].Buffer
 
 	for i := 0; i < gen.Config.BufferSize; i++ {
-		out[i] = gen.generator.Tick()
+		out[i] = gen.generator.Tick()[0]
 	}
 
 	return true
