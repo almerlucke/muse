@@ -7,8 +7,8 @@ import (
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	"github.com/almerlucke/muse/components/interpolator"
 	"github.com/almerlucke/muse/components/iterator"
+	"github.com/almerlucke/muse/components/iterator/chaos/verhulst"
 	"github.com/almerlucke/muse/components/waveshaping"
-	"github.com/almerlucke/muse/components/waveshaping/chaos"
 	"github.com/almerlucke/muse/controls/val"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/timer"
@@ -27,7 +27,7 @@ import (
 
 type ChaosVoice struct {
 	*muse.BasePatch
-	verhulst       *chaos.Verhulst
+	verhulst       *verhulst.Verhulst
 	iter           *iterator.Iterator
 	interpol       *interpolator.Interpolator
 	ampEnvSteps    adsrc.StepProvider
@@ -41,8 +41,8 @@ type ChaosVoice struct {
 }
 
 func NewChaosVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider) *ChaosVoice {
-	verhulst := chaos.NewVerhulstWithFunc(3.6951, chaos.Iter1a)
-	iter := iterator.NewIterator(verhulst, 0.1231)
+	verhulst := verhulst.NewVerhulstWithFunc(3.6951, verhulst.Iter1a)
+	iter := iterator.NewIterator([]float64{0.1231}, verhulst)
 	interpol := interpolator.NewInterpolator(iter, interpolator.Cubic, 120)
 
 	voice := &ChaosVoice{
@@ -116,7 +116,7 @@ func (v *ChaosVoice) Note(duration float64, amplitude float64, msg any, config *
 		v.panner.SetPan(pan.(float64))
 	}
 
-	v.iter.SetValue(rand.Float64())
+	v.iter.SetValues([]float64{rand.Float64()})
 
 	v.ampEnv.TriggerFull(duration, amplitude, v.ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration)
 	v.filterEnv.TriggerFull(duration, 1.0, v.filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration)

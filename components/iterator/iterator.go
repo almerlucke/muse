@@ -1,31 +1,37 @@
 package iterator
 
-import "github.com/almerlucke/muse/components/waveshaping"
-
-type Iterator struct {
-	Shaper    waveshaping.Shaper
-	Value     float64
-	outVector [1]float64
+type Updater interface {
+	Update([]float64)
 }
 
-func NewIterator(shaper waveshaping.Shaper, initValue float64) *Iterator {
-	return &Iterator{
-		Shaper: shaper,
-		Value:  initValue,
+type Iterator struct {
+	updater   Updater
+	values    []float64
+	outVector []float64
+}
+
+func NewIterator(initialValues []float64, updater Updater) *Iterator {
+	iter := &Iterator{
+		values:    make([]float64, len(initialValues)),
+		updater:   updater,
+		outVector: make([]float64, len(initialValues)),
 	}
+
+	copy(iter.values, initialValues)
+
+	return iter
 }
 
 func (iter *Iterator) NumDimensions() int {
-	return 1
+	return len(iter.values)
 }
 
-func (iter *Iterator) SetValue(v float64) {
-	iter.Value = v
+func (iter *Iterator) SetValues(vs []float64) {
+	copy(iter.values, vs)
 }
 
 func (iter *Iterator) Tick() []float64 {
-	v := iter.Value
-	iter.Value = iter.Shaper.Shape(v)
-	iter.outVector[0] = v
-	return iter.outVector[:]
+	copy(iter.outVector, iter.values)
+	iter.updater.Update(iter.values)
+	return iter.outVector
 }
