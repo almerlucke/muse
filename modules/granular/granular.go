@@ -26,7 +26,7 @@ type Envelope interface {
 
 type Source interface {
 	Synthesize([][]float64, int)
-	Activate(Parameter, *muse.Configuration)
+	Activate(int64, Parameter, *muse.Configuration)
 }
 
 type grain struct {
@@ -38,7 +38,7 @@ type grain struct {
 func (g *grain) activate(p Parameter, config *muse.Configuration) {
 	g.sampsToGo = int64(p.Duration() * 0.001 * config.SampleRate)
 
-	g.source.Activate(p, config)
+	g.source.Activate(g.sampsToGo, p, config)
 	g.envelope.Activate(p.Amplitude(), g.sampsToGo, p)
 }
 

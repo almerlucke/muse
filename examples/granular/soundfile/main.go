@@ -130,7 +130,7 @@ func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
 	}
 }
 
-func (s *SFSource) Activate(p granular.Parameter, c *muse.Configuration) {
+func (s *SFSource) Activate(sampsToGo int64, p granular.Parameter, c *muse.Configuration) {
 	// pan := p.Panning()
 	// g.panLeft = math.Cos(pan * math.Pi / 2.0)
 	// g.panRight = math.Sin(pan * math.Pi / 2.0)

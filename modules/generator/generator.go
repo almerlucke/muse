@@ -22,7 +22,7 @@ func NewBasicGenerator(generator generator.Generator, config *muse.Configuration
 
 func NewGenerator(generator generator.Generator, controlFunction ControlFunction, messageFunction MessageFunction, config *muse.Configuration, id string) *Generator {
 	gen := &Generator{
-		BaseModule:      muse.NewBaseModule(0, 1, config, id),
+		BaseModule:      muse.NewBaseModule(0, generator.NumDimensions(), config, id),
 		generator:       generator,
 		controlFunction: controlFunction,
 		messageFunction: messageFunction,
@@ -52,10 +52,13 @@ func (gen *Generator) Synthesize() bool {
 		return false
 	}
 
-	out := gen.Outputs[0].Buffer
+	numDim := gen.generator.NumDimensions()
 
 	for i := 0; i < gen.Config.BufferSize; i++ {
-		out[i] = gen.generator.Tick()[0]
+		vs := gen.generator.Tick()
+		for dim := 0; dim < numDim; dim++ {
+			gen.Outputs[dim].Buffer[i] = vs[dim]
+		}
 	}
 
 	return true

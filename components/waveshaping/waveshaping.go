@@ -2,6 +2,8 @@ package waveshaping
 
 import (
 	"math"
+
+	"github.com/almerlucke/muse/components/generator"
 )
 
 type Shaper interface {
@@ -12,6 +14,33 @@ type ShapeFunction func(float64) float64
 
 type Any struct {
 	F ShapeFunction
+}
+
+type GeneratorWrapper struct {
+	generator generator.Generator
+	shapers   []Shaper
+	outVector []float64
+}
+
+func NewGeneratorWrapper(generator generator.Generator, shapers []Shaper) *GeneratorWrapper {
+	return &GeneratorWrapper{
+		generator: generator,
+		shapers:   shapers,
+		outVector: make([]float64, generator.NumDimensions()),
+	}
+}
+
+func (gw *GeneratorWrapper) NumDimensions() int {
+	return gw.generator.NumDimensions()
+}
+
+func (gw *GeneratorWrapper) Tick() []float64 {
+	vec := gw.generator.Tick()
+	for i, v := range vec {
+		gw.outVector[i] = gw.shapers[i].Shape(v)
+	}
+
+	return gw.outVector
 }
 
 type Chain struct {
