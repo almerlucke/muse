@@ -12,8 +12,10 @@ import (
 	"github.com/almerlucke/muse/components/iterator"
 	"github.com/almerlucke/muse/components/iterator/chaos"
 	"github.com/almerlucke/muse/components/waveshaping"
+	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/granular"
 	museRand "github.com/almerlucke/muse/utils/rand"
+	"github.com/mkb218/gosndfile/sndfile"
 )
 
 type SFParam struct {
@@ -221,12 +223,12 @@ func main() {
 
 	paramGen := &SFParameterGenerator{}
 
-	paramGen.chaosClustering = museRand.NewClusterRand(1.667, 0.332, 0.9, 1.0, 1.0)
+	paramGen.chaosClustering = museRand.NewClusterRand(1.767, 0.232, 0.9, 1.0, 1.0)
 	paramGen.amplitudeClustering = museRand.NewClusterRand(0.4, 0.3, 0.8, 0.8, 0.8)
 	paramGen.durationClustering = museRand.NewClusterRand(4400.0, 3250.0, 0.9, 0.9, 0.9)
 	paramGen.freqLowClustering = museRand.NewClusterRand(150, 100, 0.9, 0.9, 0.9)
 	paramGen.freqHighClustering = museRand.NewClusterRand(2000, 1800, 0.9, 1.0, 1.0)
-	paramGen.onsetClustering = museRand.NewClusterRand(1200.0, 40.5, 0.4, 0.8, 0.8)
+	paramGen.onsetClustering = museRand.NewClusterRand(1000.0, 840.5, 0.9, 0.9, 0.9)
 	paramGen.panStartClustering = museRand.NewClusterRand(0.5, 0.5, 1.0, 1.0, 1.0)
 	paramGen.panEndClustering = museRand.NewClusterRand(0.5, 0.5, 1.0, 1.0, 1.0)
 	paramGen.numCyclesClustering = museRand.NewClusterRand(200.0, 180.0, 0.9, 1.0, 1.0)
@@ -234,8 +236,14 @@ func main() {
 
 	gr := env.AddModule(granular.NewGranulator(2, NewSourceFactory(env.Config.SampleRate), &granular.DefaultEnvelopeFactory{}, 400, paramGen, env.Config, "granulator"))
 
-	// chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 0.9, 1.1, env.Config, ""))
-	// chaosLfo.CtrlConnect(0, gr, 3)
+	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.56, 1.767, env.Config, ""))
+	chaosLfo.CtrlConnect(0, gr, 0)
+
+	freqLowLfo := env.AddControl(lfo.NewBasicControlLFO(0.0821, 150.0, 300.0, env.Config, ""))
+	freqLowLfo.CtrlConnect(0, gr, 1)
+
+	freqHighLfo := env.AddControl(lfo.NewBasicControlLFO(0.0621, 800, 2000, env.Config, ""))
+	freqHighLfo.CtrlConnect(0, gr, 2)
 
 	// offsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.04, 0.1, 0.9, env.Config, ""))
 	// offsetLfo.CtrlConnect(0, gr, 0)
@@ -253,7 +261,7 @@ func main() {
 		gr.Connect(i, env, i)
 	}
 
-	env.QuickPlayAudio()
+	// env.QuickPlayAudio()
 
-	// env.SynthesizeToFile("/Users/almerlucke/Desktop/children.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/chaosGrains.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }
