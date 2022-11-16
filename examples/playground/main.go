@@ -24,7 +24,7 @@ func plot() {
 	vecY := make([]float64, 20000)
 
 	for i := 0; i < 20000; i++ {
-		v := iter.Tick()
+		v := iter.Generate()
 		pts[i].X = v[0]
 		pts[i].Y = v[1]
 		vecX[i] = v[0]

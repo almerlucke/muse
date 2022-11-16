@@ -2,5 +2,5 @@ package generator
 
 type Generator interface {
 	NumDimensions() int
-	Tick() []float64
+	Generate() []float64
 }

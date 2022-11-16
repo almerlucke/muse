@@ -55,7 +55,7 @@ func (gen *Generator) Synthesize() bool {
 	numDim := gen.generator.NumDimensions()
 
 	for i := 0; i < gen.Config.BufferSize; i++ {
-		vs := gen.generator.Tick()
+		vs := gen.generator.Generate()
 		for dim := 0; dim < numDim; dim++ {
 			gen.Outputs[dim].Buffer[i] = vs[dim]
 		}

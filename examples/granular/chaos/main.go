@@ -110,7 +110,7 @@ func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
 
 		s.panCur += s.panInc
 
-		s.osc.SetFrequency(s.gen.Tick()[0])
+		s.osc.SetFrequency(s.gen.Generate()[0])
 		out := s.osc.Tick()[waveformMap[s.waveform]]
 
 		for outIndex, outBuf := range outBuffers {

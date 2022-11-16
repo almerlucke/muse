@@ -66,21 +66,21 @@ func (inter *Interpolator) SetNumCycles(n int) {
 func (inter *Interpolator) initialize() {
 	switch inter.method {
 	case Linear:
-		for dim, v := range inter.generator.Tick() {
+		for dim, v := range inter.generator.Generate() {
 			inter.history[dim][0] = v
 		}
-		for dim, v := range inter.generator.Tick() {
+		for dim, v := range inter.generator.Generate() {
 			inter.history[dim][1] = v
 		}
 	case Cubic:
-		for dim, v := range inter.generator.Tick() {
+		for dim, v := range inter.generator.Generate() {
 			inter.history[dim][0] = v
 			inter.history[dim][1] = v
 		}
-		for dim, v := range inter.generator.Tick() {
+		for dim, v := range inter.generator.Generate() {
 			inter.history[dim][2] = v
 		}
-		for dim, v := range inter.generator.Tick() {
+		for dim, v := range inter.generator.Generate() {
 			inter.history[dim][3] = v
 		}
 	}
@@ -89,12 +89,12 @@ func (inter *Interpolator) initialize() {
 func (inter *Interpolator) updateHistory() {
 	switch inter.method {
 	case Linear:
-		for dim, v := range inter.generator.Tick() {
+		for dim, v := range inter.generator.Generate() {
 			inter.history[dim][0] = inter.history[dim][1]
 			inter.history[dim][1] = v
 		}
 	case Cubic:
-		for dim, v := range inter.generator.Tick() {
+		for dim, v := range inter.generator.Generate() {
 			inter.history[dim][0] = inter.history[dim][1]
 			inter.history[dim][1] = inter.history[dim][2]
 			inter.history[dim][2] = inter.history[dim][3]
@@ -118,7 +118,7 @@ func (inter *Interpolator) interpolate(t float64) []float64 {
 	return inter.outVector
 }
 
-func (inter *Interpolator) Tick() []float64 {
+func (inter *Interpolator) Generate() []float64 {
 	if inter.currentCycle >= inter.numCycles {
 		inter.currentCycle = 0
 		inter.updateHistory()

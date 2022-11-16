@@ -34,7 +34,7 @@ func NewBasicGen(generator generator.Generator, id string) *Gen {
 }
 
 func (g *Gen) bang() {
-	for i, v := range g.generator.Tick() {
+	for i, v := range g.generator.Generate() {
 		g.SendControlValue(v, i)
 	}
 }
@@ -62,7 +62,7 @@ func (g *Gen) ReceiveMessage(msg any) []*muse.Message {
 }
 
 func (g *Gen) Tick(timestamp int64, config *muse.Configuration) {
-	for i, v := range g.generator.Tick() {
+	for i, v := range g.generator.Generate() {
 		g.SendControlValue(v, i)
 	}
 }

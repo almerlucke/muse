@@ -34,8 +34,8 @@ func (gw *GeneratorWrapper) NumDimensions() int {
 	return gw.generator.NumDimensions()
 }
 
-func (gw *GeneratorWrapper) Tick() []float64 {
-	vec := gw.generator.Tick()
+func (gw *GeneratorWrapper) Generate() []float64 {
+	vec := gw.generator.Generate()
 	for i, v := range vec {
 		gw.outVector[i] = gw.shapers[i].Shape(v)
 	}
