@@ -42,7 +42,7 @@ type ChaosVoice struct {
 func NewChaosVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider) *ChaosVoice {
 	verhulst := chaos.NewVerhulstWithFunc(3.6951, chaos.Iter1)
 	iter := iterator.NewIterator([]float64{0.1231}, verhulst)
-	interpol := interpolator.NewInterpolator(iter, interpolator.Linear, 120)
+	interpol := interpolator.NewInterpolator(iter, interpolator.Linear, 1.0/120.0)
 
 	voice := &ChaosVoice{
 		BasePatch:      muse.NewPatch(0, 2, config, ""),
@@ -104,7 +104,7 @@ func (v *ChaosVoice) Note(duration float64, amplitude float64, msg any, config *
 	content := msg.(map[string]any)
 
 	if numCycles, ok := content["numCycles"]; ok {
-		v.interpol.SetNumCycles(int(numCycles.(float64)))
+		v.interpol.SetDelta(1.0 / (numCycles.(float64)))
 	}
 
 	if chaos, ok := content["chaos"]; ok {

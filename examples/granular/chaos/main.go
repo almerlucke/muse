@@ -19,15 +19,15 @@ import (
 )
 
 type SFParam struct {
-	duration  float64
-	amplitude float64
-	chaos     float64
-	numCycles int
-	waveform  int
-	freqLow   float64
-	freqHigh  float64
-	panStart  float64
-	panEnd    float64
+	duration      float64
+	amplitude     float64
+	chaos         float64
+	interpolDelta float64
+	waveform      int
+	freqLow       float64
+	freqHigh      float64
+	panStart      float64
+	panEnd        float64
 }
 
 func (p *SFParam) Duration() float64 {
@@ -54,17 +54,17 @@ func (p *SFParam) Release() float64 {
 	return 0.5
 }
 
-func NewSFParam(duration float64, amplitude float64, panStart float64, panEnd float64, chaos float64, numCycles int, waveform int, freqLow float64, freqhigh float64) *SFParam {
+func NewSFParam(duration float64, amplitude float64, panStart float64, panEnd float64, chaos float64, delta float64, waveform int, freqLow float64, freqhigh float64) *SFParam {
 	return &SFParam{
-		duration:  duration,
-		amplitude: amplitude,
-		panStart:  panStart,
-		panEnd:    panEnd,
-		chaos:     chaos,
-		numCycles: numCycles,
-		freqLow:   freqLow,
-		freqHigh:  freqhigh,
-		waveform:  waveform,
+		duration:      duration,
+		amplitude:     amplitude,
+		panStart:      panStart,
+		panEnd:        panEnd,
+		chaos:         chaos,
+		interpolDelta: delta,
+		freqLow:       freqLow,
+		freqHigh:      freqhigh,
+		waveform:      waveform,
 	}
 }
 
@@ -88,7 +88,7 @@ func NewSource(sr float64) *SFSource {
 	chain := waveshaping.NewChain(mirror, uni, scale)
 	wrapper := interpolator.NewInterpolator(
 		waveshaping.NewGeneratorWrapper(iter, []waveshaping.Shaper{chain, chain}),
-		interpolator.Cubic,
+		interpolator.Linear,
 		250,
 	)
 
@@ -102,7 +102,7 @@ func NewSource(sr float64) *SFSource {
 
 func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
 	pan := [2]float64{}
-	waveformMap := [5]int{0, 0, 0, 3, 2}
+	waveformMap := [5]int{0, 0, 0, 3, 3}
 
 	for i := 0; i < bufSize; i++ {
 		pan[0] = math.Cos(s.panCur * math.Pi / 2.0)
@@ -128,7 +128,7 @@ func (s *SFSource) Activate(sampsToGo int64, p granular.Parameter, c *muse.Confi
 	s.panInc = (sfp.panEnd - sfp.panStart) / float64(sampsToGo)
 	s.waveform = sfp.waveform
 	s.osc.SetMix([4]float64{0.25, 0.25, 0.25, 0.25})
-	s.gen.(*interpolator.Interpolator).SetNumCycles(sfp.numCycles)
+	s.gen.(*interpolator.Interpolator).SetDelta(sfp.interpolDelta)
 }
 
 type SFSourceFactory struct {
@@ -156,7 +156,7 @@ type SFParameterGenerator struct {
 	amplitudeClustering *museRand.ClusterRand
 	onsetClustering     *museRand.ClusterRand
 	chaosClustering     *museRand.ClusterRand
-	numCyclesClustering *museRand.ClusterRand
+	deltaClustering     *museRand.ClusterRand
 	freqLowClustering   *museRand.ClusterRand
 	freqHighClustering  *museRand.ClusterRand
 	durationClustering  *museRand.ClusterRand
@@ -188,8 +188,8 @@ func (pgen *SFParameterGenerator) ReceiveControlValue(value any, index int) {
 		pgen.panEndClustering.SetCenter(value.(float64))
 		pgen.panEndClustering.Update()
 	} else if index == 7 {
-		pgen.numCyclesClustering.SetCenter(value.(float64))
-		pgen.numCyclesClustering.Update()
+		pgen.deltaClustering.SetCenter(value.(float64))
+		pgen.deltaClustering.Update()
 	} else if index == 8 {
 		pgen.waveformClustering.SetCenter(value.(float64))
 		pgen.waveformClustering.Update()
@@ -210,7 +210,7 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 	param.freqHigh = pgen.freqHighClustering.Rand()
 	param.panStart = pgen.panStartClustering.Rand()
 	param.panEnd = pgen.panEndClustering.Rand()
-	param.numCycles = int(pgen.numCyclesClustering.Rand())
+	param.interpolDelta = pgen.deltaClustering.Rand()
 	param.waveform = int(pgen.waveformClustering.Rand()) % 5
 
 	return param, int64(pgen.onsetClustering.Rand() * 0.001 * config.SampleRate)
@@ -223,27 +223,30 @@ func main() {
 
 	paramGen := &SFParameterGenerator{}
 
-	paramGen.chaosClustering = museRand.NewClusterRand(1.767, 0.232, 0.9, 1.0, 1.0)
-	paramGen.amplitudeClustering = museRand.NewClusterRand(0.4, 0.3, 0.8, 0.8, 0.8)
-	paramGen.durationClustering = museRand.NewClusterRand(4400.0, 3250.0, 0.9, 0.9, 0.9)
+	paramGen.chaosClustering = museRand.NewClusterRand(1.667, 0.332, 0.9, 1.0, 1.0)
+	paramGen.amplitudeClustering = museRand.NewClusterRand(0.2, 0.15, 0.8, 0.8, 0.8)
+	paramGen.durationClustering = museRand.NewClusterRand(2400.0, 2250.0, 0.9, 0.9, 0.9)
 	paramGen.freqLowClustering = museRand.NewClusterRand(150, 100, 0.9, 0.9, 0.9)
 	paramGen.freqHighClustering = museRand.NewClusterRand(2000, 1800, 0.9, 1.0, 1.0)
-	paramGen.onsetClustering = museRand.NewClusterRand(1000.0, 840.5, 0.9, 0.9, 0.9)
+	paramGen.onsetClustering = museRand.NewClusterRand(16.0, 14.5, 0.9, 0.9, 0.9)
 	paramGen.panStartClustering = museRand.NewClusterRand(0.5, 0.5, 1.0, 1.0, 1.0)
 	paramGen.panEndClustering = museRand.NewClusterRand(0.5, 0.5, 1.0, 1.0, 1.0)
-	paramGen.numCyclesClustering = museRand.NewClusterRand(200.0, 180.0, 0.9, 1.0, 1.0)
+	paramGen.deltaClustering = museRand.NewClusterRand(0.004, 0.00039999, 0.0, 1.0, 1.0)
 	paramGen.waveformClustering = museRand.NewClusterRand(3.0, 2.0, 0.9, 0.9, 0.9)
 
 	gr := env.AddModule(granular.NewGranulator(2, NewSourceFactory(env.Config.SampleRate), &granular.DefaultEnvelopeFactory{}, 400, paramGen, env.Config, "granulator"))
 
-	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.56, 1.767, env.Config, ""))
-	chaosLfo.CtrlConnect(0, gr, 0)
+	// chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.56, 1.767, env.Config, ""))
+	// chaosLfo.CtrlConnect(0, gr, 0)
 
 	freqLowLfo := env.AddControl(lfo.NewBasicControlLFO(0.0821, 150.0, 300.0, env.Config, ""))
 	freqLowLfo.CtrlConnect(0, gr, 1)
 
 	freqHighLfo := env.AddControl(lfo.NewBasicControlLFO(0.0621, 800, 2000, env.Config, ""))
 	freqHighLfo.CtrlConnect(0, gr, 2)
+
+	// deltaLfo := env.AddControl(lfo.NewBasicControlLFO(0.0521, 0.05, 0.001, env.Config, ""))
+	// deltaLfo.CtrlConnect(0, gr, 7)
 
 	// offsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.04, 0.1, 0.9, env.Config, ""))
 	// offsetLfo.CtrlConnect(0, gr, 0)
@@ -263,5 +266,5 @@ func main() {
 
 	// env.QuickPlayAudio()
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/chaosGrains.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/chaosGrains_wind.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

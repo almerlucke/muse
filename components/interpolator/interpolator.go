@@ -23,21 +23,21 @@ func (h interpolationHistory) interpolateCubic(t float64) float64 {
 
 type Interpolator struct {
 	generator     generator.Generator
-	numCycles     int
-	currentCycle  int
+	dt            float64
+	t             float64
 	method        Method
 	numDimensions int
 	history       []interpolationHistory
 	outVector     []float64
 }
 
-func NewInterpolator(generator generator.Generator, method Method, numCycles int) *Interpolator {
+func NewInterpolator(generator generator.Generator, method Method, dt float64) *Interpolator {
 	numDimensions := generator.NumDimensions()
 
 	interpol := &Interpolator{
 		numDimensions: numDimensions,
 		generator:     generator,
-		numCycles:     numCycles,
+		dt:            dt,
 		method:        method,
 		history:       make([]interpolationHistory, numDimensions),
 		outVector:     make([]float64, numDimensions),
@@ -56,11 +56,8 @@ func (inter *Interpolator) NumDimensions() int {
 	return inter.generator.NumDimensions()
 }
 
-func (inter *Interpolator) SetNumCycles(n int) {
-	inter.numCycles = n
-	if inter.currentCycle >= n {
-		inter.currentCycle = 0
-	}
+func (inter *Interpolator) SetDelta(dt float64) {
+	inter.dt = dt
 }
 
 func (inter *Interpolator) initialize() {
@@ -119,13 +116,14 @@ func (inter *Interpolator) interpolate(t float64) []float64 {
 }
 
 func (inter *Interpolator) Generate() []float64 {
-	if inter.currentCycle >= inter.numCycles {
-		inter.currentCycle = 0
+	out := inter.interpolate(inter.t)
+
+	inter.t += inter.dt
+
+	if inter.t >= 1.0 {
+		inter.t -= 1.0
 		inter.updateHistory()
 	}
 
-	t := float64(inter.currentCycle) / float64(inter.numCycles)
-	inter.currentCycle++
-
-	return inter.interpolate(t)
+	return out
 }
