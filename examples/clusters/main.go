@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/plot"
 	"gonum.org/v1/plot/plotter"
 )
 
@@ -179,5 +179,5 @@ func main() {
 
 	// sort.Sort(sort.Float64Slice(v))
 
-	muse.PlotPoints(points, 500, 300, "/Users/almerlucke/Desktop/exponential.png")
+	plot.PlotPoints(points, 500, 300, "/Users/almerlucke/Desktop/exponential.png")
 }

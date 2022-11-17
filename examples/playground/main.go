@@ -12,10 +12,11 @@ import (
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/blosc"
 	"github.com/almerlucke/muse/modules/generator"
+	"github.com/almerlucke/muse/plot"
 	"gonum.org/v1/plot/plotter"
 )
 
-func plot() {
+func genPlot() {
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
 	iter := iterator.NewIterator([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.978, f))
 
@@ -33,9 +34,9 @@ func plot() {
 		log.Printf("y: %f", v[1])
 	}
 
-	muse.PlotVector(vecX[:1600], 1600, 400, "/Users/almerlucke/Desktop/aronX.png")
-	muse.PlotVector(vecY[:1600], 1600, 400, "/Users/almerlucke/Desktop/aronY.png")
-	muse.PlotPoints(pts, 400, 400, "/Users/almerlucke/Desktop/aron.png")
+	plot.PlotVector(vecX[:1600], 1600, 400, "/Users/almerlucke/Desktop/aronX.png")
+	plot.PlotVector(vecY[:1600], 1600, 400, "/Users/almerlucke/Desktop/aronY.png")
+	plot.PlotPoints(pts, 400, 400, "/Users/almerlucke/Desktop/aron.png")
 }
 
 func genSound() {

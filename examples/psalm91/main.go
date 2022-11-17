@@ -21,6 +21,7 @@ import (
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/arpeggio"
 	"github.com/almerlucke/muse/value/template"
+	"github.com/mkb218/gosndfile/sndfile"
 )
 
 func noteSequence(octave notes.Note) value.Valuer[any] {
@@ -170,7 +171,7 @@ func createScheduler(bass muse.Messenger, kick muse.Messenger, snare muse.Messen
 }
 
 func main() {
-	env := muse.NewEnvironment(2, 44100.0, 512)
+	env := muse.NewEnvironment(2, 44100.0, 128)
 	bpm := 105
 
 	env.AddMessageReceiver(env, "env")
@@ -275,7 +276,7 @@ func main() {
 	leftMixer.Connect(0, env, 0)
 	rightMixer.Connect(0, env, 1)
 
-	// env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 240.0, env.Config.SampleRate, false, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/psalm91_rendered.aiff", 194.0, env.Config.SampleRate, false, sndfile.SF_FORMAT_AIFF)
 
-	env.QuickPlayAudio()
+	// env.QuickPlayAudio()
 }

@@ -32,6 +32,7 @@ import (
 	"github.com/almerlucke/muse/value/arpeggio"
 	"github.com/almerlucke/muse/value/markov"
 	"github.com/almerlucke/muse/value/template"
+	"github.com/mkb218/gosndfile/sndfile"
 )
 
 type ClassicSynth struct {
@@ -406,8 +407,8 @@ func main() {
 
 	bpm := 80.0
 	synth := NewClassicSynth(bpm, env.Config)
-	amp1 := env.AddModule(functor.NewAmp(0.5, env.Config))
-	amp2 := env.AddModule(functor.NewAmp(0.5, env.Config))
+	amp1 := env.AddModule(functor.NewAmp(0.7, env.Config))
+	amp2 := env.AddModule(functor.NewAmp(0.7, env.Config))
 
 	env.AddModule(synth)
 
@@ -511,7 +512,7 @@ func main() {
 	// 	"voice.filterFcMax": template.NewParameter("val", nil),
 	// }))
 
-	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
 	stream, err := env.InitializeAudio()
 	if err != nil {
