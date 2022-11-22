@@ -88,9 +88,7 @@ func (p *BasePatch) AddMessageReceiver(rcvr MessageReceiver, identifier string) 
 }
 
 func (p *BasePatch) RemoveMessageReceiverByID(id string) {
-	if _, ok := p.receivers[id]; ok {
-		delete(p.receivers, id)
-	}
+	delete(p.receivers, id)
 }
 
 func (p *BasePatch) AddMessenger(msgr Messenger) Messenger {

@@ -18,8 +18,6 @@ type MessageReceiver interface {
 
 type Messenger interface {
 	Control
-	Identifiable
-	MessageReceiver
 	Stater
 	Messages(timestamp int64, config *Configuration) []*Message
 }
