@@ -29,11 +29,13 @@ type BufferInfo struct {
 
 func NewBufferInfo(buffer []float64) *BufferInfo {
 	zeroCrossings := []*ZeroCrossing{}
+
 	prevSample := 0.0
+
 	for index, sample := range buffer {
-		if prevSample < 0.0 && sample > 0.0 {
+		if prevSample <= 0.0 && sample > 0.0 {
 			zeroCrossings = append(zeroCrossings, &ZeroCrossing{Position: index, Direction: ZeroCrossingUp})
-		} else if prevSample > 0.0 && sample < 0.0 {
+		} else if prevSample >= 0.0 && sample < 0.0 {
 			zeroCrossings = append(zeroCrossings, &ZeroCrossing{Position: index, Direction: ZeroCrossingDown})
 		}
 
