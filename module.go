@@ -2,8 +2,6 @@ package muse
 
 type Module interface {
 	Control
-	MessageReceiver
-	Identifiable
 	Stater
 	Configuration() *Configuration
 	NumInputs() int
@@ -28,7 +26,6 @@ type BaseModule struct {
 	Outputs       []*Socket
 	Config        *Configuration
 	didSynthesize bool
-	identifier    string
 }
 
 func NewBaseModule(numInputs int, numOutputs int, config *Configuration, identifier string) *BaseModule {

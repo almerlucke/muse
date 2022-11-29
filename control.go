@@ -79,10 +79,8 @@ func (c *BaseControl) ReceiveMessage(msg any) []*Message {
 
 func (c *BaseControl) SendControlValue(value any, index int) {
 	connections := c.outConnections[index]
-	if connections != nil {
-		for _, connection := range connections {
-			connection.Control.ReceiveControlValue(value, connection.Index)
-		}
+	for _, connection := range connections {
+		connection.Control.ReceiveControlValue(value, connection.Index)
 	}
 }
 
