@@ -14,8 +14,8 @@ import (
 	"github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/granular"
+	"github.com/almerlucke/muse/modules/granular/envelopes/trapezoidal"
 	museRand "github.com/almerlucke/muse/utils/rand"
-	"github.com/mkb218/gosndfile/sndfile"
 )
 
 type SFParam struct {
@@ -24,6 +24,8 @@ type SFParam struct {
 	chaos         float64
 	interpolDelta float64
 	waveform      int
+	attack        float64
+	release       float64
 	freqLow       float64
 	freqHigh      float64
 	panStart      float64
@@ -42,19 +44,19 @@ func (p *SFParam) Panning() float64 {
 	return 0.5
 }
 
-func (p *SFParam) EnvType() granular.DefaultEnvelopeType {
-	return granular.Parabolic
+func (p *SFParam) Smoothness() float64 {
+	return 1.0
 }
 
 func (p *SFParam) Attack() float64 {
-	return 0.1
+	return p.attack
 }
 
 func (p *SFParam) Release() float64 {
-	return 0.5
+	return p.release
 }
 
-func NewSFParam(duration float64, amplitude float64, panStart float64, panEnd float64, chaos float64, delta float64, waveform int, freqLow float64, freqhigh float64) *SFParam {
+func NewSFParam(duration float64, amplitude float64, attack float64, release float64, panStart float64, panEnd float64, chaos float64, delta float64, waveform int, freqLow float64, freqhigh float64) *SFParam {
 	return &SFParam{
 		duration:      duration,
 		amplitude:     amplitude,
@@ -62,6 +64,8 @@ func NewSFParam(duration float64, amplitude float64, panStart float64, panEnd fl
 		panEnd:        panEnd,
 		chaos:         chaos,
 		interpolDelta: delta,
+		attack:        attack,
+		release:       release,
 		freqLow:       freqLow,
 		freqHigh:      freqhigh,
 		waveform:      waveform,
@@ -163,6 +167,8 @@ type SFParameterGenerator struct {
 	waveformClustering  *museRand.ClusterRand
 	panStartClustering  *museRand.ClusterRand
 	panEndClustering    *museRand.ClusterRand
+	attackClustering    *museRand.ClusterRand
+	releaseClustering   *museRand.ClusterRand
 }
 
 func (pgen *SFParameterGenerator) ReceiveControlValue(value any, index int) {
@@ -212,6 +218,8 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 	param.panEnd = pgen.panEndClustering.Rand()
 	param.interpolDelta = pgen.deltaClustering.Rand()
 	param.waveform = int(pgen.waveformClustering.Rand()) % 5
+	param.attack = pgen.attackClustering.Rand()
+	param.release = pgen.releaseClustering.Rand()
 
 	return param, int64(pgen.onsetClustering.Rand() * 0.001 * config.SampleRate)
 }
@@ -223,21 +231,23 @@ func main() {
 
 	paramGen := &SFParameterGenerator{}
 
-	paramGen.chaosClustering = museRand.NewClusterRand(1.667, 0.332, 0.9, 1.0, 1.0)
-	paramGen.amplitudeClustering = museRand.NewClusterRand(0.2, 0.15, 0.8, 0.8, 0.8)
-	paramGen.durationClustering = museRand.NewClusterRand(2400.0, 2250.0, 0.9, 0.9, 0.9)
+	paramGen.chaosClustering = museRand.NewClusterRand(1.567, 0.432, 0.9, 1.0, 1.0)
+	paramGen.amplitudeClustering = museRand.NewClusterRand(0.1, 0.07, 0.8, 0.8, 0.8)
+	paramGen.durationClustering = museRand.NewClusterRand(1400.0, 1250.0, 0.9, 0.9, 0.9)
 	paramGen.freqLowClustering = museRand.NewClusterRand(150, 100, 0.9, 0.9, 0.9)
 	paramGen.freqHighClustering = museRand.NewClusterRand(2000, 1800, 0.9, 1.0, 1.0)
-	paramGen.onsetClustering = museRand.NewClusterRand(16.0, 14.5, 0.9, 0.9, 0.9)
+	paramGen.onsetClustering = museRand.NewClusterRand(680.0, 674.5, 0.9, 0.9, 0.9)
 	paramGen.panStartClustering = museRand.NewClusterRand(0.5, 0.5, 1.0, 1.0, 1.0)
 	paramGen.panEndClustering = museRand.NewClusterRand(0.5, 0.5, 1.0, 1.0, 1.0)
-	paramGen.deltaClustering = museRand.NewClusterRand(0.004, 0.00039999, 0.0, 1.0, 1.0)
+	paramGen.deltaClustering = museRand.NewClusterRand(0.006, 0.0049999, 0.0, 1.0, 1.0)
 	paramGen.waveformClustering = museRand.NewClusterRand(3.0, 2.0, 0.9, 0.9, 0.9)
+	paramGen.attackClustering = museRand.NewClusterRand(0.04, 0.03, 0.9, 1.0, 1.0)
+	paramGen.releaseClustering = museRand.NewClusterRand(0.81, 0.12, 0.9, 1.0, 1.0)
 
-	gr := env.AddModule(granular.NewGranulator(2, NewSourceFactory(env.Config.SampleRate), &granular.DefaultEnvelopeFactory{}, 400, paramGen, env.Config, "granulator"))
+	gr := env.AddModule(granular.NewGranulator(2, NewSourceFactory(env.Config.SampleRate), &trapezoidal.Factory{}, 40, paramGen, env.Config, "granulator"))
 
-	// chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.56, 1.767, env.Config, ""))
-	// chaosLfo.CtrlConnect(0, gr, 0)
+	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.56, 1.767, env.Config, ""))
+	chaosLfo.CtrlConnect(0, gr, 0)
 
 	freqLowLfo := env.AddControl(lfo.NewBasicControlLFO(0.0821, 150.0, 300.0, env.Config, ""))
 	freqLowLfo.CtrlConnect(0, gr, 1)
@@ -245,8 +255,8 @@ func main() {
 	freqHighLfo := env.AddControl(lfo.NewBasicControlLFO(0.0621, 800, 2000, env.Config, ""))
 	freqHighLfo.CtrlConnect(0, gr, 2)
 
-	// deltaLfo := env.AddControl(lfo.NewBasicControlLFO(0.0521, 0.05, 0.001, env.Config, ""))
-	// deltaLfo.CtrlConnect(0, gr, 7)
+	deltaLfo := env.AddControl(lfo.NewBasicControlLFO(0.0521, 0.05, 0.001, env.Config, ""))
+	deltaLfo.CtrlConnect(0, gr, 7)
 
 	// offsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.04, 0.1, 0.9, env.Config, ""))
 	// offsetLfo.CtrlConnect(0, gr, 0)
@@ -264,7 +274,7 @@ func main() {
 		gr.Connect(i, env, i)
 	}
 
-	// env.QuickPlayAudio()
+	env.QuickPlayAudio()
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/chaosGrains_wind.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	//env.SynthesizeToFile("/Users/almerlucke/Desktop/chaosGrains_wind.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

@@ -10,9 +10,9 @@ import (
 	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/granular"
+	"github.com/almerlucke/muse/modules/granular/envelopes/parabolic"
 	"github.com/almerlucke/muse/utils/float"
 	museRand "github.com/almerlucke/muse/utils/rand"
-	"github.com/mkb218/gosndfile/sndfile"
 )
 
 type LookupMode int
@@ -41,18 +41,6 @@ func (p *SFParam) Amplitude() float64 {
 
 func (p *SFParam) Panning() float64 {
 	return p.panning
-}
-
-func (p *SFParam) EnvType() granular.DefaultEnvelopeType {
-	return granular.Parabolic
-}
-
-func (p *SFParam) Attack() float64 {
-	return 0.1
-}
-
-func (p *SFParam) Release() float64 {
-	return 0.5
 }
 
 func (p *SFParam) Speed() float64 {
@@ -248,7 +236,7 @@ func main() {
 	paramGen.panClustering = museRand.NewClusterRand(0.5, 0.3, 0.3, 0.2, 0.5)
 	paramGen.reversePlayChance = 0.0
 
-	gr := env.AddModule(granular.NewGranulator(numChannels, &SFSourceFactory{Samples: sfb}, &granular.DefaultEnvelopeFactory{}, 400, paramGen, env.Config, "granulator"))
+	gr := env.AddModule(granular.NewGranulator(numChannels, &SFSourceFactory{Samples: sfb}, &parabolic.Factory{}, 400, paramGen, env.Config, "granulator"))
 
 	speedLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 0.9, 1.1, env.Config, ""))
 	speedLfo.CtrlConnect(0, gr, 3)
@@ -269,7 +257,7 @@ func main() {
 		gr.Connect(i, env, i)
 	}
 
-	// env.QuickPlayAudio()
+	env.QuickPlayAudio()
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/children.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	//env.SynthesizeToFile("/Users/almerlucke/Desktop/children.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }
