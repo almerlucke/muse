@@ -43,6 +43,60 @@ type Step struct {
 	Shape         float64
 }
 
+func QuickSteps() []Step {
+	return []Step{
+		{
+			Level:         1.0,
+			DurationRatio: 0.1,
+			Duration:      100.0,
+			Shape:         1.0,
+		},
+		{
+			Level:         0.3,
+			DurationRatio: 0.1,
+			Duration:      100.0,
+			Shape:         1.0,
+		},
+		{
+			Level:         0.3,
+			DurationRatio: 0.4,
+			Duration:      100.0,
+			Shape:         1.0,
+		},
+		{
+			Level:         0.0,
+			DurationRatio: 0.4,
+			Duration:      100.0,
+			Shape:         1.0,
+		},
+	}
+}
+
+func StepsRatio(level1 float64, ratio1 float64, level2 float64, ratio2 float64, ratio3 float64, ratio4 float64) []Step {
+	return []Step{
+		{
+			Level:         level1,
+			DurationRatio: ratio1,
+			Shape:         1.0,
+		},
+		{
+			Level:         level2,
+			DurationRatio: ratio2,
+			Shape:         1.0,
+		},
+		{
+			Level:         level2,
+			DurationRatio: ratio3,
+			Shape:         1.0,
+		},
+		{
+			Level:         0.0,
+			DurationRatio: ratio4,
+			Shape:         1.0,
+		},
+	}
+}
+
 type StepProvider interface {
 	GetSteps() []Step
 }

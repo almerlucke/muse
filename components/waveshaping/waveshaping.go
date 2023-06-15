@@ -416,3 +416,48 @@ func (c *Chain) SetSuperSawM2(m2 float64) {
 // func (c *Chain) SetVarSlopeSinW(w float64) {
 // 	c.Shapers[1].(*Pulse).W = w
 // }
+
+type Chebyshev struct {
+	harmonics   map[int]float64
+	maxHarmonic int
+}
+
+func NewChebyshev(harmonics map[int]float64) *Chebyshev {
+	cheby := &Chebyshev{}
+
+	cheby.SetHarmonics(harmonics)
+
+	return cheby
+}
+
+func (cheby *Chebyshev) SetHarmonics(harmonics map[int]float64) {
+	cheby.harmonics = harmonics
+
+	maxHarmonic := 0
+
+	for k, _ := range cheby.harmonics {
+		if k > maxHarmonic {
+			maxHarmonic = k
+		}
+	}
+
+	cheby.maxHarmonic = maxHarmonic
+}
+
+func (cheby *Chebyshev) Shape(signal float64) float64 {
+	var t0, t1, t2, mix float64
+
+	t0 = 1
+	t1 = signal
+
+	for harmonic := 1; harmonic <= cheby.maxHarmonic; harmonic++ {
+		if magnitude, ok := cheby.harmonics[harmonic]; ok {
+			mix += magnitude * t1
+		}
+		t2 = 2.0*signal*t1 - t0
+		t0 = t1
+		t1 = t2
+	}
+
+	return mix
+}

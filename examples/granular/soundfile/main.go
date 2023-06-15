@@ -10,7 +10,7 @@ import (
 	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/granular"
-	"github.com/almerlucke/muse/modules/granular/envelopes/parabolic"
+	"github.com/almerlucke/muse/modules/granular/envelopes/trapezoidal"
 	"github.com/almerlucke/muse/utils/float"
 	museRand "github.com/almerlucke/muse/utils/rand"
 )
@@ -37,6 +37,18 @@ func (p *SFParam) Duration() float64 {
 
 func (p *SFParam) Amplitude() float64 {
 	return p.amplitude
+}
+
+func (p *SFParam) Attack() float64 {
+	return 0.01
+}
+
+func (p *SFParam) Release() float64 {
+	return 0.96
+}
+
+func (p *SFParam) Smoothness() float64 {
+	return 1.0
 }
 
 func (p *SFParam) Panning() float64 {
@@ -217,7 +229,7 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	sfb, err := io.NewSoundFileBuffer("resources/sounds/mixkit-laughing-children-indoors-427.wav")
+	sfb, err := io.NewSoundFileBuffer("resources/sounds/birdfish-happy-loop-6199.wav")
 	if err != nil {
 		log.Fatalf("fatal err: %v", err)
 	}
@@ -228,27 +240,27 @@ func main() {
 
 	paramGen := &SFParameterGenerator{}
 
-	paramGen.speedClustering = museRand.NewClusterRand(1.0, 0.1, 0.2, 0.1, 0.5)
+	paramGen.speedClustering = museRand.NewClusterRand(2.0, 1.0, 1.0, 0.01, 0.01)
 	paramGen.amplitudeClustering = museRand.NewClusterRand(0.2, 0.1, 0.3, 0.3, 0.3)
-	paramGen.durationClustering = museRand.NewClusterRand(400.0, 5.0, 0.2, 0.01, 0.2)
-	paramGen.offsetClustering = museRand.NewClusterRand(0.6, 0.1, 0.8, 0.03, 0.5)
-	paramGen.onsetClustering = museRand.NewClusterRand(20.0, 4.5, 0.4, 0.8, 0.8)
+	paramGen.durationClustering = museRand.NewClusterRand(300.0, 255.0, 0.2, 0.01, 0.2)
+	paramGen.offsetClustering = museRand.NewClusterRand(0.6, 0.3, 0.8, 0.03, 0.5)
+	paramGen.onsetClustering = museRand.NewClusterRand(120.0, 104.5, 0.4, 0.8, 0.8)
 	paramGen.panClustering = museRand.NewClusterRand(0.5, 0.3, 0.3, 0.2, 0.5)
 	paramGen.reversePlayChance = 0.0
 
-	gr := env.AddModule(granular.NewGranulator(numChannels, &SFSourceFactory{Samples: sfb}, &parabolic.Factory{}, 400, paramGen, env.Config, "granulator"))
+	gr := env.AddModule(granular.NewGranulator(numChannels, &SFSourceFactory{Samples: sfb}, &trapezoidal.Factory{}, 400, paramGen, env.Config, "granulator"))
 
-	speedLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 0.9, 1.1, env.Config, ""))
-	speedLfo.CtrlConnect(0, gr, 3)
+	// speedLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 0.9, 1.1, env.Config, ""))
+	// speedLfo.CtrlConnect(0, gr, 3)
 
-	offsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.04, 0.1, 0.9, env.Config, ""))
-	offsetLfo.CtrlConnect(0, gr, 0)
+	// offsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.04, 0.1, 0.9, env.Config, ""))
+	// offsetLfo.CtrlConnect(0, gr, 0)
 
-	onsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.031, 5.2, 40.8, env.Config, ""))
-	onsetLfo.CtrlConnect(0, gr, 1)
+	// onsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.031, 5.2, 40.8, env.Config, ""))
+	// onsetLfo.CtrlConnect(0, gr, 1)
 
-	durationLfo := env.AddControl(lfo.NewBasicControlLFO(0.021, 135.2, 450.8, env.Config, ""))
-	durationLfo.CtrlConnect(0, gr, 2)
+	// durationLfo := env.AddControl(lfo.NewBasicControlLFO(0.021, 35.2, 150.8, env.Config, ""))
+	// durationLfo.CtrlConnect(0, gr, 2)
 
 	panLfo := env.AddControl(lfo.NewBasicControlLFO(0.011, 0.3, 0.7, env.Config, ""))
 	panLfo.CtrlConnect(0, gr, 4)

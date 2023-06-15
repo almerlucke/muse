@@ -231,12 +231,12 @@ func main() {
 
 	paramGen := &SFParameterGenerator{}
 
-	paramGen.chaosClustering = museRand.NewClusterRand(1.567, 0.432, 0.9, 1.0, 1.0)
+	paramGen.chaosClustering = museRand.NewClusterRand(1.567, 0.232, 0.9, 1.0, 1.0)
 	paramGen.amplitudeClustering = museRand.NewClusterRand(0.1, 0.07, 0.8, 0.8, 0.8)
 	paramGen.durationClustering = museRand.NewClusterRand(1400.0, 1250.0, 0.9, 0.9, 0.9)
 	paramGen.freqLowClustering = museRand.NewClusterRand(150, 100, 0.9, 0.9, 0.9)
 	paramGen.freqHighClustering = museRand.NewClusterRand(2000, 1800, 0.9, 1.0, 1.0)
-	paramGen.onsetClustering = museRand.NewClusterRand(680.0, 674.5, 0.9, 0.9, 0.9)
+	paramGen.onsetClustering = museRand.NewClusterRand(380.0, 374.5, 0.9, 0.9, 0.9)
 	paramGen.panStartClustering = museRand.NewClusterRand(0.5, 0.5, 1.0, 1.0, 1.0)
 	paramGen.panEndClustering = museRand.NewClusterRand(0.5, 0.5, 1.0, 1.0, 1.0)
 	paramGen.deltaClustering = museRand.NewClusterRand(0.006, 0.0049999, 0.0, 1.0, 1.0)
@@ -246,7 +246,7 @@ func main() {
 
 	gr := env.AddModule(granular.NewGranulator(2, NewSourceFactory(env.Config.SampleRate), &trapezoidal.Factory{}, 40, paramGen, env.Config, "granulator"))
 
-	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.56, 1.767, env.Config, ""))
+	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.36, 1.767, env.Config, ""))
 	chaosLfo.CtrlConnect(0, gr, 0)
 
 	freqLowLfo := env.AddControl(lfo.NewBasicControlLFO(0.0821, 150.0, 300.0, env.Config, ""))
@@ -255,7 +255,7 @@ func main() {
 	freqHighLfo := env.AddControl(lfo.NewBasicControlLFO(0.0621, 800, 2000, env.Config, ""))
 	freqHighLfo.CtrlConnect(0, gr, 2)
 
-	deltaLfo := env.AddControl(lfo.NewBasicControlLFO(0.0521, 0.05, 0.001, env.Config, ""))
+	deltaLfo := env.AddControl(lfo.NewBasicControlLFO(0.0521, 0.01, 0.0001, env.Config, ""))
 	deltaLfo.CtrlConnect(0, gr, 7)
 
 	// offsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.04, 0.1, 0.9, env.Config, ""))

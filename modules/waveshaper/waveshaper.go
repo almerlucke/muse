@@ -5,7 +5,7 @@ import (
 	shaping "github.com/almerlucke/muse/components/waveshaping"
 )
 
-type ParamMapFunction func(int, float64, shaping.Shaper)
+type ParamMapFunction func(int, any, shaping.Shaper)
 
 type MessageMapFunction func(any, shaping.Shaper)
 
@@ -30,7 +30,7 @@ func NewWaveShaper(shaper shaping.Shaper, numParams int, paramMapper ParamMapFun
 }
 
 func (s *WaveShaper) ReceiveControlValue(value any, index int) {
-	s.paramMapper(index, value.(float64), s.shaper)
+	s.paramMapper(index, value, s.shaper)
 }
 
 func (s *WaveShaper) ReceiveMessage(msg any) []*muse.Message {

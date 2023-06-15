@@ -30,9 +30,9 @@ func msgMapper(msg any, shaper shaping.Shaper) {
 	// }
 }
 
-func paramMapper(param int, value float64, shaper shaping.Shaper) {
+func paramMapper(param int, value any, shaper shaping.Shaper) {
 	if param == 0 {
-		shaper.(*shaping.Chain).SetSuperSawM1(value)
+		shaper.(*shaping.Chain).SetSuperSawM1(value.(float64))
 	}
 }
 
