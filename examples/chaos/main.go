@@ -69,7 +69,7 @@ func genFreq() {
 	mirror := waveshaping.NewMirror(-1.0, 1.0)
 	uni := waveshaping.NewUnipolar()
 	scale := waveshaping.NewLinear(1400.0, 50.0)
-	chain := waveshaping.NewChain(mirror, uni, scale)
+	chain := waveshaping.NewSerial(mirror, uni, scale)
 	wrapper := interpolator.NewInterpolator(
 		waveshaping.NewGeneratorWrapper(iter, []waveshaping.Shaper{chain, chain}),
 		interpolator.Cubic,

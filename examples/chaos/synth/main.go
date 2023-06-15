@@ -55,7 +55,7 @@ func NewChaosVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, f
 		panner:         pan.NewStereoPan(0.5, config, ""),
 		filter:         korg35.NewKorg35LPF(1500.0, 1.2, 1.0, config, "filter"),
 		genMod:         generator.NewGenerator(interpol, nil, nil, config, ""),
-		waveShape:      waveshaper.NewWaveShaper(waveshaping.NewChain(waveshaping.NewMirror(0.0, 1.0), waveshaping.NewBipolar()), 0, nil, nil, config, ""),
+		waveShape:      waveshaper.NewWaveShaper(waveshaping.NewSerial(waveshaping.NewMirror(0.0, 1.0), waveshaping.NewBipolar()), 0, nil, nil, config, ""),
 		ampEnv:         adsr.NewADSR(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampEnv"),
 		filterEnv:      adsr.NewADSR(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "filterEnv"),
 	}

@@ -47,7 +47,7 @@ type TestVoice struct {
 	filterEnv          *adsr.ADSR
 	phasor             *phasor.Phasor
 	filter             *moog.Moog
-	shaper             *shaping.Chain
+	shaper             *shaping.Serial
 	ampStepProvider    adsrctrl.ADSRStepProvider
 	filterStepProvider adsrctrl.ADSRStepProvider
 }
@@ -230,12 +230,12 @@ func main() {
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
-	targetShaper := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.8, 0.1)), "shaper", template.Template{
+	targetShaper := lfo.NewTarget("polyphony", shaping.NewSerial(sineTable, shaping.NewLinear(0.8, 0.1)), "shaper", template.Template{
 		"command": "voice",
 		"shaper":  template.NewParameter("shaper", nil),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.4, 0.1)), "adsrDecayLevel", template.Template{
+	targetFilter := lfo.NewTarget("polyphony", shaping.NewSerial(sineTable, shaping.NewLinear(0.4, 0.1)), "adsrDecayLevel", template.Template{
 		"command":        "voice",
 		"adsrDecayLevel": template.NewParameter("adsrDecayLevel", nil),
 	})

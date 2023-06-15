@@ -39,8 +39,7 @@ func main() {
 	harmonicsTimer.CtrlConnect(0, harmonicsGen, 0)
 	freqTimer.CtrlConnect(0, freqGen, 0)
 
-	adsrEnv := adsr.NewADSR(adsrc.StepsRatio(1.0, 0.1, 0.4, 0.1, 0.3, 0.5),
-		adsrc.Ratio, adsrc.Automatic, 1.0, env.Config, "")
+	adsrEnv := adsr.NewADSR(adsrc.StepsRatio(1.0, 0.1, 0.4, 0.1, 0.3, 0.5), adsrc.Ratio, adsrc.Automatic, 1.0, env.Config, "")
 	adsrEnv.SetDuration(375.0)
 
 	env.AddModule(adsrEnv)

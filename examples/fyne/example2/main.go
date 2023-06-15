@@ -37,7 +37,7 @@ type TestVoice struct {
 	filterEnv          *adsr.ADSR
 	phasor             *phasor.Phasor
 	filter             *moog.Moog
-	superSaw           *shaping.Chain
+	superSaw           *shaping.Serial
 	ampStepProvider    adsrctrl.ADSRStepProvider
 	filterStepProvider adsrctrl.ADSRStepProvider
 }
@@ -136,12 +136,12 @@ func main() {
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
-	targetSuperSaw := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(0.15, 0.1)), "superSawM1", template.Template{
+	targetSuperSaw := lfo.NewTarget("polyphony", shaping.NewSerial(sineTable, shaping.NewLinear(0.15, 0.1)), "superSawM1", template.Template{
 		"command":    "voice",
 		"superSawM1": template.NewParameter("superSawM1", nil),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewChain(sineTable, shaping.NewLinear(6000.0, 800.0)), "frequency", template.Template{
+	targetFilter := lfo.NewTarget("polyphony", shaping.NewSerial(sineTable, shaping.NewLinear(6000.0, 800.0)), "frequency", template.Template{
 		"command":         "voice",
 		"filterFrequency": template.NewParameter("frequency", nil),
 	})

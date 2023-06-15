@@ -100,7 +100,7 @@ func NewLFO(speed float64, targets []*Target, config *muse.Configuration, identi
 func NewBasicLFO(speed float64, scale float64, offset float64, addresses []string, config *muse.Configuration, param string, templ template.Template) *LFO {
 	ts := make([]*Target, len(addresses))
 	for i, address := range addresses {
-		ts[i] = NewTarget(address, shaping.NewChain(lfoSineShaper, shaping.NewLinear(scale, offset)), param, templ)
+		ts[i] = NewTarget(address, shaping.NewSerial(lfoSineShaper, shaping.NewLinear(scale, offset)), param, templ)
 	}
 
 	return NewLFO(speed, ts, config, "")

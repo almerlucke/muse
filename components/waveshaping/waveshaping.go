@@ -10,12 +10,6 @@ type Shaper interface {
 	Shape(float64) float64
 }
 
-type ShapeFunction func(float64) float64
-
-type Any struct {
-	F ShapeFunction
-}
-
 type GeneratorWrapper struct {
 	generator generator.Generator
 	shapers   []Shaper
@@ -43,20 +37,20 @@ func (gw *GeneratorWrapper) Generate() []float64 {
 	return gw.outVector
 }
 
-type Chain struct {
+type Serial struct {
 	Shapers []Shaper
 }
 
-func (c *Chain) Shape(x float64) float64 {
-	for _, shaper := range c.Shapers {
+func (s *Serial) Shape(x float64) float64 {
+	for _, shaper := range s.Shapers {
 		x = shaper.Shape(x)
 	}
 
 	return x
 }
 
-func NewChain(shapers ...Shaper) *Chain {
-	return &Chain{
+func NewSerial(shapers ...Shaper) *Serial {
+	return &Serial{
 		Shapers: shapers,
 	}
 }
@@ -193,28 +187,32 @@ func NewUnipolar() *Linear {
 	return &Linear{Scale: 0.5, Shift: 0.5}
 }
 
-func (a *Any) Shape(signal float64) float64 {
-	return a.F(signal)
+type Function struct {
+	F func(float64) float64
 }
 
-func NewAny(f ShapeFunction) *Any {
-	return &Any{F: f}
+func (f *Function) Shape(signal float64) float64 {
+	return f.F(signal)
 }
 
-func NewMod1() *Any {
-	return &Any{F: func(signal float64) float64 { return math.Mod(signal, 1.0) }}
+func NewFunction(f func(float64) float64) *Function {
+	return &Function{F: f}
 }
 
-func NewAbs() *Any {
-	return &Any{F: math.Abs}
+func NewMod1() *Function {
+	return &Function{F: func(signal float64) float64 { return math.Mod(signal, 1.0) }}
 }
 
-func NewSin() *Any {
-	return &Any{F: func(signal float64) float64 { return math.Sin(signal * 2.0 * math.Pi) }}
+func NewAbs() *Function {
+	return &Function{F: math.Abs}
 }
 
-func NewTri() *Any {
-	return &Any{F: func(x float64) float64 {
+func NewSin() *Function {
+	return &Function{F: func(signal float64) float64 { return math.Sin(signal * 2.0 * math.Pi) }}
+}
+
+func NewTri() *Function {
+	return &Function{F: func(x float64) float64 {
 		if x < 0.5 {
 			return 2.0 * x
 		} else {
@@ -289,6 +287,12 @@ type Pulse struct {
 	W float64
 }
 
+func NewPulse(w float64) *Pulse {
+	return &Pulse{
+		W: w,
+	}
+}
+
 func (p *Pulse) Shape(signal float64) float64 {
 	if signal < p.W {
 		return 1.0
@@ -297,46 +301,40 @@ func (p *Pulse) Shape(signal float64) float64 {
 	return 0.0
 }
 
-func NewPulse(w float64) *Pulse {
-	return &Pulse{
-		W: w,
-	}
-}
-
 type Ripple struct {
 	M float64
-}
-
-func (r *Ripple) Shape(signal float64) float64 {
-	return signal + math.Mod(signal, r.M)
 }
 
 func NewRipple(m float64) *Ripple {
 	return &Ripple{M: m}
 }
 
-func NewMinimoogVoyagerSawtooth() *Chain {
-	return NewChain(
+func (r *Ripple) Shape(signal float64) float64 {
+	return signal + math.Mod(signal, r.M)
+}
+
+func NewMinimoogVoyagerSawtooth() *Serial {
+	return NewSerial(
 		NewLinear(0.25, 0.0),
-		NewAny(func(s float64) float64 { return math.Sin(2.0 * math.Pi * s) }),
+		NewSin(),
 		NewBipolar(),
 	)
 }
 
-func NewHardSync() *Chain {
-	return NewChain(
+func NewHardSync() *Serial {
+	return NewSerial(
 		NewLinear(2.5, 0.0),
 		NewMod1(),
 		NewBipolar(),
 	)
 }
 
-func (c *Chain) SetHardSyncA1(a1 float64) {
-	c.Shapers[0].(*Linear).Scale = a1
+func (s *Serial) SetHardSyncA1(a1 float64) {
+	s.Shapers[0].(*Linear).Scale = a1
 }
 
-func NewSoftSyncTriangle() *Chain {
-	return NewChain(
+func NewSoftSyncTriangle() *Serial {
+	return NewSerial(
 		NewBipolar(),
 		NewAbs(),
 		NewLinear(1.25, 0.0),
@@ -346,27 +344,27 @@ func NewSoftSyncTriangle() *Chain {
 	)
 }
 
-func (c *Chain) SetSoftSyncA1(a1 float64) {
-	c.Shapers[2].(*Linear).Scale = a1
+func (s *Serial) SetSoftSyncA1(a1 float64) {
+	s.Shapers[2].(*Linear).Scale = a1
 }
 
-func NewJP8000triMod() *Chain {
-	return NewChain(
+func NewJP8000triMod() *Serial {
+	return NewSerial(
 		NewBipolar(),
 		NewAbs(),
 		NewLinear(2.0, -1.0),
 		NewMod1(),
 		NewMult(0.3),
-		NewAny(func(x float64) float64 { return 2.0 * (x - math.Ceil(x-0.5)) }),
+		NewFunction(func(x float64) float64 { return 2.0 * (x - math.Ceil(x-0.5)) }),
 	)
 }
 
-func (c *Chain) SetJP8000Mod(m float64) {
-	c.Shapers[4].(*Mult).M = m
+func (s *Serial) SetJP8000Mod(m float64) {
+	s.Shapers[4].(*Mult).M = m
 }
 
-func NewPulseWidthMod() *Chain {
-	return NewChain(
+func NewPulseWidthMod() *Serial {
+	return NewSerial(
 		NewLinear(1.25, 0.0),
 		NewMod1(),
 		NewPulse(0.4),
@@ -374,33 +372,33 @@ func NewPulseWidthMod() *Chain {
 	)
 }
 
-func (c *Chain) SetPulseWidthA1(a1 float64) {
-	c.Shapers[0].(*Linear).Scale = a1
+func (s *Serial) SetPulseWidthA1(a1 float64) {
+	s.Shapers[0].(*Linear).Scale = a1
 }
 
-func (c *Chain) SetPulseWidthW(w float64) {
-	c.Shapers[2].(*Pulse).W = w
+func (s *Serial) SetPulseWidthW(w float64) {
+	s.Shapers[2].(*Pulse).W = w
 }
 
-func NewSuperSaw() *Chain {
-	return NewChain(
+func NewSuperSaw() *Serial {
+	return NewSerial(
 		NewLinear(1.5, 0.0),
 		NewParallel(NewMod(0.25), NewMod(0.88)),
-		NewAny(math.Sin),
+		NewFunction(math.Sin),
 		NewBipolar(),
 	)
 }
 
-func (c *Chain) SetSuperSawA1(a1 float64) {
-	c.Shapers[0].(*Linear).Scale = a1
+func (s *Serial) SetSuperSawA1(a1 float64) {
+	s.Shapers[0].(*Linear).Scale = a1
 }
 
-func (c *Chain) SetSuperSawM1(m1 float64) {
-	c.Shapers[1].(*Parallel).Shapers[0].(*Mod).M = m1
+func (s *Serial) SetSuperSawM1(m1 float64) {
+	s.Shapers[1].(*Parallel).Shapers[0].(*Mod).M = m1
 }
 
-func (c *Chain) SetSuperSawM2(m2 float64) {
-	c.Shapers[1].(*Parallel).Shapers[1].(*Mod).M = m2
+func (s *Serial) SetSuperSawM2(m2 float64) {
+	s.Shapers[1].(*Parallel).Shapers[1].(*Mod).M = m2
 }
 
 // // sin(2.0 * PI * x(n){1 + g pulse [x(n) – 1, w]})
