@@ -321,9 +321,9 @@ func NewMinimoogVoyagerSawtooth() *Serial {
 	)
 }
 
-func NewHardSync() *Serial {
+func NewHardSync(a1 float64) *Serial {
 	return NewSerial(
-		NewLinear(2.5, 0.0),
+		NewLinear(a1, 0.0),
 		NewMod1(),
 		NewBipolar(),
 	)
@@ -333,11 +333,11 @@ func (s *Serial) SetHardSyncA1(a1 float64) {
 	s.Shapers[0].(*Linear).Scale = a1
 }
 
-func NewSoftSyncTriangle() *Serial {
+func NewSoftSyncTriangle(a1 float64) *Serial {
 	return NewSerial(
 		NewBipolar(),
 		NewAbs(),
-		NewLinear(1.25, 0.0),
+		NewLinear(a1, 0.0), // a=1.25
 		NewMod1(),
 		NewTri(),
 		NewBipolar(),
@@ -348,13 +348,13 @@ func (s *Serial) SetSoftSyncA1(a1 float64) {
 	s.Shapers[2].(*Linear).Scale = a1
 }
 
-func NewJP8000triMod() *Serial {
+func NewJP8000triMod(m float64) *Serial {
 	return NewSerial(
 		NewBipolar(),
 		NewAbs(),
 		NewLinear(2.0, -1.0),
 		NewMod1(),
-		NewMult(0.3),
+		NewMult(m), // m=0.3
 		NewFunction(func(x float64) float64 { return 2.0 * (x - math.Ceil(x-0.5)) }),
 	)
 }
@@ -380,10 +380,10 @@ func (s *Serial) SetPulseWidthW(w float64) {
 	s.Shapers[2].(*Pulse).W = w
 }
 
-func NewSuperSaw() *Serial {
+func NewSuperSaw(a1 float64, m1 float64, m2 float64) *Serial {
 	return NewSerial(
-		NewLinear(1.5, 0.0),
-		NewParallel(NewMod(0.25), NewMod(0.88)),
+		NewLinear(a1, 0.0),                  // a1=1.5
+		NewParallel(NewMod(m1), NewMod(m2)), // m1=025, m2=0.88
 		NewFunction(math.Sin),
 		NewBipolar(),
 	)
@@ -458,4 +458,24 @@ func (cheby *Chebyshev) Shape(signal float64) float64 {
 	}
 
 	return mix
+}
+
+type Switch struct {
+	Shapers []Shaper
+	Index   int
+}
+
+func NewSwitch(index int, shapers ...Shaper) *Switch {
+	return &Switch{
+		Shapers: shapers,
+		Index:   index,
+	}
+}
+
+func (s *Switch) Shape(x float64) float64 {
+	return s.Shapers[s.Index].Shape(x)
+}
+
+func (s *Switch) Selected() Shaper {
+	return s.Shapers[s.Index]
 }

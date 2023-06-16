@@ -21,78 +21,12 @@ import (
 // 	}
 // }
 
-// inline float MoogFilter::step(float input)
-// {
-// 	// transconductance
-// 	// gM(vIn) = tanh( vIn ) / vIn
-// 	float gm0 = tanhXdivX(state[0]);
-// 	// to ease calculations the others are 1.0 (so daturation)
-// 	// denominators
-// 	float d0 = 1.0f / (1.0f + c*gm0);
-// 	float dp1 = 1.0f / (1.0f + c);
-// 	float dp2 = dp1*dp1;
-// 	float dp3 = dp2*dp1;
-
-// 	// instantaneous response estimate
-// 	float y3Estimate =
-// 			cp4 * d0 * gm0 * dp3 * input +
-// 			cp3 * gm0 * dp3     * d0 * state[0] +
-// 			cp2 * dp3 * state[1] +
-// 			c   * dp2 * state[2] +
-// 						dp1 * state[3];
-
-// 	// mix input and gained feedback estimate for
-// 	// cheaper feedback gain compensation. Idea from
-// 	// Antti Huovilainen and Vesa Välimäki, "NEW APPROACHES TO DIGITAL SUBTRACTIVE SYNTHESIS"
-// 	float u = input - tanhX(feedbackGain * (y3Estimate - 0.5f*input));
-// 	// output of all stages
-// 	float y0 = gm0 * d0 * (state[0] + c * u);
-// 	float y1 = dp1 * (state[1] + c * y0);
-// 	float y2 = dp1 * (state[2] + c * y1);
-// 	float y3 = dp1 * (state[3] + c * y2);
-
-// 	// update state
-// 	state[0] += ct2 * (u - y0);
-// 	state[1] += ct2 * (y0 - y1);
-// 	state[2] += ct2 * (y1 - y2);
-// 	state[3] += ct2 * (y2 - y3);
-
-// 	// calculate multimode filter output
-// 	return (a0 * u
-// 				+ a1 * y0
-// 				+ a2 * y1
-// 				+ a3 * y2
-// 				+ a4 * y3);
-// }
-
 // void MoogFilter::filterout(float *smp)
 // {
 // 	for (int i = 0; i < buffersize; i ++)
 // 	{
 // 			smp[i] = step(tanhX(smp[i]*gain));
 // 			smp[i] *= outgain;
-// 	}
-// }
-
-// void MoogFilter::setgain(float dBgain)
-// {
-// 	gain = dB2rap(dBgain);
-// }
-
-// void MoogFilter::settype(unsigned char ftype)
-// {
-// 	switch (ftype)
-// 	{
-// 			case 0:
-// 					a0 = 1.0f; a1 =-4.0f; a2 = 6.0f; a3 =-4.0f; a4 = 1.0f;
-// 					break;
-// 			case 1:
-// 					a0 = 0.0f; a1 = 0.0f; a2 = 4.0f; a3 =-8.0f; a4 = 4.0f;
-// 					break;
-// 			case 2:
-// 			default:
-// 					a0 = 0.0f; a1 = 0.0f; a2 = 0.0f; a3 = 0.0f; a4 = passbandCompensation;
-// 					break;
 // 	}
 // }
 
@@ -124,7 +58,6 @@ func tanhXdivX(x float64) float64 {
 
 type Moog2 struct {
 	*muse.BaseModule
-
 	fType                 int
 	fc                    float64
 	q                     float64
@@ -134,6 +67,26 @@ type Moog2 struct {
 	state                 [4]float64
 	passbandCompensation  float64
 	c, ct2, cp2, cp3, cp4 float64
+}
+
+func NewMoog2(fc float64, q float64, config *muse.Configuration, identifier string) *Moog2 {
+	m := &Moog2{
+		BaseModule: muse.NewBaseModule(1, 1, config, identifier),
+		gain:       1.0,
+	}
+
+	m.setFreq(fc / config.SampleRate)
+	m.setQ(q)
+	m.setType(0)
+
+	m.state[0] = 0.0001
+	m.state[1] = 0.0001
+	m.state[2] = 0.0001
+	m.state[3] = 0.0001
+
+	m.SetSelf(m)
+
+	return m
 }
 
 func (m *Moog2) setGain(gain float64) {
@@ -188,4 +141,60 @@ func (m *Moog2) setType(fType int) {
 	default:
 		break
 	}
+}
+
+func (m *Moog2) step(input float64) float64 {
+	// transconductance
+	// gM(vIn) = tanh( vIn ) / vIn
+	gm0 := tanhXdivX(m.state[0])
+	// to ease calculations the others are 1.0 (so daturation)
+	// denominators
+	d0 := 1.0 / (1.0 + m.c*gm0)
+	dp1 := 1.0 / (1.0 + m.c)
+	dp2 := dp1 * dp1
+	dp3 := dp2 * dp1
+
+	// instantaneous response estimate
+	y3Estimate :=
+		m.cp4*d0*gm0*dp3*input +
+			m.cp3*gm0*dp3*d0*m.state[0] +
+			m.cp2*dp3*m.state[1] +
+			m.c*dp2*m.state[2] +
+			dp1*m.state[3]
+
+	// mix input and gained feedback estimate for
+	// cheaper feedback gain compensation. Idea from
+	// Antti Huovilainen and Vesa Välimäki, "NEW APPROACHES TO DIGITAL SUBTRACTIVE SYNTHESIS"
+	u := input - tanhX(m.feedbackGain*(y3Estimate-0.5*input))
+	// output of all stages
+	y0 := gm0 * d0 * (m.state[0] + m.c*u)
+	y1 := dp1 * (m.state[1] + m.c*y0)
+	y2 := dp1 * (m.state[2] + m.c*y1)
+	y3 := dp1 * (m.state[3] + m.c*y2)
+
+	// update state
+	m.state[0] += m.ct2 * (u - y0)
+	m.state[1] += m.ct2 * (y0 - y1)
+	m.state[2] += m.ct2 * (y1 - y2)
+	m.state[3] += m.ct2 * (y2 - y3)
+
+	// calculate multimode filter output
+	return m.a0*u + m.a1*y0 + m.a2*y1 + m.a3*y2 + m.a4*y3
+}
+
+func (m *Moog2) Synthesize() bool {
+	if !m.BaseModule.Synthesize() {
+		return false
+	}
+
+	in := m.Inputs[0].Buffer
+	out := m.Outputs[0].Buffer
+
+	for i := 0; i < m.Config.BufferSize; i++ {
+
+		out[i] = m.step(tanhX(in[i] * m.gain))
+		// 			smp[i] *= outgain;
+	}
+
+	return true
 }

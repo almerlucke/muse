@@ -60,7 +60,7 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 	adsrEnv := testVoice.AddModule(adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
 	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(shaping.NewSuperSaw(), 1, paramMapper, nil, config, "shaper"))
+	shape := testVoice.AddModule(waveshaper.NewWaveShaper(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, config, "shaper"))
 	filter := testVoice.AddModule(moog.NewMoog(1700.0, 0.48, 1.0, config, "filter"))
 
 	osc.Connect(0, shape, 0)

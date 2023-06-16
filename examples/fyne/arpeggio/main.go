@@ -51,7 +51,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	testVoice := &TestVoice{
 		BasePatch:       muse.NewPatch(0, 1, config, ""),
 		ampStepProvider: ampStepProvider,
-		shaper:          shaping.NewJP8000triMod(),
+		shaper:          shaping.NewJP8000triMod(0.3),
 	}
 
 	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampAdsr"))

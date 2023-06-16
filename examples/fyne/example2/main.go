@@ -47,7 +47,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 		BasePatch:          muse.NewPatch(0, 1, config, ""),
 		ampStepProvider:    ampStepProvider,
 		filterStepProvider: filterStepProvider,
-		superSaw:           shaping.NewSuperSaw(),
+		superSaw:           shaping.NewSuperSaw(1.5, 0.25, 0.88),
 	}
 
 	testVoice.SetSelf(testVoice)

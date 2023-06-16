@@ -57,7 +57,7 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 		BasePatch:          muse.NewPatch(0, 1, config, ""),
 		ampStepProvider:    ampStepProvider,
 		filterStepProvider: filterStepProvider,
-		shaper:             shaping.NewSoftSyncTriangle(),
+		shaper:             shaping.NewSoftSyncTriangle(1.25),
 	}
 
 	testVoice.SetSelf(testVoice)

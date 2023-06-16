@@ -62,7 +62,7 @@ func main() {
 	mult1 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config))
 	filterParam := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*2200.0 + 40.0 }, env.Config))
 	osc1 := env.AddModule(phasor.NewPhasor(140.0, 0.0, env.Config, "osc1"))
-	shaper1 := env.AddModule(waveshaper.NewWaveShaper(shaping.NewSuperSaw(), 1, paramMapper, nil, env.Config, "shaper1"))
+	shaper1 := env.AddModule(waveshaper.NewWaveShaper(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, env.Config, "shaper1"))
 	allpass := env.AddModule(allpass.NewAllpass(375.0, 375.0, 0.3, env.Config, "allpass"))
 	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config))
 	// filter := env.AddModule(butterworth.NewButterworth(300.0, 0.4, env.Config, "filter"))
