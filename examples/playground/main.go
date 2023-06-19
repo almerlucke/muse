@@ -1,20 +1,60 @@
 package main
 
 import (
+	"log"
+
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/messengers/lfo"
-	"github.com/almerlucke/muse/modules/blosc"
+	"github.com/almerlucke/muse/controls/val"
+	"github.com/almerlucke/muse/dsp/mipmap"
+	"github.com/almerlucke/muse/io"
+	"github.com/almerlucke/muse/messengers/triggers/timer"
+	"github.com/almerlucke/muse/modules/player"
+	"github.com/almerlucke/muse/value"
 )
 
-func main() {
-	env := muse.NewEnvironment(1, 44100, 512)
+func notMipMapped() {
+	env := muse.NewEnvironment(2, 44100, 512)
 
-	lfo := env.AddControl(lfo.NewBasicControlLFO(0.2, 0.1, 0.9, env.Config, ""))
-	osc := env.AddModule(blosc.NewOsc2(100.0, 0, 0.2, 1.0, blosc.MODIFIED_TRIANGLE, env.Config, ""))
+	mm, err := io.NewSoundFileBuffer("resources/sounds/mixkit-angelical-choir-654.wav")
+	if err != nil {
+		log.Fatalf("err loading file: %v", err)
+	}
 
-	lfo.CtrlConnect(0, osc, 1)
-	osc.Connect(0, env, 0)
+	timer := env.AddControl(timer.NewControlTimer(1000.0, env.Config, ""))
+	player := env.AddModule(player.NewPlayer(mm, 4.0, 1.0, true, env.Config, ""))
+
+	timer.CtrlConnect(0, player, 0)
+
+	player.Connect(0, env, 0)
+	player.Connect(1, env, 1)
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/rect.aiff", 2.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
 	env.QuickPlayAudio()
+}
+
+func mipMapped() {
+	env := muse.NewEnvironment(2, 44100, 512)
+
+	mm, err := mipmap.NewMipMapSoundFileBuffer("resources/sounds/mixkit-angelical-choir-654.wav", 5)
+	if err != nil {
+		log.Fatalf("err loading mipmap: %v", err)
+	}
+
+	timer := env.AddControl(timer.NewControlTimer(2000.0, env.Config, ""))
+	val := val.NewVal[float64](value.NewSequence([]float64{1.0, 2.0, 2.0, 1.5, 3.0, 4.0}), "")
+	player := env.AddModule(player.NewMMPlayer(mm, 1.0, 1.0, true, env.Config, ""))
+
+	timer.CtrlConnect(0, val, 0)
+	val.CtrlConnect(0, player, 1)
+	timer.CtrlConnect(0, player, 0)
+
+	player.Connect(0, env, 0)
+	player.Connect(1, env, 1)
+
+	// env.SynthesizeToFile("/Users/almerlucke/Desktop/rect.aiff", 2.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
+	env.QuickPlayAudio()
+}
+
+func main() {
+	mipMapped()
 }
