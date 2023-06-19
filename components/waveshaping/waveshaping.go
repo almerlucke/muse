@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/almerlucke/muse/components/generator"
+	"github.com/almerlucke/muse/utils/mmath"
 )
 
 type Shaper interface {
@@ -321,6 +322,15 @@ func NewMinimoogVoyagerSawtooth() *Serial {
 	)
 }
 
+func NewMinimoogVoyagerSawtoothAntialiased(inc float64) *Serial {
+	return NewSerial(
+		NewPolyBlep(-1.0, inc),
+		NewLinear(0.25, 0.0),
+		NewSin(),
+		NewBipolar(),
+	)
+}
+
 func NewHardSync(a1 float64) *Serial {
 	return NewSerial(
 		NewLinear(a1, 0.0),
@@ -478,4 +488,22 @@ func (s *Switch) Shape(x float64) float64 {
 
 func (s *Switch) Selected() Shaper {
 	return s.Shapers[s.Index]
+}
+
+// y = x / (1 + |x|) soft clip
+
+type PolyBlep struct {
+	DiscontinuityHeight float64
+	PhaseInc            float64
+}
+
+func NewPolyBlep(h float64, inc float64) *PolyBlep {
+	return &PolyBlep{
+		DiscontinuityHeight: h,
+		PhaseInc:            inc,
+	}
+}
+
+func (p *PolyBlep) Shape(x float64) float64 {
+	return x + mmath.PolyBlep(x, p.PhaseInc)*p.DiscontinuityHeight
 }
