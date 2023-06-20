@@ -278,7 +278,7 @@ func NewMipMap(buf buffer.Buffer, sampleRate float64, depth int) (*MipMap, error
 			Sinc: &filters.Sinc{
 				CutOffFreq:   dfc,
 				SamplingFreq: int(sampleRate),
-				Taps:         40,
+				Taps:         200,
 				Window:       windows.Hamming,
 			},
 		}
