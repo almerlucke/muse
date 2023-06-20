@@ -50,7 +50,7 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 		}, true)
 }
 
-func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) (muse.Messenger, muse.Module) {
+func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) (muse.Messenger, muse.Module) {
 	identifier := moduleName + "Speed"
 
 	msgr := stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, moduleName+"Stepper")
@@ -176,12 +176,12 @@ func main() {
 
 	env.AddMessageReceiver(env, "env")
 
-	guitarBuffer, _ := io.NewSoundFileBuffer("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_guitar.aiff")
-	singBuffer, _ := io.NewSoundFileBuffer("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_voice.aiff")
+	guitarBuffer, _ := io.NewSoundFile("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_guitar.aiff")
+	singBuffer, _ := io.NewSoundFile("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_voice.aiff")
 
-	hihatSound, _ := io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	kickSound, _ := io.NewSoundFileBuffer("resources/drums/kick/Cymatics - Humble Sit Down Kick - D.wav")
-	snareSound, _ := io.NewSoundFileBuffer("resources/drums/snare/Cymatics - Humble Institution Snare - C#.wav")
+	hihatSound, _ := io.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
+	kickSound, _ := io.NewSoundFile("resources/drums/kick/Cymatics - Humble Sit Down Kick - D.wav")
+	snareSound, _ := io.NewSoundFile("resources/drums/snare/Cymatics - Humble Institution Snare - C#.wav")
 
 	ampEnv := adsr.NewBasicStepProvider()
 	ampEnv.Steps[0] = adsr.Step{Level: 1.0, Duration: 25.0}

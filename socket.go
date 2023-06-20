@@ -1,13 +1,15 @@
 package muse
 
+import "github.com/almerlucke/muse/buffer"
+
 type Socket struct {
-	Buffer      Buffer
+	Buffer      buffer.Buffer
 	Connections []*Connection
 }
 
 func NewSocket(bufferSize int) *Socket {
 	return &Socket{
-		Buffer:      make(Buffer, bufferSize),
+		Buffer:      make(buffer.Buffer, bufferSize),
 		Connections: []*Connection{},
 	}
 }

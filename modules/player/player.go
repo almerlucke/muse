@@ -9,30 +9,36 @@ import (
 
 type Player struct {
 	*muse.BaseModule
-	buffer    *io.SoundFileBuffer
+	sf        io.SoundFiler
 	phase     float64
 	inc       float64
 	speed     float64
 	amp       float64
+	depth     int
 	oneShot   bool
 	done      bool
 	soundBank io.SoundBank
 }
 
-func NewPlayer(buffer *io.SoundFileBuffer, speed float64, amp float64, oneShot bool, config *muse.Configuration, identifier string) *Player {
-	inc := (speed * buffer.SampleRate / config.SampleRate) / float64(buffer.NumFrames)
+func NewPlayer(sf io.SoundFiler, speed float64, amp float64, oneShot bool, config *muse.Configuration, identifier string) *Player {
+	inc := (speed * sf.SampleRate() / config.SampleRate) / float64(sf.NumFrames())
 
 	if oneShot {
 		inc = math.Abs(inc)
 	}
 
+	depth := io.SpeedToMipMapDepth(speed)
+	if depth >= sf.Depth() {
+		depth = sf.Depth() - 1
+	}
+
 	p := &Player{
-		BaseModule: muse.NewBaseModule(0, len(buffer.Channels), config, identifier),
+		BaseModule: muse.NewBaseModule(0, sf.NumChannels(), config, identifier),
 		inc:        inc,
 		speed:      speed,
 		oneShot:    oneShot,
 		done:       oneShot,
-		buffer:     buffer,
+		sf:         sf,
 		amp:        amp,
 	}
 
@@ -47,15 +53,19 @@ func (p *Player) SetSoundBank(soundBank io.SoundBank) {
 
 func (p *Player) SetSound(sound string) {
 	if p.soundBank != nil {
-		if buffer, ok := p.soundBank[sound]; ok {
-			p.SetBuffer(buffer)
+		if sf, ok := p.soundBank[sound]; ok {
+			p.SetSoundFile(sf)
 		}
 	}
 }
 
-func (p *Player) SetBuffer(buffer *io.SoundFileBuffer) {
-	p.buffer = buffer
-	p.inc = (p.speed * p.buffer.SampleRate / p.Config.SampleRate) / float64(p.buffer.NumFrames)
+func (p *Player) SetSoundFile(sf io.SoundFiler) {
+	p.sf = sf
+	p.inc = (p.speed * p.sf.SampleRate() / p.Config.SampleRate) / float64(p.sf.NumFrames())
+	depth := io.SpeedToMipMapDepth(p.speed)
+	if depth >= sf.Depth() {
+		depth = sf.Depth() - 1
+	}
 }
 
 func (p *Player) Speed() float64 {
@@ -63,8 +73,12 @@ func (p *Player) Speed() float64 {
 }
 
 func (p *Player) SetSpeed(speed float64) {
-	p.inc = (speed * p.buffer.SampleRate / p.Config.SampleRate) / float64(p.buffer.NumFrames)
+	p.inc = (speed * p.sf.SampleRate() / p.Config.SampleRate) / float64(p.sf.NumFrames())
 	p.speed = speed
+	depth := io.SpeedToMipMapDepth(speed)
+	if depth >= p.sf.Depth() {
+		depth = p.sf.Depth() - 1
+	}
 }
 
 func (p *Player) Bang() {
@@ -147,22 +161,9 @@ func (p *Player) Synthesize() bool {
 			continue
 		}
 
-		x := p.phase * float64(p.buffer.NumFrames)
-		xi1 := int64(x)
-		xi2 := xi1 + 1
-		xf := x - float64(xi1)
-
-		if xi2 >= p.buffer.NumFrames {
-			if p.oneShot {
-				xi2 = p.buffer.NumFrames - 1
-			} else {
-				xi2 = 0
-			}
-		}
-
+		samps := p.sf.LookupAll(p.phase*float64(p.sf.NumFrames()), 0, !p.oneShot)
 		for outIndex, out := range p.Outputs {
-			xi1v := p.buffer.Channels[outIndex][xi1]
-			out.Buffer[i] = p.amp * (xi1v + (p.buffer.Channels[outIndex][xi2]-xi1v)*xf)
+			out.Buffer[i] = samps[outIndex]
 		}
 
 		p.phase += p.inc

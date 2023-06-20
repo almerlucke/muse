@@ -179,14 +179,14 @@ func main() {
 
 	soundBank := io.SoundBank{}
 
-	soundBank["hihat"], _ = io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	soundBank["kick"], _ = io.NewSoundFileBuffer("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
-	soundBank["snare"], _ = io.NewSoundFileBuffer("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
-	soundBank["808_1"], _ = io.NewSoundFileBuffer("resources/drums/808/Cymatics - Humble 808 4 - F.wav")
-	soundBank["808_2"], _ = io.NewSoundFileBuffer("resources/drums/808/Cymatics - Humble 808 3 - F.wav")
-	soundBank["808_3"], _ = io.NewSoundFileBuffer("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav")
-	soundBank["808_4"], _ = io.NewSoundFileBuffer("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
-	soundBank["shaker"], _ = io.NewSoundFileBuffer("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
+	soundBank["hihat"], _ = io.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
+	soundBank["kick"], _ = io.NewSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
+	soundBank["snare"], _ = io.NewSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
+	soundBank["808_1"], _ = io.NewSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav")
+	soundBank["808_2"], _ = io.NewSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav")
+	soundBank["808_3"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav")
+	soundBank["808_4"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
+	soundBank["shaker"], _ = io.NewSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
 
 	drums := env.AddModule(drums.NewDrums(soundBank, 20, env.Config, "drums"))
 

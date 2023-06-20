@@ -165,7 +165,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) muse.Module {
+func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) muse.Module {
 	identifier := moduleName + "Speed"
 
 	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
@@ -272,14 +272,14 @@ func main() {
 		[]string{"template2"}, "",
 	))
 
-	hihatSound, _ := io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	kickSound, _ := io.NewSoundFileBuffer("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
-	snareSound, _ := io.NewSoundFileBuffer("resources/drums/clap/Cymatics - Humble Stars Clap.wav")
-	bassSound, _ := io.NewSoundFileBuffer("resources/drums/808/Cymatics - Humble 808 5 - G.wav")
-	rideSound, _ := io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Open Hihat 2.wav")
-	waterSound, _ := io.NewSoundFileBuffer("resources/sounds/Cymatics - Orchid Live Recording - Waves.wav")
-	swirlSound, _ := io.NewSoundFileBuffer("resources/sounds/Cymatics - Orchid KEYS Swirl (C).wav")
-	vocalSound, _ := io.NewSoundFileBuffer("resources/sounds/Cymatics - Blurry Vocal - 80 BPM F Min.wav")
+	hihatSound, _ := io.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
+	kickSound, _ := io.NewSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
+	snareSound, _ := io.NewSoundFile("resources/drums/clap/Cymatics - Humble Stars Clap.wav")
+	bassSound, _ := io.NewSoundFile("resources/drums/808/Cymatics - Humble 808 5 - G.wav")
+	rideSound, _ := io.NewSoundFile("resources/drums/hihat/Cymatics - Humble Open Hihat 2.wav")
+	waterSound, _ := io.NewSoundFile("resources/sounds/Cymatics - Orchid Live Recording - Waves.wav")
+	swirlSound, _ := io.NewSoundFile("resources/sounds/Cymatics - Orchid KEYS Swirl (C).wav")
+	vocalSound, _ := io.NewSoundFile("resources/sounds/Cymatics - Blurry Vocal - 80 BPM F Min.wav")
 
 	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 8, 1.875, 2.125, 0.75, value.NewSequence([]*swing.Step{
 		{}, {Shuffle: 0.1}, {SkipChance: 0.3, BurstChance: 1.0, NumBurst: 3}, {}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipChance: 0.4}, {Skip: true}, {Skip: true},

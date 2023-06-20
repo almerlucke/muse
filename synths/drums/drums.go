@@ -8,7 +8,7 @@ import (
 )
 
 func NewDrums(soundBank io.SoundBank, numVoices int, config *muse.Configuration, id string) *polyphony.Polyphony {
-	var initSound *io.SoundFileBuffer
+	var initSound io.SoundFiler
 
 	for _, v := range soundBank {
 		if initSound == nil {
@@ -24,5 +24,5 @@ func NewDrums(soundBank io.SoundBank, numVoices int, config *muse.Configuration,
 		voices[i] = player
 	}
 
-	return polyphony.NewPolyphony(len(initSound.Channels), voices, config, id)
+	return polyphony.NewPolyphony(initSound.NumChannels(), voices, config, id)
 }

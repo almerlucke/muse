@@ -165,7 +165,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.SoundFileBuffer, tempo int, division int, lowSpeed float64, highSpeed float64, steps value.Valuer[*swing.Step]) muse.Module {
+func addDrumTrack(env *muse.Environment, moduleName string, soundFile *io.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, steps value.Valuer[*swing.Step]) muse.Module {
 	identifier := moduleName + "Speed"
 
 	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
@@ -175,7 +175,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 		"bang":  true,
 	}, identifier))
 
-	return env.AddModule(player.NewPlayer(soundBuffer, 1.0, 1.0, true, env.Config, moduleName))
+	return env.AddModule(player.NewPlayer(soundFile, 1.0, 1.0, true, env.Config, moduleName))
 }
 
 type Nums []float64
@@ -198,9 +198,9 @@ func main() {
 
 	milliPerBeat := 60000.0 / float64(bpm)
 
-	hihatSound, _ := io.NewSoundFileBuffer("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	kickSound, _ := io.NewSoundFileBuffer("resources/drums/kick/Cymatics - Humble Friday Kick - E.wav")
-	snareSound, _ := io.NewSoundFileBuffer("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
+	hihatSound, _ := io.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
+	kickSound, _ := io.NewSoundFile("resources/drums/kick/Cymatics - Humble Friday Kick - E.wav")
+	snareSound, _ := io.NewSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
 
 	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 8, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
 		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{

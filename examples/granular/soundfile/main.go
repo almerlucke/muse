@@ -79,9 +79,10 @@ func NewSFParam(duration float64, amplitude float64, panning float64, speed floa
 }
 
 type SFSource struct {
-	buffer     *io.SoundFileBuffer
+	sf         io.SoundFiler
 	phase      float64
 	delta      float64
+	speed      float64
 	panLeft    float64
 	panRight   float64
 	lookupMode LookupMode
@@ -91,15 +92,7 @@ func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
 	pan := [2]float64{s.panLeft, s.panRight}
 
 	for i := 0; i < bufSize; i++ {
-		lookupf := s.phase * float64(s.buffer.NumFrames)
-		lookup1 := int64(lookupf)
-		fraction := lookupf - float64(lookup1)
-		lookup2 := lookup1 + 1
-
-		if lookup2 >= s.buffer.NumFrames {
-			lookup2 = s.buffer.NumFrames - 1
-		}
-
+		pos := s.phase * float64(s.sf.NumFrames())
 		s.phase = float.ZeroIfSmall(s.phase + s.delta)
 
 		switch s.lookupMode {
@@ -122,10 +115,16 @@ func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
 			}
 		}
 
-		for outIndex, outBuf := range outBuffers {
-			out := s.buffer.Channels[outIndex][lookup1]
+		depth := io.SpeedToMipMapDepth(s.speed)
+		if depth >= s.sf.Depth() {
+			depth = s.sf.Depth() - 1
+		}
 
-			outBuf[i] = pan[outIndex] * (out + (s.buffer.Channels[outIndex][lookup2]-out)*fraction)
+		samps := s.sf.LookupAll(pos, depth, true)
+
+		for outIndex, outBuf := range outBuffers {
+
+			outBuf[i] = pan[outIndex] * samps[outIndex]
 		}
 	}
 }
@@ -137,10 +136,11 @@ func (s *SFSource) Activate(sampsToGo int64, p granular.Parameter, c *muse.Confi
 
 	sfp := p.(*SFParam)
 	s.phase = sfp.offset
-	s.delta = (sfp.speed * s.buffer.SampleRate / c.SampleRate) / float64(s.buffer.NumFrames)
+	s.delta = (sfp.speed * s.sf.SampleRate() / c.SampleRate) / float64(s.sf.NumFrames())
+	s.speed = sfp.speed
 	s.lookupMode = sfp.lookupMode
 
-	if len(s.buffer.Channels) == 2 {
+	if s.sf.NumChannels() == 2 {
 		s.panLeft = math.Cos(sfp.panning * math.Pi / 2.0)
 		s.panRight = math.Sin(sfp.panning * math.Pi / 2.0)
 	} else {
@@ -158,12 +158,12 @@ func (s *SFSource) Activate(sampsToGo int64, p granular.Parameter, c *muse.Confi
 }
 
 type SFSourceFactory struct {
-	Samples *io.SoundFileBuffer
+	SoundFile io.SoundFiler
 }
 
 func (sf *SFSourceFactory) New() granular.Source {
 	return &SFSource{
-		buffer: sf.Samples,
+		sf: sf.SoundFile,
 	}
 }
 
@@ -229,26 +229,26 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	sfb, err := io.NewSoundFileBuffer("resources/sounds/birdfish-happy-loop-6199.wav")
+	sfb, err := io.NewMipMapSoundFile("resources/sounds/mixkit-cinematic-angelical-choir-transition-663.wav", 5)
 	if err != nil {
 		log.Fatalf("fatal err: %v", err)
 	}
 
-	numChannels := len(sfb.Channels)
+	numChannels := sfb.NumChannels()
 
 	env := muse.NewEnvironment(numChannels, 44100, 1024)
 
 	paramGen := &SFParameterGenerator{}
 
-	paramGen.speedClustering = museRand.NewClusterRand(2.0, 1.0, 1.0, 0.01, 0.01)
+	paramGen.speedClustering = museRand.NewClusterRand(2.0, 1.6, 1.0, 0.8, 0.8)
 	paramGen.amplitudeClustering = museRand.NewClusterRand(0.2, 0.1, 0.3, 0.3, 0.3)
-	paramGen.durationClustering = museRand.NewClusterRand(300.0, 255.0, 0.2, 0.01, 0.2)
-	paramGen.offsetClustering = museRand.NewClusterRand(0.6, 0.3, 0.8, 0.03, 0.5)
+	paramGen.durationClustering = museRand.NewClusterRand(1500.0, 1455.0, 0.2, 0.4, 0.2)
+	paramGen.offsetClustering = museRand.NewClusterRand(0.5, 0.45, 0.8, 0.8, 0.8)
 	paramGen.onsetClustering = museRand.NewClusterRand(120.0, 104.5, 0.4, 0.8, 0.8)
 	paramGen.panClustering = museRand.NewClusterRand(0.5, 0.3, 0.3, 0.2, 0.5)
-	paramGen.reversePlayChance = 0.0
+	paramGen.reversePlayChance = 0.1
 
-	gr := env.AddModule(granular.NewGranulator(numChannels, &SFSourceFactory{Samples: sfb}, &trapezoidal.Factory{}, 400, paramGen, env.Config, "granulator"))
+	gr := env.AddModule(granular.NewGranulator(numChannels, &SFSourceFactory{SoundFile: sfb}, &trapezoidal.Factory{}, 400, paramGen, env.Config, "granulator"))
 
 	// speedLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 0.9, 1.1, env.Config, ""))
 	// speedLfo.CtrlConnect(0, gr, 3)

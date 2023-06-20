@@ -2,6 +2,7 @@ package chorus
 
 import (
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/buffer"
 	"github.com/almerlucke/muse/components/delay"
 	"github.com/almerlucke/muse/components/phasor"
 	"github.com/almerlucke/muse/components/waveshaping"
@@ -140,7 +141,7 @@ func (c *Chorus) Synthesize() bool {
 	in := c.Inputs[0].Buffer
 	outLeft := c.Outputs[0].Buffer
 
-	var outRight muse.Buffer
+	var outRight buffer.Buffer
 
 	stereo := len(c.Outputs) == 2
 
