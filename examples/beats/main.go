@@ -179,22 +179,22 @@ func main() {
 
 	soundBank := io.SoundBank{}
 
-	soundBank["hihat"], _ = io.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	soundBank["kick"], _ = io.NewSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
-	soundBank["snare"], _ = io.NewSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
-	soundBank["808_1"], _ = io.NewSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav")
-	soundBank["808_2"], _ = io.NewSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav")
-	soundBank["808_3"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav")
-	soundBank["808_4"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
-	soundBank["shaker"], _ = io.NewSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
+	soundBank["hihat"], _ = io.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav", 4)
+	soundBank["kick"], _ = io.NewMipMapSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav", 4)
+	soundBank["snare"], _ = io.NewMipMapSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav", 4)
+	soundBank["808_1"], _ = io.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav", 4)
+	soundBank["808_2"], _ = io.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav", 4)
+	soundBank["808_3"], _ = io.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav", 4)
+	soundBank["808_4"], _ = io.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav", 4)
+	soundBank["shaker"], _ = io.NewMipMapSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav", 4)
 
 	drums := env.AddModule(drums.NewDrums(soundBank, 20, env.Config, "drums"))
 
-	addDrumTrack(env, "drums", []string{"hihat"}, bpm, 8, 0.875, 1.125, 0.6, hihatRhythm())
-	addDrumTrack(env, "drums", []string{"kick"}, bpm, 8, 0.875, 1.125, 1.0, kickRhythm())
-	addDrumTrack(env, "drums", []string{"snare"}, bpm, 8, 1.0, 1.0, 0.7, snareRhythm())
-	addDrumTrack(env, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, bpm, 2, 1.0, 1.0, 0.3, bassRhythm())
-	addDrumTrack(env, "drums", []string{"shaker"}, bpm, 2, 1.0, 1.0, 1.0, kickRhythm())
+	addDrumTrack(env, "drums", []string{"hihat"}, bpm, 8, 0.575, 3.525, 0.6, hihatRhythm())
+	addDrumTrack(env, "drums", []string{"kick"}, bpm, 8, 0.575, 3.525, 1.0, kickRhythm())
+	addDrumTrack(env, "drums", []string{"snare"}, bpm, 8, 0.6, 3.4, 0.7, snareRhythm())
+	addDrumTrack(env, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, bpm, 2, 0.6, 4.0, 0.3, bassRhythm())
+	addDrumTrack(env, "drums", []string{"shaker"}, bpm, 2, 0.6, 4.0, 1.0, kickRhythm())
 
 	drums.Connect(0, env, 0)
 	drums.Connect(1, env, 1)
