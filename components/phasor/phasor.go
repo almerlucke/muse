@@ -43,5 +43,6 @@ func (p *Phasor) Tick() []float64 {
 	}
 
 	p.outVector[0] = out
+
 	return p.outVector[:]
 }

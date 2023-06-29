@@ -67,6 +67,7 @@ func NewThru() *Thru {
 	return &Thru{}
 }
 
+// Make sure lookup table always contains one more sample so we do not need to wrap
 type LookupTable []float64
 
 func (lt LookupTable) Shape(x float64) float64 {
@@ -78,40 +79,46 @@ func (lt LookupTable) Shape(x float64) float64 {
 }
 
 func NewSineTable(n int) LookupTable {
-	table := make(LookupTable, n)
+	table := make(LookupTable, n+1)
 	phase := 0.0
-	inc := 2.0 * math.Pi / float64(n-1)
+	inc := 2.0 * math.Pi / float64(n)
 
 	for i := 0; i < n; i++ {
 		table[i] = math.Sin(phase)
 		phase += inc
 	}
 
+	table[n] = table[0]
+
 	return table
 }
 
 func NewNormalizedSineTable(n int) LookupTable {
-	table := make(LookupTable, n)
+	table := make(LookupTable, n+1)
 	phase := 0.0
-	inc := 2.0 * math.Pi / float64(n-1)
+	inc := 2.0 * math.Pi / float64(n)
 
 	for i := 0; i < n; i++ {
 		table[i] = math.Sin(phase)*0.5 + 0.5
 		phase += inc
 	}
 
+	table[n] = table[0]
+
 	return table
 }
 
 func NewHanningWindow(n int) LookupTable {
-	table := make(LookupTable, n)
+	table := make(LookupTable, n+1)
 	phase := 0.0
-	inc := 2.0 * math.Pi / float64(n-1)
+	inc := 2.0 * math.Pi / float64(n)
 
 	for i := 0; i < n; i++ {
 		table[i] = 0.5 - 0.5*math.Cos(phase)
 		phase += inc
 	}
+
+	table[n] = table[0]
 
 	return table
 }
