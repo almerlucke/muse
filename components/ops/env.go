@@ -89,6 +89,10 @@ func NewEnvelope(levels [4]float64, rates [4]float64, sr float64, releaseMode En
 	return env
 }
 
+func (env *Envelope) SetReleaseMode(releaseMode EnvelopeReleaseMode) {
+	env.releaseMode = releaseMode
+}
+
 func (env *Envelope) waitForRelease() bool {
 	return env.releaseMode == EnvelopeDurationRelease || env.releaseMode == EnvelopeNoteOffRelease
 }
@@ -134,6 +138,10 @@ func (env *Envelope) NoteOff() {
 	if env.Listener != nil {
 		env.Listener.Release(env)
 	}
+}
+
+func (env *Envelope) Idle() bool {
+	return env.index > 3
 }
 
 func (env *Envelope) Tick() float64 {

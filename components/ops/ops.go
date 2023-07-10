@@ -1,13 +1,23 @@
 // ops fm ops
 package ops
 
-type ComponentType int
 type FrequencyMode int
+type OperatorType int
 
 const (
 	TrackFrequency FrequencyMode = iota
 	FixedFrequency
 )
+
+const (
+	Modulator OperatorType = iota
+	Carrier
+)
+
+var defaultEnvLevels = [4]float64{1.0, 0.35, 0.35, 0.0}
+var defaultRateLevels = [4]float64{0.95, 0.8, 0.8, 0.95}
+var defaultPitchEnvLevels = [4]float64{0.5, 0.5, 0.5, 0.5}
+var defaultPitchRateLevels = [4]float64{0.95, 0.8, 0.8, 0.95}
 
 type Component interface {
 	Run() float64
@@ -21,17 +31,19 @@ type baseComponent struct {
 
 type Op struct {
 	baseComponent
-	table  []float64
-	phase  float64
-	inc    float64
-	fr     float64
-	fc     float64
-	level  float64
-	input  Component
-	fcMode FrequencyMode
+	table    []float64
+	phase    float64
+	inc      float64
+	fr       float64
+	fc       float64
+	level    float64
+	opType   OperatorType
+	input    Component
+	fcMode   FrequencyMode
+	levelEnv *Envelope
 }
 
-func NewOp(table []float64, fr float64, fc float64, sr float64, level float64, fcMode FrequencyMode) *Op {
+func NewOp(table []float64, fr float64, fc float64, sr float64, level float64, fcMode FrequencyMode, opType OperatorType) *Op {
 	var inc float64
 
 	if fcMode == TrackFrequency {
@@ -41,12 +53,14 @@ func NewOp(table []float64, fr float64, fc float64, sr float64, level float64, f
 	}
 
 	return &Op{
-		inc:    inc,
-		table:  table,
-		fr:     fr,
-		fc:     fc,
-		level:  level,
-		fcMode: fcMode,
+		inc:      inc,
+		table:    table,
+		fr:       fr,
+		fc:       fc,
+		level:    level,
+		fcMode:   fcMode,
+		opType:   opType,
+		levelEnv: NewEnvelope(defaultEnvLevels, defaultRateLevels, sr, EnvelopeNoteOffRelease),
 	}
 }
 
@@ -62,6 +76,14 @@ func (op *Op) SetTable(table []float64) {
 	op.table = table
 }
 
+func (op *Op) LevelEnvelope() *Envelope {
+	return op.levelEnv
+}
+
+func (op *Op) OperatorType() OperatorType {
+	return op.opType
+}
+
 func (op *Op) Level() float64 {
 	return op.level
 }
@@ -74,8 +96,9 @@ func (op *Op) FrequencyRatio() float64 {
 	return op.fr
 }
 
-func (op *Op) SetFrequencyRatio(fr float64) {
+func (op *Op) SetFrequencyRatio(fr float64, sr float64) {
 	op.fr = fr
+	op.SetFrequency(op.fc, sr)
 }
 
 func (op *Op) Frequency() float64 {
@@ -89,14 +112,17 @@ func (op *Op) SetFrequency(fc, sr float64) {
 	case FixedFrequency:
 		op.inc = fc / sr
 	}
+
+	op.fc = fc
 }
 
 func (op *Op) FrequencyMode() FrequencyMode {
 	return op.fcMode
 }
 
-func (op *Op) SetFrequencyMode(fcMode FrequencyMode) {
+func (op *Op) SetFrequencyMode(fcMode FrequencyMode, sr float64) {
 	op.fcMode = fcMode
+	op.SetFrequency(op.fc, sr)
 }
 
 func (op *Op) PrepareRun() {
@@ -150,7 +176,7 @@ func (op *Op) Run() float64 {
 	v1 := op.table[n1]
 	v2 := op.table[n1+1]
 
-	op.output = (v1 + fr*(v2-v1)) * op.level
+	op.output = (v1 + fr*(v2-v1)) * op.level * op.levelEnv.Tick()
 
 	return op.output
 }
@@ -201,17 +227,21 @@ type Ops struct {
 	root      Component
 	ops       []*Op
 	outputVec []float64
+	pitchEnv  *Envelope
+	level     float64
+	fc        float64
+	sr        float64
 }
 
 func NewDX7Algo1(table []float64, fc float64, sr float64) *Ops {
 	ops := make([]*Op, 6)
 
-	ops[0] = NewOp(table, 2.01, fc, sr, 0.2, TrackFrequency)
-	ops[1] = NewOp(table, 1.02, fc, sr, 0.5, TrackFrequency)
-	ops[2] = NewOp(table, 4.01, fc, sr, 0.2, TrackFrequency)
-	ops[3] = NewOp(table, 3.02, fc, sr, 0.1, TrackFrequency)
-	ops[4] = NewOp(table, 1.53, fc, sr, 0.2, TrackFrequency)
-	ops[5] = NewOp(table, 3.01, fc, sr, 0.5, TrackFrequency)
+	ops[0] = NewOp(table, 2.01, fc, sr, 0.2, TrackFrequency, Modulator)
+	ops[1] = NewOp(table, 1.02, fc, sr, 0.5, TrackFrequency, Carrier)
+	ops[2] = NewOp(table, 4.01, fc, sr, 0.2, TrackFrequency, Modulator)
+	ops[3] = NewOp(table, 3.02, fc, sr, 0.1, TrackFrequency, Modulator)
+	ops[4] = NewOp(table, 1.53, fc, sr, 0.2, TrackFrequency, Modulator)
+	ops[5] = NewOp(table, 3.01, fc, sr, 0.5, TrackFrequency, Carrier)
 
 	ops[1].Connect(ops[0]) // ops 1 to ops 2
 	ops[2].Connect(ops[2]) // ops 3 to ops 3 feedback
@@ -225,15 +255,55 @@ func NewDX7Algo1(table []float64, fc float64, sr float64) *Ops {
 		root:      mix,
 		ops:       ops,
 		outputVec: []float64{0.0},
+		pitchEnv:  NewEnvelope(defaultPitchEnvLevels, defaultPitchRateLevels, sr, EnvelopeNoteOffRelease),
+		sr:        sr,
+		fc:        fc,
+		level:     1.0,
 	}
 }
 
-func (ops *Ops) SetFrequency(fc float64, sr float64) {
+func (ops *Ops) SetReleaseMode(releaseMode EnvelopeReleaseMode) {
+	ops.pitchEnv.SetReleaseMode(releaseMode)
+	for _, op := range ops.ops {
+		op.levelEnv.SetReleaseMode(releaseMode)
+	}
+}
+
+func (ops *Ops) PitchEnvelope() *Envelope {
+	return ops.pitchEnv
+}
+
+func (ops *Ops) NoteOn(fc float64, level float64, duration float64) {
+	ops.fc = fc
+	ops.level = level
+
 	for _, op := range ops.ops {
 		if op.FrequencyMode() == TrackFrequency {
-			op.SetFrequency(fc, sr)
+			op.SetFrequency(fc, ops.sr)
 		}
 	}
+
+	ops.pitchEnv.TriggerHard(duration)
+	for _, op := range ops.ops {
+		op.levelEnv.TriggerHard(duration)
+	}
+}
+
+func (ops *Ops) NoteOff() {
+	ops.pitchEnv.NoteOff()
+	for _, op := range ops.ops {
+		op.LevelEnvelope().NoteOff()
+	}
+}
+
+func (ops *Ops) Idle() bool {
+	for _, op := range ops.ops {
+		if op.opType == Carrier && !op.levelEnv.Idle() {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (ops *Ops) Operator(index int) *Op {
@@ -257,7 +327,14 @@ func (ops *Ops) Run() float64 {
 
 	ops.run = true
 
-	ops.output = ops.root.Run()
+	fc := ops.pitchEnv.Tick() * 2.0 * ops.fc
+	for _, op := range ops.ops {
+		if op.FrequencyMode() == TrackFrequency {
+			op.SetFrequency(fc, ops.sr)
+		}
+	}
+
+	ops.output = ops.root.Run() * ops.level
 
 	return ops.output
 }
