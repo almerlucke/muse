@@ -15,7 +15,6 @@ import (
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/polyphony"
@@ -25,10 +24,11 @@ import (
 	"github.com/almerlucke/muse/utils/notes"
 	"github.com/gordonklaus/portaudio"
 
+	museMidi "github.com/almerlucke/muse/midi"
+
 	"gitlab.com/gomidi/midi"
 	. "gitlab.com/gomidi/midi/midimessage/channel" // (Channel Messages)
 	"gitlab.com/gomidi/midi/reader"
-	"gitlab.com/gomidi/rtmididrv"
 )
 
 type ClassicSynth struct {
@@ -74,21 +74,11 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 
 	synthAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, config))
 	synthAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, config))
-	allpass1 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, config, "allpass"))
-	allpass2 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, config, "allpass"))
-	allpassAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
-	allpassAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, config))
 
 	synth.Poly.Connect(0, synthAmp1, 0)
 	synth.Poly.Connect(1, synthAmp2, 0)
 	synthAmp1.Connect(0, synth.chorus1, 0)
 	synthAmp2.Connect(0, synth.chorus2, 0)
-	synthAmp1.Connect(0, allpass1, 0)
-	synthAmp2.Connect(0, allpass2, 0)
-	allpass1.Connect(0, allpassAmp1, 0)
-	allpass2.Connect(0, allpassAmp2, 0)
-	allpassAmp1.Connect(0, synth.chorus1, 0)
-	allpassAmp2.Connect(0, synth.chorus2, 0)
 	synth.chorus1.Connect(0, synth, 0)
 	synth.chorus2.Connect(0, synth, 1)
 
@@ -285,40 +275,19 @@ func main() {
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
-	drv, err := rtmididrv.New()
-	if err != nil {
-		log.Fatalf("error opening midi driver, %v", err)
-	}
+	listener, err := museMidi.NewMidiListener(1, reader.Each(func(pos *reader.Position, msg midi.Message) {
 
-	// make sure to close the driver at the end
-	defer drv.Close()
+		// inspect
+		log.Println(msg)
 
-	midiIns, err := drv.Ins()
-	if err != nil {
-		log.Fatalf("error getting midi ins, %v", err)
-	}
-
-	midiIn := midiIns[0]
-
-	log.Printf("opening MIDI Port %v\n", midiIn)
-	err = midiIn.Open()
-	if err != nil {
-		log.Fatalf("error opening midi port, %v", err)
-	}
-
-	defer midiIn.Close()
-
-	// to disable logging, pass mid.NoLogger() as option
-	midiReader := reader.New(
-		reader.NoLogger(),
-		// print every message
-		reader.Each(func(pos *reader.Position, msg midi.Message) {
-
-			// inspect
-			log.Println(msg)
-
-			switch v := msg.(type) {
-			case NoteOn:
+		switch v := msg.(type) {
+		case NoteOn:
+			if v.Velocity() == 0 {
+				synth.Poly.ReceiveMessage(map[string]any{
+					"command": "trigger",
+					"noteOff": fmt.Sprintf("%d", v.Key()),
+				})
+			} else {
 				velocity := float64(v.Velocity()) / 127.0
 				log.Printf("velocity %v", velocity)
 				synth.Poly.ReceiveMessage(map[string]any{
@@ -329,20 +298,19 @@ func main() {
 						"frequency": notes.Mtof(int(v.Key())),
 					},
 				})
-			case NoteOff:
-				synth.Poly.ReceiveMessage(map[string]any{
-					"command": "trigger",
-					"noteOff": fmt.Sprintf("%d", v.Key()),
-				})
 			}
-		}),
-	)
-
-	// listen for MIDI
-	err = midiReader.ListenTo(midiIn)
+		case NoteOff:
+			synth.Poly.ReceiveMessage(map[string]any{
+				"command": "trigger",
+				"noteOff": fmt.Sprintf("%d", v.Key()),
+			})
+		}
+	}))
 	if err != nil {
-		log.Fatalf("error lisiting to midi in, %v", err)
+		log.Fatalf("error opening midi listener, %v", err)
 	}
+
+	defer listener.Close()
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()
@@ -382,9 +350,4 @@ func main() {
 	)
 
 	w.ShowAndRun()
-
-	err = midiIn.StopListening()
-	if err != nil {
-		log.Fatalf("error stop listening to midi, %v", err)
-	}
 }
