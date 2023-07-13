@@ -14,14 +14,15 @@ const (
 	Carrier
 )
 
-var defaultEnvLevels = [4]float64{1.0, 0.35, 0.35, 0.0}
-var defaultRateLevels = [4]float64{0.95, 0.8, 0.8, 0.95}
-var defaultPitchEnvLevels = [4]float64{0.5, 0.5, 0.5, 0.5}
-var defaultPitchRateLevels = [4]float64{0.95, 0.8, 0.8, 0.95}
+var DefaultEnvLevels = [4]float64{1.0, 0.35, 0.35, 0.0}
+var DefaultEnvRates = [4]float64{0.95, 0.95, 0.8, 0.85}
+var DefaultPitchEnvLevels = [4]float64{0.5, 0.5, 0.5, 0.5}
+var DefaultPitchEnvRates = [4]float64{0.95, 0.8, 0.8, 0.95}
 
 type Component interface {
 	Run() float64
 	PrepareRun()
+	Connect(Component)
 }
 
 type baseComponent struct {
@@ -43,7 +44,7 @@ type Op struct {
 	levelEnv *Envelope
 }
 
-func NewOp(table []float64, fr float64, fc float64, sr float64, level float64, fcMode FrequencyMode, opType OperatorType) *Op {
+func NewOp(table []float64, fr float64, fc float64, sr float64, level float64, fcMode FrequencyMode) *Op {
 	var inc float64
 
 	if fcMode == TrackFrequency {
@@ -59,8 +60,7 @@ func NewOp(table []float64, fr float64, fc float64, sr float64, level float64, f
 		fc:       fc,
 		level:    level,
 		fcMode:   fcMode,
-		opType:   opType,
-		levelEnv: NewEnvelope(defaultEnvLevels, defaultRateLevels, sr, EnvelopeNoteOffRelease),
+		levelEnv: NewEnvelope(DefaultEnvLevels, DefaultEnvRates, sr, EnvelopeNoteOffRelease),
 	}
 }
 
@@ -78,6 +78,10 @@ func (op *Op) SetTable(table []float64) {
 
 func (op *Op) LevelEnvelope() *Envelope {
 	return op.levelEnv
+}
+
+func (op *Op) SetOperatorType(opType OperatorType) {
+	op.opType = opType
 }
 
 func (op *Op) OperatorType() OperatorType {
@@ -192,6 +196,10 @@ func NewMixer(inputs ...Component) *Mixer {
 	}
 }
 
+func (mix *Mixer) Connect(component Component) {
+	mix.inputs = append(mix.inputs, component)
+}
+
 func (mix *Mixer) PrepareRun() {
 	if !mix.run {
 		return
@@ -233,33 +241,70 @@ type Ops struct {
 	sr        float64
 }
 
-func NewDX7Algo1(table []float64, fc float64, sr float64) *Ops {
+func NewOps(table []float64, fc float64, sr float64) *Ops {
 	ops := make([]*Op, 6)
 
-	ops[0] = NewOp(table, 2.01, fc, sr, 0.2, TrackFrequency, Modulator)
-	ops[1] = NewOp(table, 1.02, fc, sr, 0.5, TrackFrequency, Carrier)
-	ops[2] = NewOp(table, 4.01, fc, sr, 0.2, TrackFrequency, Modulator)
-	ops[3] = NewOp(table, 3.02, fc, sr, 0.1, TrackFrequency, Modulator)
-	ops[4] = NewOp(table, 1.53, fc, sr, 0.2, TrackFrequency, Modulator)
-	ops[5] = NewOp(table, 3.01, fc, sr, 0.5, TrackFrequency, Carrier)
+	ops[0] = NewOp(table, 2.01, fc, sr, 0.2, TrackFrequency)
+	ops[1] = NewOp(table, 1.02, fc, sr, 0.5, TrackFrequency)
+	ops[2] = NewOp(table, 4.01, fc, sr, 0.2, TrackFrequency)
+	ops[3] = NewOp(table, 3.02, fc, sr, 0.1, TrackFrequency)
+	ops[4] = NewOp(table, 1.53, fc, sr, 0.2, TrackFrequency)
+	ops[5] = NewOp(table, 3.01, fc, sr, 0.5, TrackFrequency)
 
-	ops[1].Connect(ops[0]) // ops 1 to ops 2
-	ops[2].Connect(ops[2]) // ops 3 to ops 3 feedback
-	ops[3].Connect(ops[2]) // ops 3 to ops 4
-	ops[4].Connect(ops[3]) // ops 4 to ops 5
-	ops[5].Connect(ops[4]) // ops 5 to ops 6
-
-	mix := NewMixer(ops[1], ops[5])
-
-	return &Ops{
-		root:      mix,
+	opsObj := &Ops{
+		root:      nil,
 		ops:       ops,
 		outputVec: []float64{0.0},
-		pitchEnv:  NewEnvelope(defaultPitchEnvLevels, defaultPitchRateLevels, sr, EnvelopeNoteOffRelease),
+		pitchEnv:  NewEnvelope(DefaultPitchEnvLevels, DefaultPitchEnvRates, sr, EnvelopeNoteOffRelease),
 		sr:        sr,
 		fc:        fc,
 		level:     1.0,
 	}
+
+	opsObj.Apply(DX7Algo1)
+
+	return opsObj
+}
+
+func (ops *Ops) ResetAlgo() {
+	for _, op := range ops.ops {
+		op.Connect(nil)
+		op.opType = Modulator
+	}
+	ops.root = ops.ops[0]
+}
+
+func (ops *Ops) Apply(algo *Algo) {
+	ops.ResetAlgo()
+
+	objects := map[string]Component{}
+
+	objects["op1"] = ops.ops[0]
+	objects["op2"] = ops.ops[1]
+	objects["op3"] = ops.ops[2]
+	objects["op4"] = ops.ops[3]
+	objects["op5"] = ops.ops[4]
+	objects["op6"] = ops.ops[5]
+
+	for id, opType := range algo.OpTypes {
+		if opType == "carrier" {
+			objects[id].(*Op).SetOperatorType(Carrier)
+		} else {
+			objects[id].(*Op).SetOperatorType(Modulator)
+		}
+	}
+
+	for _, obj := range algo.Objects {
+		if obj["type"] == "mix" {
+			objects[obj["id"]] = NewMixer()
+		}
+	}
+
+	for _, connection := range algo.Connections {
+		objects[connection[1]].Connect(objects[connection[0]])
+	}
+
+	ops.root = objects[algo.Root]
 }
 
 func (ops *Ops) SetReleaseMode(releaseMode EnvelopeReleaseMode) {
@@ -328,6 +373,7 @@ func (ops *Ops) Run() float64 {
 	ops.run = true
 
 	fc := ops.pitchEnv.Tick() * 2.0 * ops.fc
+
 	for _, op := range ops.ops {
 		if op.FrequencyMode() == TrackFrequency {
 			op.SetFrequency(fc, ops.sr)

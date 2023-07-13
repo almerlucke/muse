@@ -1,58 +1,38 @@
 package main
 
 import (
-	"github.com/almerlucke/muse/components/generator"
+	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/ops"
 	"github.com/almerlucke/muse/components/waveshaping"
-	"github.com/mkb218/gosndfile/sndfile"
+	"github.com/almerlucke/muse/messengers/banger"
+	"github.com/almerlucke/muse/messengers/triggers/timer"
+	"github.com/almerlucke/muse/modules/fmsynth"
+	"github.com/almerlucke/muse/value"
+	"github.com/almerlucke/muse/value/template"
 )
 
 func main() {
-	dx7 := ops.NewDX7Algo1(waveshaping.NewSineTable(2048), 100.0, 44100.0)
+	env := muse.NewEnvironment(1, 44100, 1024)
 
-	dx7.Operator(0).LevelEnvelope().Rates = [4]float64{0.95, 0.8, 0.8, 0.8}
-	dx7.Operator(1).LevelEnvelope().Rates = [4]float64{0.95, 0.8, 0.8, 0.8}
-	dx7.Operator(2).LevelEnvelope().Rates = [4]float64{0.95, 0.8, 0.8, 0.8}
-	dx7.Operator(3).LevelEnvelope().Rates = [4]float64{0.95, 0.8, 0.8, 0.8}
-	dx7.Operator(4).LevelEnvelope().Rates = [4]float64{0.95, 0.8, 0.8, 0.8}
-	dx7.Operator(5).LevelEnvelope().Rates = [4]float64{0.95, 0.8, 0.8, 0.8}
-	dx7.PitchEnvelope().Levels = [4]float64{0.516, 0.503, 0.495, 0.5}
-	dx7.PitchEnvelope().Rates = [4]float64{0.95, 0.8, 0.8, 0.8}
-	dx7.SetReleaseMode(ops.EnvelopeDurationRelease)
-	dx7.NoteOn(400.0, 1.0, 2.0)
-	generator.WriteToFile(dx7, "/Users/almerlucke/Desktop/test.aiff", 8.0, 44100, sndfile.SF_FORMAT_AIFF)
+	fm := fmsynth.NewFMSynth(18, waveshaping.NewSineTable(2048), env.Config, "fm")
+	fm.OperatorSettings[1].Level = 0.5
+	fm.OperatorSettings[5].Level = 0.5
+	fm.PitchEnvLevels = [4]float64{0.49, 0.51, 0.495, 0.5}
+	fm.PitchEnvRates = [4]float64{0.95, 0.95, 0.95, 0.95}
+	fm.ReleaseMode = ops.EnvelopeDurationRelease
+	fm.ApplySettingsChange()
 
-	// rate 1.0 -> 0.001 s --- 0.001 s
-	// rate 0.0 -> 90 s --- 210 s
-	//
+	env.AddModule(fm)
 
-	// env := ops.NewEnvelope([4]float64{1.0, 0.5, 0.3, 0.0}, [4]float64{0.95, 0.95, 0.95, 0.95}, 44100.0, ops.EnvelopeAutomaticRelease)
-	// vec := []float64{}
+	env.AddMessenger(banger.NewTemplateGenerator([]string{"fm"}, template.Template{
+		"noteOn":   value.NewSequence([]any{36, 36, 48, 41, 51, 51, 49, 47, 32, 33}),
+		"duration": value.NewSequence([]any{500.0, 300.0, 250.0, 150.0, 300.0, 125.0, 125.0, 500.0, 375.0}),
+		"level":    value.NewSequence([]any{1.0}),
+	}, "notes"))
 
-	// env.TriggerHard(0)
+	env.AddMessenger(timer.NewTimer(250.0, []string{"notes"}, env.Config, ""))
 
-	// for i := 0; i < 4000; i++ {
-	// 	v := env.Tick()
-	// 	//log.Printf("%f", v)
-	// 	vec = append(vec, v)
-	// }
+	fm.Connect(0, env, 0)
 
-	// // env.NoteOff()
-
-	// for i := 0; i < 16000; i++ {
-	// 	v := env.Tick()
-	// 	//log.Printf("%f", v)
-	// 	vec = append(vec, v)
-	// }
-
-	// plot.PlotVector(vec, 1000, 500, "/Users/almerlucke/Desktop/env.png")
-
-	// vec = []float64{}
-	// for i := 0; i < 2000; i++ {
-	// 	v := ops.RateToSeconds(float64(i)/2000.0, ops.Rising, 2.5)
-	// 	// log.Printf("%f", v)
-	// 	vec = append(vec, v)
-	// }
-
-	// plot.PlotVector(vec, 1000, 500, "/Users/almerlucke/Desktop/decay.png")
+	env.QuickPlayAudio()
 }
