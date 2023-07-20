@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/mkb218/gosndfile/sndfile"
 
 	// Components
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
@@ -57,17 +56,14 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 		{Duration: 350, Shape: 0.1},
 	}
 
-	adsrEnv := testVoice.AddModule(adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr"))
-	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
-	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, config, "shaper"))
-	filter := testVoice.AddModule(moog.NewMoog(1700.0, 0.48, 1.0, config, "filter"))
+	adsrEnv := adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr").Add(testVoice)
+	osc := phasor.NewPhasor(140.0, 0.0, config, "osc").Add(testVoice)
+	shape := waveshaper.NewWaveShaper(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, config, "shaper").
+		Add(testVoice).In(0, osc, 0)
+	multiplier := functor.NewFunctor(2, functor.FunctorMult, config).Add(testVoice).In(0, shape, 0, 1, adsrEnv, 0)
+	filter := moog.NewMoog(1700.0, 0.48, 1.0, config, "filter").Add(testVoice).In(0, multiplier, 0)
 
-	osc.Connect(0, shape, 0)
-	shape.Connect(0, multiplier, 0)
-	adsrEnv.Connect(0, multiplier, 1)
-	multiplier.Connect(0, filter, 0)
-	filter.Connect(0, testVoice, 0)
+	testVoice.In(0, filter, 0)
 
 	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
 	testVoice.Shaper = shape.(*waveshaper.WaveShaper)
@@ -122,10 +118,10 @@ func main() {
 
 	milliPerBeat := 60000.0 / float64(bpm) / 4.0
 
-	paramVarTri1 := env.AddModule(vartri.NewVarTri(0.265, 0.0, 0.5, env.Config, "vartri1"))
-	paramVarTri2 := env.AddModule(vartri.NewVarTri(0.325, 0.0, 0.5, env.Config, "vartri2"))
-	superSawDrive := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.84 + 0.15 }, env.Config))
-	filterCutOff := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*3200.0 + 40.0 }, env.Config))
+	paramVarTri1 := vartri.NewVarTri(0.265, 0.0, 0.5, env.Config).Named("vartri1").Add(env)
+	paramVarTri2 := vartri.NewVarTri(0.325, 0.0, 0.5, env.Config).Named("vartri2").Add(env)
+	superSawDrive := functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.84 + 0.15 }, env.Config).Add(env).In(0, paramVarTri1, 0)
+	filterCutOff := functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*3200.0 + 40.0 }, env.Config).Add(env).In(0, paramVarTri2, 0)
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
@@ -136,30 +132,22 @@ func main() {
 		filterCutOff.Connect(0, voice.Filter, 1)
 	}
 
-	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
-	allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config, "allpass"))
-	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config))
-	reverb := env.AddModule(freeverb.NewFreeVerb(env.Config, "freeverb"))
-
-	reverb.(*freeverb.FreeVerb).SetDamp(0.1)
-	reverb.(*freeverb.FreeVerb).SetDry(0.7)
-	reverb.(*freeverb.FreeVerb).SetWet(0.1)
-	reverb.(*freeverb.FreeVerb).SetRoomSize(0.8)
-	reverb.(*freeverb.FreeVerb).SetWidth(0.8)
-
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
-	superSawDrive.Connect(0, poly, 0)
-	filterCutOff.Connect(0, poly, 0)
+	poly := polyphony.NewPolyphony(1, voices, env.Config, "polyphony").Add(env).In(0, superSawDrive, 0, 0, filterCutOff, 0)
+	allpass := allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config, "allpass").Add(env).In(0, poly, 0)
+	allpassAmp := functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config).Add(env).In(0, allpass, 0)
+	reverb := freeverb.NewFreeVerb(env.Config).Named("freeverb").Add(env).In(0, poly, 0, 1, allpassAmp, 0).(*freeverb.FreeVerb)
 
-	paramVarTri1.Connect(0, superSawDrive, 0)
-	paramVarTri2.Connect(0, filterCutOff, 0)
-	poly.Connect(0, allpass, 0)
-	allpass.Connect(0, allpassAmp, 0)
-	poly.Connect(0, reverb, 0)
-	allpassAmp.Connect(0, reverb, 1)
-	reverb.Connect(0, env, 0)
-	reverb.Connect(1, env, 1)
+	reverb.SetDamp(0.1)
+	reverb.SetDry(0.7)
+	reverb.SetWet(0.1)
+	reverb.SetRoomSize(0.8)
+	reverb.SetWidth(0.8)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/voices.aiff", 24.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	env.In(0, reverb, 0, 1, reverb, 1)
+
+	env.QuickPlayAudio()
+
+	// env.SynthesizeToFile("/Users/almerlucke/Desktop/voices.aiff", 24.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

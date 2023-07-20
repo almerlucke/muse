@@ -3,6 +3,8 @@ package muse
 type Module interface {
 	Control
 	Stater
+	Named(string) Module
+	Add(Patch) Module
 	Configuration() *Configuration
 	NumInputs() int
 	NumOutputs() int
@@ -16,6 +18,7 @@ type Module interface {
 	MustSynthesize() bool
 	PrepareSynthesis()
 	Synthesize() bool
+	In(...any) Module
 	Connect(int, Module, int)
 	Disconnect()
 }
@@ -103,6 +106,24 @@ func (m *BaseModule) RemoveOutputConnection(outputIndex int, receiver Module, in
 	if removeIndex > -1 {
 		m.Outputs[outputIndex].Connections = append(conns[:removeIndex], conns[removeIndex+1:]...)
 	}
+}
+
+func (m *BaseModule) Named(name string) Module {
+	self := m.Self().(Module)
+	self.SetIdentifier(name)
+	return self
+}
+
+func (m *BaseModule) Add(p Patch) Module {
+	return p.AddModule(m.Self().(Module))
+}
+
+func (m *BaseModule) In(rawIconns ...any) Module {
+	self := m.Self().(Module)
+	for _, iConn := range IConns(rawIconns...) {
+		iConn.Module.Connect(iConn.OutIndex, self, iConn.InIndex)
+	}
+	return self
 }
 
 func (m *BaseModule) Connect(outIndex int, to Module, inIndex int) {
