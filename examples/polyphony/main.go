@@ -118,8 +118,8 @@ func main() {
 
 	milliPerBeat := 60000.0 / float64(bpm) / 4.0
 
-	paramVarTri1 := vartri.NewVarTri(0.265, 0.0, 0.5, env.Config).Named("vartri1").Add(env)
-	paramVarTri2 := vartri.NewVarTri(0.325, 0.0, 0.5, env.Config).Named("vartri2").Add(env)
+	paramVarTri1 := vartri.NewVarTri(0.265, 0.0, 0.5, env.Config).Add(env)
+	paramVarTri2 := vartri.NewVarTri(0.325, 0.0, 0.5, env.Config).Add(env)
 	superSawDrive := functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.84 + 0.15 }, env.Config).Add(env).In(0, paramVarTri1, 0)
 	filterCutOff := functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*3200.0 + 40.0 }, env.Config).Add(env).In(0, paramVarTri2, 0)
 
@@ -134,10 +134,10 @@ func main() {
 
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
-	poly := polyphony.NewPolyphony(1, voices, env.Config, "polyphony").Add(env).In(0, superSawDrive, 0, 0, filterCutOff, 0)
+	poly := polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony").Add(env).In(0, superSawDrive, 0, 0, filterCutOff, 0)
 	allpass := allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config, "allpass").Add(env).In(0, poly, 0)
 	allpassAmp := functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config).Add(env).In(0, allpass, 0)
-	reverb := freeverb.NewFreeVerb(env.Config).Named("freeverb").Add(env).In(0, poly, 0, 1, allpassAmp, 0).(*freeverb.FreeVerb)
+	reverb := freeverb.NewFreeVerb(env.Config).Add(env).In(0, poly, 0, 1, allpassAmp, 0).(*freeverb.FreeVerb)
 
 	reverb.SetDamp(0.1)
 	reverb.SetDry(0.7)

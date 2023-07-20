@@ -710,7 +710,7 @@ func main() {
 		voices = append(voices, voice)
 	}
 
-	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
+	poly := polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony").Add(env)
 	// allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.1, env.Config, "allpass"))
 
 	// muse.Connect(voicePlayer, 0, allpass, 0)

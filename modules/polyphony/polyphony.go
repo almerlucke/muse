@@ -19,9 +19,9 @@ type Polyphony struct {
 	activePool *pool.Pool[Voice]
 }
 
-func NewPolyphony(numChannels int, voices []Voice, config *muse.Configuration, identifier string) *Polyphony {
+func NewPolyphony(numChannels int, voices []Voice, config *muse.Configuration) *Polyphony {
 	poly := &Polyphony{
-		BaseModule: muse.NewBaseModule(1, numChannels, config, identifier),
+		BaseModule: muse.NewBaseModule(1, numChannels, config, ""),
 	}
 
 	poly.freePool = pool.NewPool[Voice]()

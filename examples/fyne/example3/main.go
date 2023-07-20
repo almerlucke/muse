@@ -225,7 +225,7 @@ func main() {
 	}))
 
 	mult := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.3 }, env.Config))
-	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
+	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony"))
 	allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.3, env.Config, "allpass"))
 
 	sineTable := shaping.NewNormalizedSineTable(512)

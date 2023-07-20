@@ -67,7 +67,7 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 
 	synth.ampEnv = ampEnv
 	synth.filterEnv = filterEnv
-	synth.poly = classic.NewSynth(20, ampEnv, filterEnv, config, "poly")
+	synth.poly = classic.NewSynth(20, ampEnv, filterEnv, config).Named("poly").(*polyphony.Polyphony)
 	synth.chorus1 = chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, config, "chorus1")
 	synth.chorus2 = chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, config, "chorus2")
 
@@ -422,7 +422,7 @@ func main() {
 	soundBank["808_4"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
 	soundBank["shaker"], _ = io.NewSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
 
-	drumMachine := env.AddModule(drums.NewDrums(soundBank, 20, env.Config, "drums"))
+	drumMachine := env.AddModule(drums.NewDrums(soundBank, 20, env.Config).Named("drums"))
 
 	addDrumTrack(env, "drums", []string{"hihat"}, int(bpm), 8, 0.875, 1.125, 0.6, hihatRhythm())
 	addDrumTrack(env, "drums", []string{"kick"}, int(bpm), 8, 0.875, 1.125, 1.0, kickRhythm())

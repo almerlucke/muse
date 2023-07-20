@@ -112,7 +112,7 @@ func main() {
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
+	poly := polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony").Add(env)
 
 	octave := notes.O3
 

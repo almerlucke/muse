@@ -7,7 +7,7 @@ import (
 	"github.com/almerlucke/muse/modules/polyphony"
 )
 
-func NewDrums(soundBank io.SoundBank, numVoices int, config *muse.Configuration, id string) *polyphony.Polyphony {
+func NewDrums(soundBank io.SoundBank, numVoices int, config *muse.Configuration) *polyphony.Polyphony {
 	var initSound io.SoundFiler
 
 	for _, v := range soundBank {
@@ -24,5 +24,5 @@ func NewDrums(soundBank io.SoundBank, numVoices int, config *muse.Configuration,
 		voices[i] = player
 	}
 
-	return polyphony.NewPolyphony(initSound.NumChannels(), voices, config, id)
+	return polyphony.NewPolyphony(initSound.NumChannels(), voices, config)
 }

@@ -207,7 +207,7 @@ func main() {
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config, "polyphony"))
+	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony"))
 	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config, "allpass"))
 
 	sineTable := shaping.NewNormalizedSineTable(512)

@@ -188,7 +188,7 @@ func main() {
 	soundBank["808_4"], _ = io.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav", 4)
 	soundBank["shaker"], _ = io.NewMipMapSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav", 4)
 
-	drums := env.AddModule(drums.NewDrums(soundBank, 20, env.Config, "drums"))
+	drums := drums.NewDrums(soundBank, 20, env.Config).Named("drums").Add(env)
 
 	addDrumTrack(env, "drums", []string{"hihat"}, bpm, 8, 0.575, 3.525, 0.6, hihatRhythm())
 	addDrumTrack(env, "drums", []string{"kick"}, bpm, 8, 0.575, 3.525, 1.0, kickRhythm())

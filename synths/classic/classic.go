@@ -94,14 +94,14 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 	return voice
 }
 
-func NewSynth(numVoices int, ampEnv adsrc.StepProvider, filterEnv adsrc.StepProvider, config *muse.Configuration, identifier string) *polyphony.Polyphony {
+func NewSynth(numVoices int, ampEnv adsrc.StepProvider, filterEnv adsrc.StepProvider, config *muse.Configuration) *polyphony.Polyphony {
 	voices := make([]polyphony.Voice, numVoices)
 
 	for i := 0; i < numVoices; i++ {
 		voices[i] = NewVoice(config, ampEnv, filterEnv)
 	}
 
-	return polyphony.NewPolyphony(2, voices, config, identifier)
+	return polyphony.NewPolyphony(2, voices, config)
 }
 
 func (v *Voice) IsActive() bool {
