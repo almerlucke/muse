@@ -41,14 +41,14 @@ type Chorus struct {
 	mix         float64
 }
 
-func NewChorus(stereo bool, delayCenter float64, delayRange float64, modDepth float64, modSpeed float64, mix float64, modShaper waveshaping.Shaper, config *muse.Configuration, identifier string) *Chorus {
+func NewChorus(stereo bool, delayCenter float64, delayRange float64, modDepth float64, modSpeed float64, mix float64, modShaper waveshaping.Shaper, config *muse.Configuration) *Chorus {
 	numOutputs := 1
 	if stereo {
 		numOutputs = 2
 	}
 
 	c := &Chorus{
-		BaseModule:  *muse.NewBaseModule(4, numOutputs, config, identifier),
+		BaseModule:  *muse.NewBaseModule(4, numOutputs, config, ""),
 		delayLine:   delay.NewDelay(int((delayCenter + delayRange*0.5 + 1) * config.SampleRate * 0.001)),
 		delayCenter: delayCenter,
 		delayRange:  delayRange,

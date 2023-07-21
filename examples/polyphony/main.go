@@ -133,7 +133,7 @@ func main() {
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
 	poly := polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony").Add(env).In(superSawDrive, filterCutOff, 0, 0)
-	allpass := allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config, "allpass").Add(env).In(poly)
+	allpass := allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config).Add(env).In(poly)
 	allpassAmp := modules.Scale(allpass, 0, 0.5, 0.0).Add(env)
 	reverb := freeverb.NewFreeVerb(env.Config).Add(env).In(poly, allpassAmp).(*freeverb.FreeVerb)
 

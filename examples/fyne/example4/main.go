@@ -208,7 +208,7 @@ func main() {
 	// milliPerBeat := 60000.0 / bpm
 
 	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony"))
-	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config, "allpass"))
+	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config))
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
@@ -315,7 +315,7 @@ func main() {
 
 	mult := env.AddModule(functor.NewAmp(0.5, env.Config))
 
-	chor1 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.9, 1.3, 0.3, waveshaping.NewSineTable(512), env.Config, ""))
+	chor1 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.9, 1.3, 0.3, waveshaping.NewSineTable(512), env.Config))
 
 	kickPlayer.Connect(0, mult, 0)
 	hihatPlayer.Connect(0, mult, 0)

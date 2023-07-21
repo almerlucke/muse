@@ -184,8 +184,8 @@ func main() {
 	timer.CtrlConnect(0, trigger, 0)
 	trigger.CtrlConnect(0, poly, 0)
 
-	chorus1 := env.AddModule(chorus.NewChorus(false, 30.0, 20.0, 0.4, 1.21, 0.4, nil, env.Config, ""))
-	chorus2 := env.AddModule(chorus.NewChorus(false, 31.0, 21.0, 0.31, 1.31, 0.5, nil, env.Config, ""))
+	chorus1 := env.AddModule(chorus.NewChorus(false, 30.0, 20.0, 0.4, 1.21, 0.4, nil, env.Config))
+	chorus2 := env.AddModule(chorus.NewChorus(false, 31.0, 21.0, 0.31, 1.31, 0.5, nil, env.Config))
 
 	poly.Connect(0, chorus1, 0)
 	poly.Connect(1, chorus2, 0)

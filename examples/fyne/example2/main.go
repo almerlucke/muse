@@ -132,7 +132,7 @@ func main() {
 	}
 
 	poly := polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony").Add(env)
-	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config, "allpass"))
+	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config))
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 

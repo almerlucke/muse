@@ -71,9 +71,9 @@ type Osc2 struct {
 	t   float64
 }
 
-func NewOsc2(fc float64, t float64, pw float64, amp float64, wf Waveform, config *muse.Configuration, identifier string) *Osc2 {
+func NewOsc2(fc float64, t float64, pw float64, amp float64, wf Waveform, config *muse.Configuration) *Osc2 {
 	osc := &Osc2{
-		BaseModule: muse.NewBaseModule(3, 1, config, identifier),
+		BaseModule: muse.NewBaseModule(3, 1, config, ""),
 		t:          t,
 	}
 

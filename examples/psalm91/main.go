@@ -215,9 +215,9 @@ func main() {
 
 	synthSettings(synth)
 
-	guitarChorus := env.AddModule(chorus.NewChorus(true, 20.0, 10.0, 0.3, 1.3, 0.2, nil, env.Config, "guitarChorus"))
-	singChorus := env.AddModule(chorus.NewChorus(true, 30.0, 15.0, 0.3, 1.7, 0.4, nil, env.Config, "singChorus"))
-	synthChorus := env.AddModule(chorus.NewChorus(true, 10.0, 7.0, 0.5, 3.8, 0.4, nil, env.Config, "synthChorus"))
+	guitarChorus := env.AddModule(chorus.NewChorus(true, 20.0, 10.0, 0.3, 1.3, 0.2, nil, env.Config))
+	singChorus := env.AddModule(chorus.NewChorus(true, 30.0, 15.0, 0.3, 1.7, 0.4, nil, env.Config))
+	synthChorus := env.AddModule(chorus.NewChorus(true, 10.0, 7.0, 0.5, 3.8, 0.4, nil, env.Config))
 
 	hihatStepper, hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 4, 1.875, 2.125, 0.75, value.NewSequence([]*swing.Step{
 		{}, {Shuffle: 0.2}, {}, {Shuffle: 0.2}, {}, {Shuffle: 0.2}, {BurstChance: 0.3, NumBurst: 3}, {Shuffle: 0.2},
@@ -241,7 +241,7 @@ func main() {
 	snarePlayer.Connect(0, drumMixer, 1)
 	hihatPlayer.Connect(0, drumMixer, 2)
 
-	drumEcho := env.AddModule(allpass.NewAllpass(5000.0, 60000.0/float64(bpm)*1.25, 0.3, env.Config, "allpass"))
+	drumEcho := env.AddModule(allpass.NewAllpass(5000.0, 60000.0/float64(bpm)*1.25, 0.3, env.Config))
 	drumEchoAmp := env.AddModule(functor.NewAmp(0.3, env.Config))
 	drumMixer.Connect(0, drumEcho, 0)
 	drumEcho.Connect(0, drumEchoAmp, 0)

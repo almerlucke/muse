@@ -68,8 +68,8 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	synth.ampEnv = ampEnv
 	synth.filterEnv = filterEnv
 	synth.poly = classic.NewSynth(20, ampEnv, filterEnv, config).Named("poly").(*polyphony.Polyphony)
-	synth.chorus1 = chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, config, "chorus1")
-	synth.chorus2 = chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, config, "chorus2")
+	synth.chorus1 = chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, config)
+	synth.chorus2 = chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, config)
 
 	synth.AddModule(synth.poly)
 	synth.AddModule(synth.chorus1)
@@ -77,8 +77,8 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 
 	synthAmp1 := synth.AddModule(functor.NewAmp(0.85, config))
 	synthAmp2 := synth.AddModule(functor.NewAmp(0.85, config))
-	allpass1 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, config, "allpass"))
-	allpass2 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, config, "allpass"))
+	allpass1 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, config))
+	allpass2 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, config))
 	allpassAmp1 := synth.AddModule(functor.NewAmp(0.5, config))
 	allpassAmp2 := synth.AddModule(functor.NewAmp(0.5, config))
 

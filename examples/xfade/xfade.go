@@ -10,14 +10,14 @@ import (
 func main() {
 	env := muse.NewEnvironment(1, 44100.0, 512)
 
-	source1 := env.AddModule(blosc.NewOsc(110.0, 0.0, env.Config, ""))
-	source2 := env.AddModule(blosc.NewOsc(140.0, 0.0, env.Config, ""))
-	source3 := env.AddModule(blosc.NewOsc(160.0, 0.0, env.Config, ""))
-	source4 := env.AddModule(blosc.NewOsc(170.0, 0.0, env.Config, ""))
+	source1 := env.AddModule(blosc.NewOsc(110.0, 0.0, env.Config))
+	source2 := env.AddModule(blosc.NewOsc(140.0, 0.0, env.Config))
+	source3 := env.AddModule(blosc.NewOsc(160.0, 0.0, env.Config))
+	source4 := env.AddModule(blosc.NewOsc(170.0, 0.0, env.Config))
 
-	fader1 := env.AddModule(xfade.NewXFade(0.0, env.Config, ""))
-	fader2 := env.AddModule(xfade.NewXFade(0.0, env.Config, ""))
-	fader3 := env.AddModule(xfade.NewXFade(0.0, env.Config, ""))
+	fader1 := env.AddModule(xfade.NewXFade(0.0, env.Config))
+	fader2 := env.AddModule(xfade.NewXFade(0.0, env.Config))
+	fader3 := env.AddModule(xfade.NewXFade(0.0, env.Config))
 
 	source1.Connect(2, fader1, 0)
 	source2.Connect(3, fader1, 1)

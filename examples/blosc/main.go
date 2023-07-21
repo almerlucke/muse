@@ -30,7 +30,7 @@ func main() {
 		[]string{"sequencer"}, "",
 	))
 
-	osc := env.AddModule(blosc.NewOsc(100.0, 0.0, env.Config, "osc"))
+	osc := env.AddModule(blosc.NewOsc(100.0, 0.0, env.Config))
 
 	osc.Connect(3, env, 0)
 

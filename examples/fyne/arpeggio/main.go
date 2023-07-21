@@ -116,7 +116,7 @@ func main() {
 	// milliPerBeat := 60000.0 / bpm
 
 	poly1 := polyphony.NewPolyphony(1, voices1, env.Config).Named("polyphony1").Add(env)
-	chor := env.AddModule(chorus.NewChorus(true, 15, 10, 0.2, 3.42, 0.5, nil, env.Config, "chorus"))
+	chor := env.AddModule(chorus.NewChorus(true, 15, 10, 0.2, 3.42, 0.5, nil, env.Config))
 
 	octave := notes.O4
 

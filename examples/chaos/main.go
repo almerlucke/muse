@@ -90,7 +90,7 @@ func genFreq() {
 	chaosLfo.CtrlConnect(0, cgen, 0)
 	freqLfo.CtrlConnect(0, cgen, 1)
 
-	osc1 := env.AddModule(blosc.NewOsc(100.0, 0.0, env.Config, ""))
+	osc1 := env.AddModule(blosc.NewOsc(100.0, 0.0, env.Config))
 
 	cgen.CtrlConnect(1, osc1, 0)
 
