@@ -45,7 +45,7 @@ func NewChaosVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, f
 	interpol := interpolator.NewInterpolator(iter, interpolator.Linear, 1.0/120.0)
 
 	voice := &ChaosVoice{
-		BasePatch:      muse.NewPatch(0, 2, config, ""),
+		BasePatch:      muse.NewPatch(0, 2, config),
 		verhulst:       verhulst,
 		iter:           iter,
 		interpol:       interpol,

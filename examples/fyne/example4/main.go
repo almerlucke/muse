@@ -54,7 +54,7 @@ type TestVoice struct {
 
 func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepProvider, filterStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch:          muse.NewPatch(0, 1, config, ""),
+		BasePatch:          muse.NewPatch(0, 1, config),
 		ampStepProvider:    ampStepProvider,
 		filterStepProvider: filterStepProvider,
 		shaper:             shaping.NewSoftSyncTriangle(1.25),

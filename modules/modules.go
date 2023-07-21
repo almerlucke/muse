@@ -15,3 +15,7 @@ func Mult(args ...any) muse.Module {
 func Scale(mod muse.Module, outIndex int, scale float64, offset float64) muse.Module {
 	return functor.NewScale(scale, offset, mod.Configuration()).In(mod, outIndex)
 }
+
+func Amp(mod muse.Module, outIndex int, scale float64) muse.Module {
+	return functor.NewScale(scale, 0, mod.Configuration()).In(mod, outIndex)
+}

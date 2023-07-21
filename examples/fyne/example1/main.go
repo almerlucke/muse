@@ -57,7 +57,7 @@ type TestVoice struct {
 
 func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch:    muse.NewPatch(0, 1, config, ""),
+		BasePatch:    muse.NewPatch(0, 1, config),
 		stepProvider: stepProvider,
 	}
 

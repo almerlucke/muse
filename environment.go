@@ -20,7 +20,7 @@ func NewEnvironment(numOutputs int, sampleRate float64, bufferSize int) *Environ
 	config := &Configuration{SampleRate: sampleRate, BufferSize: bufferSize}
 
 	e := &Environment{
-		BasePatch: NewPatch(0, numOutputs, config, "environment"),
+		BasePatch: NewPatch(0, numOutputs, config),
 		Config:    config,
 	}
 

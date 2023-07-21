@@ -47,7 +47,7 @@ type TestVoice struct {
 
 func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch:       muse.NewPatch(0, 1, config, ""),
+		BasePatch:       muse.NewPatch(0, 1, config),
 		ampStepProvider: ampStepProvider,
 		shaper:          shaping.NewSineTable(512),
 	}

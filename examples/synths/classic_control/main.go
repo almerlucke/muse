@@ -18,6 +18,7 @@ import (
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
+	"github.com/almerlucke/muse/modules"
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/functor"
@@ -46,10 +47,11 @@ type ClassicSynth struct {
 
 func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	synth := &ClassicSynth{
-		BasePatch: muse.NewPatch(0, 2, config, "synth"),
+		BasePatch: muse.NewPatch(0, 2, config),
 		controls:  controls.NewGroup("group.main", "Classic Synth"),
 	}
 
+	synth.SetIdentifier("synth")
 	synth.SetSelf(synth)
 
 	// Add self as receiver
@@ -67,34 +69,17 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 
 	synth.ampEnv = ampEnv
 	synth.filterEnv = filterEnv
-	synth.poly = classic.NewSynth(20, ampEnv, filterEnv, config).Named("poly").(*polyphony.Polyphony)
-	synth.chorus1 = chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, config)
-	synth.chorus2 = chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, config)
+	synth.poly = classic.NewSynth(20, ampEnv, filterEnv, config).Named("poly").Add(synth).(*polyphony.Polyphony)
+	synthAmp1 := functor.NewAmp(0.85, config).Add(synth).In(synth.poly)
+	synthAmp2 := functor.NewAmp(0.85, config).Add(synth).In(synth.poly, 1)
+	allpass1 := allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, config).Add(synth).In(synthAmp1)
+	allpass2 := allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, config).Add(synth).In(synthAmp2)
+	allpassAmp1 := functor.NewAmp(0.5, config).Add(synth).In(allpass1)
+	allpassAmp2 := functor.NewAmp(0.5, config).Add(synth).In(allpass2)
+	synth.chorus1 = chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, config).Add(synth).In(synthAmp1, allpassAmp1, 0, 0).(*chorus.Chorus)
+	synth.chorus2 = chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, config).Add(synth).In(synthAmp2, allpassAmp2, 0, 0).(*chorus.Chorus)
 
-	synth.AddModule(synth.poly)
-	synth.AddModule(synth.chorus1)
-	synth.AddModule(synth.chorus2)
-
-	synthAmp1 := synth.AddModule(functor.NewAmp(0.85, config))
-	synthAmp2 := synth.AddModule(functor.NewAmp(0.85, config))
-	allpass1 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, config))
-	allpass2 := synth.AddModule(allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, config))
-	allpassAmp1 := synth.AddModule(functor.NewAmp(0.5, config))
-	allpassAmp2 := synth.AddModule(functor.NewAmp(0.5, config))
-
-	synth.poly.Connect(0, synthAmp1, 0)
-	synth.poly.Connect(1, synthAmp2, 0)
-	synthAmp1.Connect(0, synth.chorus1, 0)
-	synthAmp2.Connect(0, synth.chorus2, 0)
-	synthAmp1.Connect(0, allpass1, 0)
-	synthAmp2.Connect(0, allpass2, 0)
-	allpass1.Connect(0, allpassAmp1, 0)
-	allpass2.Connect(0, allpassAmp2, 0)
-	allpassAmp1.Connect(0, synth.chorus1, 0)
-	allpassAmp2.Connect(0, synth.chorus2, 0)
-	synth.chorus1.Connect(0, synth, 0)
-	synth.chorus2.Connect(0, synth, 1)
-
+	synth.In(synth.chorus1, synth.chorus2)
 	synth.SetupControls()
 
 	return synth
@@ -405,11 +390,6 @@ func main() {
 	env := muse.NewEnvironment(2, 44100.0, 256)
 
 	bpm := 80.0
-	synth := NewClassicSynth(bpm, env.Config)
-	amp1 := env.AddModule(functor.NewAmp(0.7, env.Config))
-	amp2 := env.AddModule(functor.NewAmp(0.7, env.Config))
-
-	env.AddModule(synth)
 
 	soundBank := io.SoundBank{}
 
@@ -422,7 +402,7 @@ func main() {
 	soundBank["808_4"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
 	soundBank["shaker"], _ = io.NewSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
 
-	drumMachine := env.AddModule(drums.NewDrums(soundBank, 20, env.Config).Named("drums"))
+	drumMachine := drums.NewDrums(soundBank, 20, env.Config).Named("drums").Add(env)
 
 	addDrumTrack(env, "drums", []string{"hihat"}, int(bpm), 8, 0.875, 1.125, 0.6, hihatRhythm())
 	addDrumTrack(env, "drums", []string{"kick"}, int(bpm), 8, 0.875, 1.125, 1.0, kickRhythm())
@@ -430,14 +410,14 @@ func main() {
 	addDrumTrack(env, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, int(bpm), 2, 1.0, 1.0, 0.7, bassRhythm())
 	addDrumTrack(env, "drums", []string{"shaker"}, int(bpm), 2, 1.0, 1.0, 1.0, kickRhythm())
 
-	drumMachine.Connect(0, env, 0)
-	drumMachine.Connect(1, env, 1)
+	synth := NewClassicSynth(bpm, env.Config).Add(env).(*ClassicSynth)
 
-	synth.Connect(0, amp1, 0)
-	synth.Connect(1, amp2, 0)
-
-	amp1.Connect(0, env, 0)
-	amp2.Connect(0, env, 1)
+	env.In(
+		drumMachine, 0, 0,
+		drumMachine, 1, 1,
+		modules.Amp(synth, 0, 0.7).Add(env), 0, 0,
+		modules.Amp(synth, 1, 0.7).Add(env), 0, 1,
+	)
 
 	synth.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
 		"command":   "trigger",

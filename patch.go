@@ -1,7 +1,6 @@
 package muse
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -41,23 +40,23 @@ type BasePatch struct {
 	timestamp             int64
 }
 
-func NewPatch(numInputs int, numOutputs int, config *Configuration, identifier string) *BasePatch {
+func NewPatch(numInputs int, numOutputs int, config *Configuration) *BasePatch {
 	subModules := []Module{}
 
 	inputModules := make([]*ThruModule, numInputs)
 	for i := 0; i < numInputs; i++ {
-		inputModules[i] = NewThruModule(config, fmt.Sprintf("patch_%s_input_%d", identifier, i+1))
+		inputModules[i] = NewThruModule(config)
 		subModules = append(subModules, inputModules[i])
 	}
 
 	outputModules := make([]*ThruModule, numOutputs)
 	for i := 0; i < numOutputs; i++ {
-		outputModules[i] = NewThruModule(config, fmt.Sprintf("patch_%s_output_%d", identifier, i+1))
+		outputModules[i] = NewThruModule(config)
 		subModules = append(subModules, outputModules[i])
 	}
 
 	p := &BasePatch{
-		BaseModule:            NewBaseModule(0, 0, config, identifier),
+		BaseModule:            NewBaseModule(0, 0, config, ""),
 		internalInputControl:  NewControlThru(),
 		internalOutputControl: NewControlThru(),
 		subModules:            subModules,

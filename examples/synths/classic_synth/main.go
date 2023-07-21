@@ -43,10 +43,11 @@ type ClassicSynth struct {
 
 func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	synth := &ClassicSynth{
-		BasePatch: muse.NewPatch(0, 2, config, "synth"),
+		BasePatch: muse.NewPatch(0, 2, config),
 		controls:  controls.NewGroup("group.main", "Classic Synth"),
 	}
 
+	synth.SetIdentifier("synth")
 	synth.SetSelf(synth)
 
 	// Add self as receiver

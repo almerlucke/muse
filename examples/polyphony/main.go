@@ -46,7 +46,7 @@ func paramMapper(param int, value any, shaper shaping.Shaper) {
 
 func NewTestVoice(config *muse.Configuration) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch: muse.NewPatch(0, 1, config, ""),
+		BasePatch: muse.NewPatch(0, 1, config),
 	}
 
 	steps := []adsrc.Step{

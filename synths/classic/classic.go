@@ -37,14 +37,14 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 	noiseMix := 0.05
 
 	voice := &Voice{
-		BasePatch:      muse.NewPatch(0, 2, config, ""),
+		BasePatch:      muse.NewPatch(0, 2, config),
 		ampEnv:         adsr.NewADSR(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
 		filterEnv:      adsr.NewADSR(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
 		Osc1:           blosc.NewOsc(100.0, 0.0, config),
 		Osc2:           blosc.NewOsc(100.0, 0.5, config),
 		noiseGen:       noise.NewNoise(1, config),
 		SourceMixer:    mixer.NewMixer(3, config),
-		filter:         korg35.NewKorg35LPF(1500.0, 0.7, 2.0, config, "filter"),
+		filter:         korg35.NewKorg35LPF(1500.0, 0.7, 2.0, config),
 		panner:         pan.NewStereoPan(0.5, config),
 		ampEnvSteps:    ampEnvSteps,
 		filterEnvSteps: filterEnvSteps,
