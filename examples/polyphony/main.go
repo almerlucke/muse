@@ -6,6 +6,7 @@ import (
 	// Components
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
+	"github.com/almerlucke/muse/modules"
 
 	// Value
 	"github.com/almerlucke/muse/value"
@@ -23,7 +24,6 @@ import (
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/freeverb"
-	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/vartri"
@@ -56,14 +56,14 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 		{Duration: 350, Shape: 0.1},
 	}
 
-	adsrEnv := adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config, "adsr").Add(testVoice)
+	adsrEnv := adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config).Add(testVoice)
 	osc := phasor.NewPhasor(140.0, 0.0, config, "osc").Add(testVoice)
 	shape := waveshaper.NewWaveShaper(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, config, "shaper").
-		Add(testVoice).In(0, osc, 0)
-	multiplier := functor.NewFunctor(2, functor.FunctorMult, config).Add(testVoice).In(0, shape, 0, 1, adsrEnv, 0)
-	filter := moog.NewMoog(1700.0, 0.48, 1.0, config, "filter").Add(testVoice).In(0, multiplier, 0)
+		Add(testVoice).In(osc)
+	mult := modules.Mult(shape, adsrEnv).Add(testVoice)
+	filter := moog.NewMoog(1700.0, 0.48, 1.0, config, "filter").Add(testVoice).In(mult)
 
-	testVoice.In(0, filter, 0)
+	testVoice.In(filter)
 
 	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
 	testVoice.Shaper = shape.(*waveshaper.WaveShaper)
@@ -118,10 +118,8 @@ func main() {
 
 	milliPerBeat := 60000.0 / float64(bpm) / 4.0
 
-	paramVarTri1 := vartri.NewVarTri(0.265, 0.0, 0.5, env.Config).Add(env)
-	paramVarTri2 := vartri.NewVarTri(0.325, 0.0, 0.5, env.Config).Add(env)
-	superSawDrive := functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.84 + 0.15 }, env.Config).Add(env).In(0, paramVarTri1, 0)
-	filterCutOff := functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*3200.0 + 40.0 }, env.Config).Add(env).In(0, paramVarTri2, 0)
+	superSawDrive := modules.Scale(vartri.NewVarTri(0.265, 0.0, 0.5, env.Config).Add(env), 0, 0.84, 0.15).Add(env)
+	filterCutOff := modules.Scale(vartri.NewVarTri(0.325, 0.0, 0.5, env.Config).Add(env), 0, 3200.0, 40.0).Add(env)
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
@@ -134,10 +132,10 @@ func main() {
 
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
-	poly := polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony").Add(env).In(0, superSawDrive, 0, 0, filterCutOff, 0)
-	allpass := allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config, "allpass").Add(env).In(0, poly, 0)
-	allpassAmp := functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config).Add(env).In(0, allpass, 0)
-	reverb := freeverb.NewFreeVerb(env.Config).Add(env).In(0, poly, 0, 1, allpassAmp, 0).(*freeverb.FreeVerb)
+	poly := polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony").Add(env).In(superSawDrive, filterCutOff, 0, 0)
+	allpass := allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config, "allpass").Add(env).In(poly)
+	allpassAmp := modules.Scale(allpass, 0, 0.5, 0.0).Add(env)
+	reverb := freeverb.NewFreeVerb(env.Config).Add(env).In(poly, allpassAmp).(*freeverb.FreeVerb)
 
 	reverb.SetDamp(0.1)
 	reverb.SetDry(0.7)
@@ -145,7 +143,7 @@ func main() {
 	reverb.SetRoomSize(0.8)
 	reverb.SetWidth(0.8)
 
-	env.In(0, reverb, 0, 1, reverb, 1)
+	env.In(reverb, reverb, 1)
 
 	env.QuickPlayAudio()
 

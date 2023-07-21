@@ -38,8 +38,8 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 
 	voice := &Voice{
 		BasePatch:      muse.NewPatch(0, 2, config, ""),
-		ampEnv:         adsr.NewADSR(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampEnv"),
-		filterEnv:      adsr.NewADSR(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "filterEnv"),
+		ampEnv:         adsr.NewADSR(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
+		filterEnv:      adsr.NewADSR(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
 		Osc1:           blosc.NewOsc(100.0, 0.0, config, "osc1"),
 		Osc2:           blosc.NewOsc(100.0, 0.5, config, "osc2"),
 		noiseGen:       noise.NewNoise(1, config),

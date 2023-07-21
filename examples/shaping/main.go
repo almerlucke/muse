@@ -18,7 +18,6 @@ import (
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/vartri"
 	"github.com/almerlucke/muse/modules/waveshaper"
-	"github.com/mkb218/gosndfile/sndfile"
 )
 
 func msgMapper(msg any, shaper shaping.Shaper) {
@@ -39,8 +38,7 @@ func paramMapper(param int, value any, shaper shaping.Shaper) {
 func main() {
 	env := muse.NewEnvironment(2, 3*44100, 512)
 
-	sequence := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/shaping_example/sequence1.json"))
-
+	sequence := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/shaping/sequence1.json"))
 	env.AddMessenger(banger.NewValueGenerator(sequence, "sequencer1"))
 
 	env.AddMessenger(stepper.NewStepper(
@@ -58,7 +56,7 @@ func main() {
 	paramVarTri1 := vartri.NewVarTri(0.25, 0.0, 0.5, env.Config).Named("vartri1").Add(env)
 	paramVarTri2 := vartri.NewVarTri(0.325, 0.0, 0.5, env.Config).Named("vartri2").Add(env)
 	superSawParam := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.82 + 0.15 }, env.Config))
-	adsrEnv1 := env.AddModule(adsr.NewADSR(steps, adsrc.Absolute, adsrc.Automatic, 1.0, env.Config, "adsr1"))
+	adsrEnv1 := env.AddModule(adsr.NewADSR(steps, adsrc.Absolute, adsrc.Automatic, 1.0, env.Config).Named("adsr1"))
 	mult1 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config))
 	filterParam := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*2200.0 + 40.0 }, env.Config))
 	osc1 := env.AddModule(phasor.NewPhasor(140.0, 0.0, env.Config, "osc1"))
@@ -91,5 +89,7 @@ func main() {
 	reverb.Connect(0, env, 0)
 	reverb.Connect(1, env, 1)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/shaper.aiff", 24.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
+	env.QuickPlayAudio()
+
+	// env.SynthesizeToFile("/Users/almerlucke/Desktop/shaper.aiff", 24.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

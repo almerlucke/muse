@@ -22,7 +22,6 @@ import (
 	"github.com/almerlucke/muse/modules/waveshaper"
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/template"
-	"github.com/mkb218/gosndfile/sndfile"
 )
 
 type ChaosVoice struct {
@@ -56,8 +55,8 @@ func NewChaosVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, f
 		filter:         korg35.NewKorg35LPF(1500.0, 1.2, 1.0, config, "filter"),
 		genMod:         generator.NewGenerator(interpol, nil, nil, config, ""),
 		waveShape:      waveshaper.NewWaveShaper(waveshaping.NewSerial(waveshaping.NewMirror(0.0, 1.0), waveshaping.NewBipolar()), 0, nil, nil, config, ""),
-		ampEnv:         adsr.NewADSR(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampEnv"),
-		filterEnv:      adsr.NewADSR(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "filterEnv"),
+		ampEnv:         adsr.NewADSR(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
+		filterEnv:      adsr.NewADSR(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
 	}
 
 	voice.SetSelf(voice)
@@ -197,6 +196,6 @@ func main() {
 	// chorus2.Connect(0, env, 0)
 	// chorus2.Connect(1, env, 1)
 
-	// env.QuickPlayAudio()
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/chaos2.aiff", 360.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
+	env.QuickPlayAudio()
+	// env.SynthesizeToFile("/Users/almerlucke/Desktop/chaos2.aiff", 360.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

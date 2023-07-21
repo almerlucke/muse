@@ -196,8 +196,7 @@ func main() {
 	addDrumTrack(env, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, bpm, 2, 0.6, 4.0, 0.3, bassRhythm())
 	addDrumTrack(env, "drums", []string{"shaker"}, bpm, 2, 0.6, 4.0, 1.0, kickRhythm())
 
-	drums.Connect(0, env, 0)
-	drums.Connect(1, env, 1)
+	env.In(drums, drums, 1)
 
 	env.QuickPlayAudio()
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
+	"github.com/almerlucke/muse/modules"
 	adsrctrl "github.com/almerlucke/muse/ui/adsr"
 	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/value"
@@ -29,7 +30,6 @@ import (
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/filters/moog"
-	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/waveshaper"
@@ -54,15 +54,12 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 
 	testVoice.SetSelf(testVoice)
 
-	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config, "ampAdsr"))
-	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
-	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config, "shaper"))
+	ampEnv := adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config).Add(testVoice)
+	osc := phasor.NewPhasor(140.0, 0.0, config, "osc").Add(testVoice)
+	shape := waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config, "shaper").Add(testVoice).In(osc)
+	mult := modules.Mult(shape, ampEnv).Add(testVoice)
 
-	osc.Connect(0, shape, 0)
-	shape.Connect(0, multiplier, 0)
-	ampEnv.Connect(0, multiplier, 1)
-	multiplier.Connect(0, testVoice, 0)
+	testVoice.In(mult)
 
 	testVoice.ampEnv = ampEnv.(*adsr.ADSR)
 	testVoice.phasor = osc.(*phasor.Phasor)
@@ -108,7 +105,7 @@ func main() {
 		voices = append(voices, voice)
 	}
 
-	bpm := 80
+	bpm := 200
 
 	// milliPerBeat := 60000.0 / bpm
 
