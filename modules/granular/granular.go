@@ -77,9 +77,9 @@ type Granulator struct {
 	outBufs       [][]float64
 }
 
-func NewGranulator(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], grainPoolSize int, paramGen ParameterGenerator, config *muse.Configuration, identifier string) *Granulator {
+func NewGranulator(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], grainPoolSize int, paramGen ParameterGenerator, config *muse.Configuration) *Granulator {
 	gl := &Granulator{
-		BaseModule:   muse.NewBaseModule(0, numOutputs, config, identifier),
+		BaseModule:   muse.NewBaseModule(0, numOutputs, config, ""),
 		freeGrains:   pool.NewPool[*grain](),
 		activeGrains: pool.NewPool[*grain](),
 		paramGen:     paramGen,

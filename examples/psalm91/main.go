@@ -60,7 +60,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 		"bang":  true,
 	}, identifier))
 
-	return msgr, env.AddModule(player.NewPlayer(soundBuffer, 1.0, amp, true, env.Config, moduleName))
+	return msgr, env.AddModule(player.NewPlayer(soundBuffer, 1.0, amp, true, env.Config).Named(moduleName))
 }
 
 func synthSettings(poly muse.Module) {
@@ -209,8 +209,8 @@ func main() {
 		[]string{"control"}, "bassStepper",
 	)
 
-	guitarPlayer := env.AddModule(player.NewPlayer(guitarBuffer, 1.0, 1.0, true, env.Config, "guitar"))
-	singPlayer := env.AddModule(player.NewPlayer(singBuffer, 1.0, 1.0, true, env.Config, "sing"))
+	guitarPlayer := env.AddModule(player.NewPlayer(guitarBuffer, 1.0, 1.0, true, env.Config))
+	singPlayer := env.AddModule(player.NewPlayer(singBuffer, 1.0, 1.0, true, env.Config))
 	synth := classic.NewSynth(20, ampEnv, filterEnv, env.Config).Named("poly").Add(env)
 
 	synthSettings(synth)
@@ -235,7 +235,7 @@ func main() {
 
 	env.AddMessenger(createScheduler(bassStepper, kickStepper, snareStepper, hihatStepper))
 
-	drumMixer := env.AddModule(mixer.NewMixer(3, env.Config, "drumMixer")).(*mixer.Mixer)
+	drumMixer := env.AddModule(mixer.NewMixer(3, env.Config)).(*mixer.Mixer)
 	drumMixer.SetMix([]float64{1.0, 1.0, 0.8})
 	kickPlayer.Connect(0, drumMixer, 0)
 	snarePlayer.Connect(0, drumMixer, 1)
@@ -246,8 +246,8 @@ func main() {
 	drumMixer.Connect(0, drumEcho, 0)
 	drumEcho.Connect(0, drumEchoAmp, 0)
 
-	leftMixer := env.AddModule(mixer.NewMixer(4, env.Config, "leftMixer")).(*mixer.Mixer)
-	rightMixer := env.AddModule(mixer.NewMixer(4, env.Config, "rightMixer")).(*mixer.Mixer)
+	leftMixer := env.AddModule(mixer.NewMixer(4, env.Config)).(*mixer.Mixer)
+	rightMixer := env.AddModule(mixer.NewMixer(4, env.Config)).(*mixer.Mixer)
 
 	leftMixer.SetMix([]float64{0.7, 0.6, 0.2, 0.2})
 	rightMixer.SetMix([]float64{0.7, 0.6, 0.2, 0.2})

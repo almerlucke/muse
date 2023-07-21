@@ -69,9 +69,9 @@ type Moog2 struct {
 	c, ct2, cp2, cp3, cp4 float64
 }
 
-func NewMoog2(fc float64, q float64, config *muse.Configuration, identifier string) *Moog2 {
+func NewMoog2(fc float64, q float64, config *muse.Configuration) *Moog2 {
 	m := &Moog2{
-		BaseModule: muse.NewBaseModule(1, 1, config, identifier),
+		BaseModule: muse.NewBaseModule(1, 1, config, ""),
 		gain:       1.0,
 	}
 

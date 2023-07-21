@@ -65,8 +65,8 @@ func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *Te
 
 	adsrEnv := testVoice.AddModule(adsr.NewADSR(stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
-	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(shaping.NewSineTable(512), 0, nil, nil, config, "shaper"))
+	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config))
+	shape := testVoice.AddModule(waveshaper.NewWaveShaper(shaping.NewSineTable(512), 0, nil, nil, config))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)

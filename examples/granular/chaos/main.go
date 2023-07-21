@@ -244,7 +244,7 @@ func main() {
 	paramGen.attackClustering = museRand.NewClusterRand(0.04, 0.03, 0.9, 1.0, 1.0)
 	paramGen.releaseClustering = museRand.NewClusterRand(0.81, 0.12, 0.9, 1.0, 1.0)
 
-	gr := env.AddModule(granular.NewGranulator(2, NewSourceFactory(env.Config.SampleRate), &trapezoidal.Factory{}, 40, paramGen, env.Config, "granulator"))
+	gr := env.AddModule(granular.NewGranulator(2, NewSourceFactory(env.Config.SampleRate), &trapezoidal.Factory{}, 40, paramGen, env.Config))
 
 	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.36, 1.767, env.Config, ""))
 	chaosLfo.CtrlConnect(0, gr, 0)

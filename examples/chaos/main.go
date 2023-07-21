@@ -51,7 +51,7 @@ func genSound() {
 		60,
 	)
 
-	sgen := env.AddModule(generator.NewBasicGenerator(wrapper, env.Config, ""))
+	sgen := env.AddModule(generator.NewBasicGenerator(wrapper, env.Config))
 
 	sgen.Connect(0, env, 0)
 	// sgen.Connect(1, env, 1)

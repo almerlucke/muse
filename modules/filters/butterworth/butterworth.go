@@ -12,9 +12,9 @@ type Butterworth struct {
 	q      float64
 }
 
-func NewButterworth(fc float64, q float64, config *muse.Configuration, identifier string) *Butterworth {
+func NewButterworth(fc float64, q float64, config *muse.Configuration) *Butterworth {
 	b := &Butterworth{
-		BaseModule: muse.NewBaseModule(3, 1, config, identifier),
+		BaseModule: muse.NewBaseModule(3, 1, config, ""),
 		fc:         fc,
 		q:          q,
 	}

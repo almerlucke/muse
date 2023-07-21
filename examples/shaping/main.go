@@ -53,20 +53,20 @@ func main() {
 		{Duration: 100, Shape: 0.0},
 	}
 
-	paramVarTri1 := vartri.NewVarTri(0.25, 0.0, 0.5, env.Config).Named("vartri1").Add(env)
-	paramVarTri2 := vartri.NewVarTri(0.325, 0.0, 0.5, env.Config).Named("vartri2").Add(env)
+	paramVarTri1 := vartri.NewVarTri(0.25, 0.0, 0.5, env.Config).Add(env)
+	paramVarTri2 := vartri.NewVarTri(0.325, 0.0, 0.5, env.Config).Add(env)
 	superSawParam := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*0.82 + 0.15 }, env.Config))
 	adsrEnv1 := env.AddModule(adsr.NewADSR(steps, adsrc.Absolute, adsrc.Automatic, 1.0, env.Config).Named("adsr1"))
 	mult1 := env.AddModule(functor.NewFunctor(2, functor.FunctorMult, env.Config))
 	filterParam := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0]*2200.0 + 40.0 }, env.Config))
-	osc1 := env.AddModule(phasor.NewPhasor(140.0, 0.0, env.Config, "osc1"))
-	shaper1 := env.AddModule(waveshaper.NewWaveShaper(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, env.Config, "shaper1"))
+	osc1 := env.AddModule(phasor.NewPhasor(140.0, 0.0, env.Config).Named("osc1"))
+	shaper1 := env.AddModule(waveshaper.NewWaveShaper(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, env.Config))
 	allpass := env.AddModule(allpass.NewAllpass(375.0, 375.0, 0.3, env.Config))
 	allpassAmp := env.AddModule(functor.NewFunctor(1, func(vec []float64) float64 { return vec[0] * 0.5 }, env.Config))
 	// filter := env.AddModule(butterworth.NewButterworth(300.0, 0.4, env.Config, "filter"))
 	// filter := env.AddModule(rbj.NewRBJFilter(rbjc.Lowpass, 300.0, 10.0, env.Config, "filter"))
-	filter := env.AddModule(moog.NewMoog(300.0, 0.45, 1.0, env.Config, "filter"))
-	reverb := freeverb.NewFreeVerb(env.Config).Named("freeverb").Add(env)
+	filter := env.AddModule(moog.NewMoog(300.0, 0.45, 1.0, env.Config))
+	reverb := freeverb.NewFreeVerb(env.Config).Add(env)
 
 	reverb.(*freeverb.FreeVerb).SetDamp(0.1)
 	reverb.(*freeverb.FreeVerb).SetDry(0.7)

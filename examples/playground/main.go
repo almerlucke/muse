@@ -14,7 +14,7 @@ import (
 func main() {
 	env := muse.NewEnvironment(1, 44100, 1024)
 
-	fm := fmsynth.NewFMSynth(18, waveshaping.NewSineTable(2048), env.Config, "fm")
+	fm := fmsynth.NewFMSynth(18, waveshaping.NewSineTable(2048), env.Config).Named("fm").(*fmsynth.FMSynth)
 	fm.OperatorSettings[1].Level = 0.5
 	fm.OperatorSettings[5].Level = 0.5
 	fm.PitchEnvLevels = [4]float64{0.49, 0.51, 0.495, 0.5}

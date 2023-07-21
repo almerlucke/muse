@@ -12,9 +12,9 @@ type Osc struct {
 	component *wtoscc.Osc
 }
 
-func NewOsc(sf *io.WaveTableSoundFile, fc float64, phase float64, tableIndex float64, amp float64, config *muse.Configuration, identifier string) *Osc {
+func NewOsc(sf *io.WaveTableSoundFile, fc float64, phase float64, tableIndex float64, amp float64, config *muse.Configuration) *Osc {
 	osc := &Osc{
-		BaseModule: muse.NewBaseModule(3, 1, config, identifier),
+		BaseModule: muse.NewBaseModule(3, 1, config, ""),
 		component:  wtoscc.NewOsc(sf, fc, config.SampleRate, phase, tableIndex, amp),
 	}
 

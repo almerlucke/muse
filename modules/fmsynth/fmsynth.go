@@ -29,7 +29,7 @@ type FMSynth struct {
 	ReleaseMode      ops.EnvelopeReleaseMode
 }
 
-func NewFMSynth(numVoices int, table []float64, config *muse.Configuration, identifier string) *FMSynth {
+func NewFMSynth(numVoices int, table []float64, config *muse.Configuration) *FMSynth {
 	voices := make([]*voice, numVoices)
 
 	for i := 0; i < numVoices; i++ {
@@ -40,7 +40,7 @@ func NewFMSynth(numVoices int, table []float64, config *muse.Configuration, iden
 	}
 
 	fmSynth := &FMSynth{
-		BaseModule: muse.NewBaseModule(0, 1, config, identifier),
+		BaseModule: muse.NewBaseModule(0, 1, config, ""),
 		voices:     voices,
 	}
 

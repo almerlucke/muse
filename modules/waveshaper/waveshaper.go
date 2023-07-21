@@ -16,9 +16,9 @@ type WaveShaper struct {
 	msgMapper   MessageMapFunction
 }
 
-func NewWaveShaper(shaper shaping.Shaper, numParams int, paramMapper ParamMapFunction, msgMapper MessageMapFunction, config *muse.Configuration, identifier string) *WaveShaper {
+func NewWaveShaper(shaper shaping.Shaper, numParams int, paramMapper ParamMapFunction, msgMapper MessageMapFunction, config *muse.Configuration) *WaveShaper {
 	w := &WaveShaper{
-		BaseModule:  muse.NewBaseModule(numParams+1, 1, config, identifier),
+		BaseModule:  muse.NewBaseModule(numParams+1, 1, config, ""),
 		shaper:      shaper,
 		paramMapper: paramMapper,
 		msgMapper:   msgMapper,

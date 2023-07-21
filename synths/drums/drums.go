@@ -19,7 +19,7 @@ func NewDrums(soundBank io.SoundBank, numVoices int, config *muse.Configuration)
 
 	voices := make([]polyphony.Voice, numVoices)
 	for i := 0; i < numVoices; i++ {
-		player := player.NewPlayer(initSound, 1.0, 1.0, true, config, "")
+		player := player.NewPlayer(initSound, 1.0, 1.0, true, config)
 		player.SetSoundBank(soundBank)
 		voices[i] = player
 	}

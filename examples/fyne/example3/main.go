@@ -66,9 +66,9 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	filterEnv := testVoice.AddModule(adsr.NewADSR(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
 	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
 	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*5000.0 + 30.0 }, config))
-	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config, "osc"))
-	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.8, 1.5, config, "filter"))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config, "shaper"))
+	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config))
+	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.8, 1.5, config))
+	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)
@@ -175,7 +175,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundFile *io.SoundF
 		"bang":  true,
 	}, identifier))
 
-	return env.AddModule(player.NewPlayer(soundFile, 1.0, 1.0, true, env.Config, moduleName))
+	return env.AddModule(player.NewPlayer(soundFile, 1.0, 1.0, true, env.Config).Named(moduleName))
 }
 
 type Nums []float64

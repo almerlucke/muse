@@ -57,11 +57,11 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 	}
 
 	adsrEnv := adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config).Add(testVoice)
-	osc := phasor.NewPhasor(140.0, 0.0, config, "osc").Add(testVoice)
-	shape := waveshaper.NewWaveShaper(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, config, "shaper").
+	osc := phasor.NewPhasor(140.0, 0.0, config).Add(testVoice)
+	shape := waveshaper.NewWaveShaper(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, config).
 		Add(testVoice).In(osc)
 	mult := modules.Mult(shape, adsrEnv).Add(testVoice)
-	filter := moog.NewMoog(1700.0, 0.48, 1.0, config, "filter").Add(testVoice).In(mult)
+	filter := moog.NewMoog(1700.0, 0.48, 1.0, config).Add(testVoice).In(mult)
 
 	testVoice.In(filter)
 

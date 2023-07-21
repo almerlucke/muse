@@ -13,9 +13,9 @@ type StereoPan struct {
 	pan float64
 }
 
-func NewStereoPan(pan float64, config *muse.Configuration, identifier string) *StereoPan {
+func NewStereoPan(pan float64, config *muse.Configuration) *StereoPan {
 	p := &StereoPan{
-		BaseModule: muse.NewBaseModule(2, 2, config, identifier),
+		BaseModule: muse.NewBaseModule(2, 2, config, ""),
 		pan:        pan,
 	}
 

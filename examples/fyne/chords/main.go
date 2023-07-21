@@ -55,8 +55,8 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 	testVoice.SetSelf(testVoice)
 
 	ampEnv := adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config).Add(testVoice)
-	osc := phasor.NewPhasor(140.0, 0.0, config, "osc").Add(testVoice)
-	shape := waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config, "shaper").Add(testVoice).In(osc)
+	osc := phasor.NewPhasor(140.0, 0.0, config).Add(testVoice)
+	shape := waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config).Add(testVoice).In(osc)
 	mult := modules.Mult(shape, ampEnv).Add(testVoice)
 
 	testVoice.In(mult)

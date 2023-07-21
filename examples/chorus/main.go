@@ -81,7 +81,7 @@ func main() {
 
 	osc := env.AddModule(blosc.NewOscX(100.0, 0.0, 0.2, [4]float64{0.1, 0.1, 0.4, 0.1}, env.Config).Named("osc"))
 	osc2 := env.AddModule(blosc.NewOscX(100.0, 0.5, 0.2, [4]float64{0.1, 0.1, 0.4, 0.1}, env.Config).Named("osc2"))
-	filter := env.AddModule(moog.NewMoog(300.0, 0.63, 0.7, env.Config, "filter"))
+	filter := env.AddModule(moog.NewMoog(300.0, 0.63, 0.7, env.Config))
 	ch := env.AddModule(chorus.NewChorus(true, 15, 10, 0.4, 1.6, 0.6, shaping.NewSineTable(512.0), env.Config))
 
 	osc.Connect(4, filter, 0)

@@ -8,7 +8,6 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/timer"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/value/template"
-	"github.com/mkb218/gosndfile/sndfile"
 
 	"github.com/almerlucke/muse/modules/waveshaper"
 	"github.com/almerlucke/muse/value"
@@ -105,10 +104,10 @@ func main() {
 	freqTimer.CtrlConnect(0, freqGen, 0)
 	freqTimer.CtrlConnect(0, shapersControlGen, 0)
 
-	phase := env.AddModule(phasor.NewPhasor(200.0, 0.0, env.Config, ""))
+	phase := env.AddModule(phasor.NewPhasor(200.0, 0.0, env.Config))
 
 	shaper := env.AddModule(
-		waveshaper.NewWaveShaper(newShapeSwitcher(), 1, switchControlFunction, nil, env.Config, ""),
+		waveshaper.NewWaveShaper(newShapeSwitcher(), 1, switchControlFunction, nil, env.Config),
 	)
 
 	freqGen.CtrlConnect(0, phase, 0)
@@ -117,6 +116,6 @@ func main() {
 	phase.Connect(0, shaper, 0)
 	shaper.Connect(0, env, 0)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/notaliased.aiff", 10.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
-	// env.QuickPlayAudio()
+	//env.SynthesizeToFile("/Users/almerlucke/Desktop/notaliased.aiff", 10.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
+	env.QuickPlayAudio()
 }
