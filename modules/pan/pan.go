@@ -8,13 +8,13 @@ import (
 
 var halfPi = math.Pi / 2.0
 
-type StereoPan struct {
+type Pan struct {
 	*muse.BaseModule
 	pan float64
 }
 
-func NewStereoPan(pan float64, config *muse.Configuration) *StereoPan {
-	p := &StereoPan{
+func New(pan float64, config *muse.Configuration) *Pan {
+	p := &Pan{
 		BaseModule: muse.NewBaseModule(2, 2, config, ""),
 		pan:        pan,
 	}
@@ -24,21 +24,21 @@ func NewStereoPan(pan float64, config *muse.Configuration) *StereoPan {
 	return p
 }
 
-func (p *StereoPan) Pan() float64 {
+func (p *Pan) Pan() float64 {
 	return p.pan
 }
 
-func (p *StereoPan) SetPan(pan float64) {
+func (p *Pan) SetPan(pan float64) {
 	p.pan = pan
 }
 
-func (p *StereoPan) ReceiveControlValue(value any, index int) {
+func (p *Pan) ReceiveControlValue(value any, index int) {
 	if index == 0 {
 		p.SetPan(value.(float64))
 	}
 }
 
-func (p *StereoPan) ReceiveMessage(msg any) []*muse.Message {
+func (p *Pan) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
 	if pan, ok := content["pan"]; ok {
@@ -48,7 +48,7 @@ func (p *StereoPan) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (p *StereoPan) Synthesize() bool {
+func (p *Pan) Synthesize() bool {
 	if !p.BaseModule.Synthesize() {
 		return false
 	}

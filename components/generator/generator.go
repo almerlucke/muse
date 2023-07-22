@@ -10,7 +10,7 @@ type Generator interface {
 	Generate() []float64
 }
 
-func WriteToFile(gen Generator, filePath string, seconds float64, sr int, format sndfile.Format) error {
+func WriteToSndFile(gen Generator, filePath string, seconds float64, sr int, format sndfile.Format) error {
 	wr := io.NewSoundWriter(gen.NumDimensions(), sr, sr, false)
 
 	numFrames := int64(seconds * float64(sr))

@@ -16,11 +16,11 @@ type Generator struct {
 	messageFunction MessageFunction
 }
 
-func NewBasicGenerator(generator generator.Generator, config *muse.Configuration) *Generator {
-	return NewGenerator(generator, nil, nil, config)
+func NewBasic(generator generator.Generator, config *muse.Configuration) *Generator {
+	return New(generator, nil, nil, config)
 }
 
-func NewGenerator(generator generator.Generator, controlFunction ControlFunction, messageFunction MessageFunction, config *muse.Configuration) *Generator {
+func New(generator generator.Generator, controlFunction ControlFunction, messageFunction MessageFunction, config *muse.Configuration) *Generator {
 	gen := &Generator{
 		BaseModule:      muse.NewBaseModule(0, generator.NumDimensions(), config, ""),
 		generator:       generator,

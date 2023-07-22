@@ -13,7 +13,7 @@ type ADSR struct {
 	duration float64
 }
 
-func NewADSR(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode adsrc.ReleaseMode, maxLevel float64, config *muse.Configuration) *ADSR {
+func New(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode adsrc.ReleaseMode, maxLevel float64, config *muse.Configuration) *ADSR {
 	a := &ADSR{
 		BaseModule: muse.NewBaseModule(0, 1, config, ""),
 	}

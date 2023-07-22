@@ -12,7 +12,7 @@ type Osc struct {
 	amp        float64
 }
 
-func NewOsc(sf *io.WaveTableSoundFile, fc, sr, phase, tableIndex, amp float64) *Osc {
+func New(sf *io.WaveTableSoundFile, fc, sr, phase, tableIndex, amp float64) *Osc {
 	tableSize := float64(sf.TableSize)
 
 	return &Osc{

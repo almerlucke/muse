@@ -56,12 +56,12 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 		{Duration: 350, Shape: 0.1},
 	}
 
-	adsrEnv := adsr.NewADSR(steps, adsrc.Absolute, adsrc.Duration, 1.0, config).Add(testVoice)
-	osc := phasor.NewPhasor(140.0, 0.0, config).Add(testVoice)
-	shape := waveshaper.NewWaveShaper(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, config).
+	adsrEnv := adsr.New(steps, adsrc.Absolute, adsrc.Duration, 1.0, config).Add(testVoice)
+	osc := phasor.New(140.0, 0.0, config).Add(testVoice)
+	shape := waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, config).
 		Add(testVoice).In(osc)
 	mult := modules.Mult(shape, adsrEnv).Add(testVoice)
-	filter := moog.NewMoog(1700.0, 0.48, 1.0, config).Add(testVoice).In(mult)
+	filter := moog.New(1700.0, 0.48, 1.0, config).Add(testVoice).In(mult)
 
 	testVoice.In(filter)
 
@@ -118,8 +118,8 @@ func main() {
 
 	milliPerBeat := 60000.0 / float64(bpm) / 4.0
 
-	superSawDrive := modules.Scale(vartri.NewVarTri(0.265, 0.0, 0.5, env.Config).Add(env), 0, 0.84, 0.15).Add(env)
-	filterCutOff := modules.Scale(vartri.NewVarTri(0.325, 0.0, 0.5, env.Config).Add(env), 0, 3200.0, 40.0).Add(env)
+	superSawDrive := modules.Scale(vartri.New(0.265, 0.0, 0.5, env.Config).Add(env), 0, 0.84, 0.15).Add(env)
+	filterCutOff := modules.Scale(vartri.New(0.325, 0.0, 0.5, env.Config).Add(env), 0, 3200.0, 40.0).Add(env)
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
@@ -132,10 +132,10 @@ func main() {
 
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
-	poly := polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony").Add(env).In(superSawDrive, filterCutOff, 0, 0)
-	allpass := allpass.NewAllpass(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config).Add(env).In(poly)
+	poly := polyphony.New(1, voices, env.Config).Named("polyphony").Add(env).In(superSawDrive, filterCutOff, 0, 0)
+	allpass := allpass.New(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config).Add(env).In(poly)
 	allpassAmp := modules.Scale(allpass, 0, 0.5, 0.0).Add(env)
-	reverb := freeverb.NewFreeVerb(env.Config).Add(env).In(poly, allpassAmp).(*freeverb.FreeVerb)
+	reverb := freeverb.New(env.Config).Add(env).In(poly, allpassAmp).(*freeverb.FreeVerb)
 
 	reverb.SetDamp(0.1)
 	reverb.SetDry(0.7)

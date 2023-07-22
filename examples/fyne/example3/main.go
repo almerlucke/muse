@@ -62,13 +62,13 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 
 	testVoice.SetSelf(testVoice)
 
-	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	filterEnv := testVoice.AddModule(adsr.NewADSR(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
-	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*5000.0 + 30.0 }, config))
-	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config))
-	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.8, 1.5, config))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config))
+	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
+	filterEnv := testVoice.AddModule(adsr.New(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
+	multiplier := testVoice.AddModule(functor.NewMult(2, config))
+	filterEnvScaler := testVoice.AddModule(functor.NewScale(5000.0, 30.0, config))
+	osc := testVoice.AddModule(phasor.New(140.0, 0.0, config))
+	filter := testVoice.AddModule(moog.New(1400.0, 0.8, 1.5, config))
+	shape := testVoice.AddModule(waveshaper.New(testVoice.shaper, 0, nil, nil, config))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)
@@ -175,7 +175,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundFile *io.SoundF
 		"bang":  true,
 	}, identifier))
 
-	return env.AddModule(player.NewPlayer(soundFile, 1.0, 1.0, true, env.Config).Named(moduleName))
+	return env.AddModule(player.New(soundFile, 1.0, 1.0, true, env.Config).Named(moduleName))
 }
 
 type Nums []float64
@@ -224,9 +224,9 @@ func main() {
 		{Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.1, ShuffleRand: 0.1},
 	}))
 
-	mult := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.3 }, env.Config))
-	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony"))
-	allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.3, env.Config))
+	mult := env.AddModule(functor.NewAmp(0.3, env.Config))
+	poly := env.AddModule(polyphony.New(1, voices, env.Config).Named("polyphony"))
+	allpass := env.AddModule(allpass.New(milliPerBeat*1.5, milliPerBeat*1.5, 0.3, env.Config))
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 

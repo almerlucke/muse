@@ -13,15 +13,13 @@ import (
 
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
-	"github.com/almerlucke/muse/modules/blosc"
-
-	"github.com/mkb218/gosndfile/sndfile"
+	"github.com/almerlucke/muse/modules/osc"
 )
 
 func main() {
 	env := muse.NewEnvironment(1, 44100, 128)
 
-	sequence := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/blosc_example/sequence1.json"))
+	sequence := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/osc/sequence1.json"))
 
 	env.AddMessenger(banger.NewValueGenerator(sequence, "sequencer"))
 
@@ -30,11 +28,11 @@ func main() {
 		[]string{"sequencer"}, "",
 	))
 
-	osc := env.AddModule(blosc.NewOsc(100.0, 0.0, env.Config))
+	osc := env.AddModule(osc.New(100.0, 0.0, env.Config))
 
 	osc.Connect(3, env, 0)
 
-	env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 10.0, env.Config.SampleRate, false, sndfile.SF_FORMAT_AIFF)
+	// env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 10.0, env.Config.SampleRate, false, sndfile.SF_FORMAT_AIFF)
 
 	portaudio.Initialize()
 	defer portaudio.Terminate()

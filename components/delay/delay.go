@@ -9,7 +9,7 @@ type Delay struct {
 }
 
 // NewDelay create a new delay
-func NewDelay(length int) *Delay {
+func New(length int) *Delay {
 	return &Delay{
 		Buffer: make([]float64, length),
 	}

@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/blosc"
 	"github.com/almerlucke/muse/components/generator"
 	"github.com/almerlucke/muse/components/interpolator"
 	"github.com/almerlucke/muse/components/iterator"
 	"github.com/almerlucke/muse/components/iterator/chaos"
+	"github.com/almerlucke/muse/components/osc"
 	"github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/granular"
@@ -73,7 +73,7 @@ func NewSFParam(duration float64, amplitude float64, attack float64, release flo
 }
 
 type SFSource struct {
-	osc      *blosc.Osc
+	osc      *osc.Osc
 	aron     *chaos.Aronson
 	scale    *waveshaping.Linear
 	gen      generator.Generator
@@ -85,19 +85,19 @@ type SFSource struct {
 func NewSource(sr float64) *SFSource {
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
 	aron := chaos.NewAronsonWithFunc(1.698, f)
-	iter := iterator.NewIterator([]float64{0.4, 0.4}, aron)
+	iter := iterator.New([]float64{0.4, 0.4}, aron)
 	mirror := waveshaping.NewMirror(-1.0, 1.0)
 	uni := waveshaping.NewUnipolar()
 	scale := waveshaping.NewLinear(1400.0, 50.0)
 	serial := waveshaping.NewSerial(mirror, uni, scale)
-	wrapper := interpolator.NewInterpolator(
+	wrapper := interpolator.New(
 		waveshaping.NewGeneratorWrapper(iter, []waveshaping.Shaper{serial, serial}),
 		interpolator.Linear,
 		250,
 	)
 
 	return &SFSource{
-		osc:   blosc.NewOsc(100.0, 0.0, sr),
+		osc:   osc.New(100.0, 0.0, sr),
 		aron:  aron,
 		scale: scale,
 		gen:   wrapper,
@@ -244,7 +244,7 @@ func main() {
 	paramGen.attackClustering = museRand.NewClusterRand(0.04, 0.03, 0.9, 1.0, 1.0)
 	paramGen.releaseClustering = museRand.NewClusterRand(0.81, 0.12, 0.9, 1.0, 1.0)
 
-	gr := env.AddModule(granular.NewGranulator(2, NewSourceFactory(env.Config.SampleRate), &trapezoidal.Factory{}, 40, paramGen, env.Config))
+	gr := env.AddModule(granular.New(2, NewSourceFactory(env.Config.SampleRate), &trapezoidal.Factory{}, 40, paramGen, env.Config))
 
 	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.36, 1.767, env.Config, ""))
 	chaosLfo.CtrlConnect(0, gr, 0)

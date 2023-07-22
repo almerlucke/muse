@@ -3,21 +3,21 @@ package main
 import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/messengers/lfo"
-	"github.com/almerlucke/muse/modules/blosc"
+	"github.com/almerlucke/muse/modules/osc"
 	"github.com/almerlucke/muse/modules/xfade"
 )
 
 func main() {
 	env := muse.NewEnvironment(1, 44100.0, 512)
 
-	source1 := env.AddModule(blosc.NewOsc(110.0, 0.0, env.Config))
-	source2 := env.AddModule(blosc.NewOsc(140.0, 0.0, env.Config))
-	source3 := env.AddModule(blosc.NewOsc(160.0, 0.0, env.Config))
-	source4 := env.AddModule(blosc.NewOsc(170.0, 0.0, env.Config))
+	source1 := env.AddModule(osc.New(110.0, 0.0, env.Config))
+	source2 := env.AddModule(osc.New(140.0, 0.0, env.Config))
+	source3 := env.AddModule(osc.New(160.0, 0.0, env.Config))
+	source4 := env.AddModule(osc.New(170.0, 0.0, env.Config))
 
-	fader1 := env.AddModule(xfade.NewXFade(0.0, env.Config))
-	fader2 := env.AddModule(xfade.NewXFade(0.0, env.Config))
-	fader3 := env.AddModule(xfade.NewXFade(0.0, env.Config))
+	fader1 := env.AddModule(xfade.New(0.0, env.Config))
+	fader2 := env.AddModule(xfade.New(0.0, env.Config))
+	fader3 := env.AddModule(xfade.New(0.0, env.Config))
 
 	source1.Connect(2, fader1, 0)
 	source2.Connect(3, fader1, 1)

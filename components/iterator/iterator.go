@@ -10,7 +10,7 @@ type Iterator struct {
 	outVector []float64
 }
 
-func NewIterator(initialValues []float64, updater Updater) *Iterator {
+func New(initialValues []float64, updater Updater) *Iterator {
 	iter := &Iterator{
 		values:    make([]float64, len(initialValues)),
 		updater:   updater,

@@ -20,11 +20,11 @@ type Player struct {
 	soundBank   io.SoundBank
 }
 
-func NewPlayer(sf io.SoundFiler, speed float64, amp float64, oneShot bool, config *muse.Configuration) *Player {
-	return NewPlayerX(sf, speed, amp, 0.0, sf.Duration(), oneShot, config)
+func New(sf io.SoundFiler, speed float64, amp float64, oneShot bool, config *muse.Configuration) *Player {
+	return NewX(sf, speed, amp, 0.0, sf.Duration(), oneShot, config)
 }
 
-func NewPlayerX(sf io.SoundFiler, speed float64, amp float64, startOffset float64, endOffset float64, oneShot bool, config *muse.Configuration) *Player {
+func NewX(sf io.SoundFiler, speed float64, amp float64, startOffset float64, endOffset float64, oneShot bool, config *muse.Configuration) *Player {
 	inc := (speed * sf.SampleRate() / config.SampleRate) / float64(sf.NumFrames())
 
 	depth := io.SpeedToMipMapDepth(speed)

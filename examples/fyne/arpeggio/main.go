@@ -54,10 +54,10 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 		shaper:          shaping.NewJP8000triMod(0.3),
 	}
 
-	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
-	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config))
+	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
+	multiplier := testVoice.AddModule(functor.NewMult(2, config))
+	osc := testVoice.AddModule(phasor.New(140.0, 0.0, config))
+	shape := testVoice.AddModule(waveshaper.New(testVoice.shaper, 0, nil, nil, config))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)
@@ -115,8 +115,8 @@ func main() {
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly1 := polyphony.NewPolyphony(1, voices1, env.Config).Named("polyphony1").Add(env)
-	chor := env.AddModule(chorus.NewChorus(true, 15, 10, 0.2, 3.42, 0.5, nil, env.Config))
+	poly1 := polyphony.New(1, voices1, env.Config).Named("polyphony1").Add(env)
+	chor := chorus.New(true, 15, 10, 0.2, 3.42, 0.5, nil, env.Config).Add(env)
 
 	octave := notes.O4
 

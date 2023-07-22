@@ -19,7 +19,7 @@ type Polyphony struct {
 	activePool *pool.Pool[Voice]
 }
 
-func NewPolyphony(numChannels int, voices []Voice, config *muse.Configuration) *Polyphony {
+func New(numChannels int, voices []Voice, config *muse.Configuration) *Polyphony {
 	poly := &Polyphony{
 		BaseModule: muse.NewBaseModule(1, numChannels, config, ""),
 	}

@@ -1,4 +1,4 @@
-package blosc
+package osc
 
 import "math"
 
@@ -15,11 +15,11 @@ type Osc struct {
 	outputVector [5]float64
 }
 
-func NewOsc(frequency float64, phase float64, sr float64) *Osc {
-	return NewOscX(frequency, phase, 0.5, [4]float64{1.0, 0.0, 0.0, 0.0}, sr)
+func New(frequency float64, phase float64, sr float64) *Osc {
+	return NewX(frequency, phase, 0.5, [4]float64{1.0, 0.0, 0.0, 0.0}, sr)
 }
 
-func NewOscX(frequency float64, phase float64, pw float64, mix [4]float64, sr float64) *Osc {
+func NewX(frequency float64, phase float64, pw float64, mix [4]float64, sr float64) *Osc {
 	o := &Osc{
 		frequency: frequency,
 		phase:     phase,

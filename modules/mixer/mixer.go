@@ -7,7 +7,7 @@ type Mixer struct {
 	mix []float64
 }
 
-func NewMixer(numInputs int, config *muse.Configuration) *Mixer {
+func New(numInputs int, config *muse.Configuration) *Mixer {
 	m := &Mixer{
 		BaseModule: muse.NewBaseModule(numInputs, 1, config, ""),
 		mix:        make([]float64, numInputs),

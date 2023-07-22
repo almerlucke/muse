@@ -5,11 +5,11 @@ import (
 	// shaping "github.com/almerlucke/muse/components/waveshaping"
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	"github.com/almerlucke/muse/modules/adsr"
-	"github.com/almerlucke/muse/modules/blosc"
 	"github.com/almerlucke/muse/modules/filters/korg35"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/mixer"
 	"github.com/almerlucke/muse/modules/noise"
+	"github.com/almerlucke/muse/modules/osc"
 	"github.com/almerlucke/muse/modules/pan"
 	"github.com/almerlucke/muse/modules/polyphony"
 )
@@ -18,12 +18,12 @@ type Voice struct {
 	*muse.BasePatch
 	ampEnv         *adsr.ADSR
 	filterEnv      *adsr.ADSR
-	Osc1           *blosc.Osc
-	Osc2           *blosc.Osc
+	Osc1           *osc.Osc
+	Osc2           *osc.Osc
 	noiseGen       *noise.Noise
 	SourceMixer    *mixer.Mixer
 	filter         *korg35.Korg35LPF
-	panner         *pan.StereoPan
+	panner         *pan.Pan
 	ampEnvSteps    adsrc.StepProvider
 	filterEnvSteps adsrc.StepProvider
 	osc2Tuning     float64
@@ -38,14 +38,14 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 
 	voice := &Voice{
 		BasePatch:      muse.NewPatch(0, 2, config),
-		ampEnv:         adsr.NewADSR(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
-		filterEnv:      adsr.NewADSR(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
-		Osc1:           blosc.NewOsc(100.0, 0.0, config),
-		Osc2:           blosc.NewOsc(100.0, 0.5, config),
-		noiseGen:       noise.NewNoise(1, config),
-		SourceMixer:    mixer.NewMixer(3, config),
-		filter:         korg35.NewKorg35LPF(1500.0, 0.7, 2.0, config),
-		panner:         pan.NewStereoPan(0.5, config),
+		ampEnv:         adsr.New(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
+		filterEnv:      adsr.New(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
+		Osc1:           osc.New(100.0, 0.0, config),
+		Osc2:           osc.New(100.0, 0.5, config),
+		noiseGen:       noise.New(1, config),
+		SourceMixer:    mixer.New(3, config),
+		filter:         korg35.New(1500.0, 0.7, 2.0, config),
+		panner:         pan.New(0.5, config),
 		ampEnvSteps:    ampEnvSteps,
 		filterEnvSteps: filterEnvSteps,
 		osc2Tuning:     2.03,
@@ -66,7 +66,7 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 	voice.AddModule(voice.filter)
 	voice.AddModule(voice.panner)
 
-	filterScaler := voice.AddModule(functor.NewFunctor(1, func(v []float64) float64 {
+	filterScaler := voice.AddModule(functor.New(1, func(v []float64) float64 {
 		min := voice.filterFcMin
 		max := voice.filterFcMax
 		if min > max {
@@ -94,14 +94,14 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 	return voice
 }
 
-func NewSynth(numVoices int, ampEnv adsrc.StepProvider, filterEnv adsrc.StepProvider, config *muse.Configuration) *polyphony.Polyphony {
+func New(numVoices int, ampEnv adsrc.StepProvider, filterEnv adsrc.StepProvider, config *muse.Configuration) *polyphony.Polyphony {
 	voices := make([]polyphony.Voice, numVoices)
 
 	for i := 0; i < numVoices; i++ {
 		voices[i] = NewVoice(config, ampEnv, filterEnv)
 	}
 
-	return polyphony.NewPolyphony(2, voices, config)
+	return polyphony.New(2, voices, config)
 }
 
 func (v *Voice) IsActive() bool {

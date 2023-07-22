@@ -1,4 +1,4 @@
-package blosc
+package osc
 
 import (
 	"math"
@@ -16,11 +16,11 @@ type Osc struct {
 	mix        [4]float64
 }
 
-func NewOsc(frequency float64, phase float64, config *muse.Configuration) *Osc {
-	return NewOscX(frequency, phase, 0.5, [4]float64{0.5, 0.01, 0.1, 0.5}, config)
+func New(frequency float64, phase float64, config *muse.Configuration) *Osc {
+	return NewX(frequency, phase, 0.5, [4]float64{0.5, 0.01, 0.1, 0.5}, config)
 }
 
-func NewOscX(frequency float64, phase float64, pw float64, mix [4]float64, config *muse.Configuration) *Osc {
+func NewX(frequency float64, phase float64, pw float64, mix [4]float64, config *muse.Configuration) *Osc {
 	osc := &Osc{
 		BaseModule: muse.NewBaseModule(3, 5, config, ""),
 		frequency:  frequency,

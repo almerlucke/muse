@@ -10,7 +10,7 @@ type Functor struct {
 	inVec []float64
 }
 
-func NewFunctor(numInputs int, f FunctorFunction, config *muse.Configuration) *Functor {
+func New(numInputs int, f FunctorFunction, config *muse.Configuration) *Functor {
 	fctr := &Functor{
 		BaseModule: muse.NewBaseModule(numInputs, 1, config, ""),
 		f:          f,
@@ -23,22 +23,22 @@ func NewFunctor(numInputs int, f FunctorFunction, config *muse.Configuration) *F
 }
 
 func NewMult(numInputs int, config *muse.Configuration) *Functor {
-	return NewFunctor(numInputs, FunctorMult, config)
+	return New(numInputs, Mult, config)
 }
 
 func NewScale(scale float64, offset float64, config *muse.Configuration) *Functor {
-	return NewFunctor(1, FunctorScale(scale, offset), config)
+	return New(1, Scale(scale, offset), config)
 }
 
 func NewAmp(amp float64, config *muse.Configuration) *Functor {
-	return NewFunctor(1, FunctorScale(amp, 0), config)
+	return New(1, Scale(amp, 0), config)
 }
 
 func NewBetween(min float64, max float64, config *muse.Configuration) *Functor {
-	return NewFunctor(1, FunctorBetween(min, max), config)
+	return New(1, Between(min, max), config)
 }
 
-func FunctorMult(vec []float64) float64 {
+func Mult(vec []float64) float64 {
 	if len(vec) == 0 {
 		return 0
 	}
@@ -52,13 +52,13 @@ func FunctorMult(vec []float64) float64 {
 	return mult
 }
 
-func FunctorScale(scale float64, offset float64) FunctorFunction {
+func Scale(scale float64, offset float64) FunctorFunction {
 	return func(v []float64) float64 {
 		return v[0]*scale + offset
 	}
 }
 
-func FunctorBetween(min float64, max float64) FunctorFunction {
+func Between(min float64, max float64) FunctorFunction {
 	if min > max {
 		tmp := max
 		max = min

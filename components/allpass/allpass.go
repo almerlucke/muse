@@ -7,9 +7,9 @@ type Allpass struct {
 	Feedback float64
 }
 
-func NewAllpass(length int, feedback float64) *Allpass {
+func New(length int, feedback float64) *Allpass {
 	return &Allpass{
-		Delay:    delay.NewDelay(length),
+		Delay:    delay.New(length),
 		Feedback: feedback,
 	}
 }

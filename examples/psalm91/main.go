@@ -60,7 +60,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 		"bang":  true,
 	}, identifier))
 
-	return msgr, env.AddModule(player.NewPlayer(soundBuffer, 1.0, amp, true, env.Config).Named(moduleName))
+	return msgr, env.AddModule(player.New(soundBuffer, 1.0, amp, true, env.Config).Named(moduleName))
 }
 
 func synthSettings(poly muse.Module) {
@@ -209,15 +209,15 @@ func main() {
 		[]string{"control"}, "bassStepper",
 	)
 
-	guitarPlayer := env.AddModule(player.NewPlayer(guitarBuffer, 1.0, 1.0, true, env.Config))
-	singPlayer := env.AddModule(player.NewPlayer(singBuffer, 1.0, 1.0, true, env.Config))
-	synth := classic.NewSynth(20, ampEnv, filterEnv, env.Config).Named("poly").Add(env)
+	guitarPlayer := env.AddModule(player.New(guitarBuffer, 1.0, 1.0, true, env.Config))
+	singPlayer := env.AddModule(player.New(singBuffer, 1.0, 1.0, true, env.Config))
+	synth := classic.New(20, ampEnv, filterEnv, env.Config).Named("poly").Add(env)
 
 	synthSettings(synth)
 
-	guitarChorus := env.AddModule(chorus.NewChorus(true, 20.0, 10.0, 0.3, 1.3, 0.2, nil, env.Config))
-	singChorus := env.AddModule(chorus.NewChorus(true, 30.0, 15.0, 0.3, 1.7, 0.4, nil, env.Config))
-	synthChorus := env.AddModule(chorus.NewChorus(true, 10.0, 7.0, 0.5, 3.8, 0.4, nil, env.Config))
+	guitarChorus := env.AddModule(chorus.New(true, 20.0, 10.0, 0.3, 1.3, 0.2, nil, env.Config))
+	singChorus := env.AddModule(chorus.New(true, 30.0, 15.0, 0.3, 1.7, 0.4, nil, env.Config))
+	synthChorus := env.AddModule(chorus.New(true, 10.0, 7.0, 0.5, 3.8, 0.4, nil, env.Config))
 
 	hihatStepper, hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 4, 1.875, 2.125, 0.75, value.NewSequence([]*swing.Step{
 		{}, {Shuffle: 0.2}, {}, {Shuffle: 0.2}, {}, {Shuffle: 0.2}, {BurstChance: 0.3, NumBurst: 3}, {Shuffle: 0.2},
@@ -235,19 +235,19 @@ func main() {
 
 	env.AddMessenger(createScheduler(bassStepper, kickStepper, snareStepper, hihatStepper))
 
-	drumMixer := env.AddModule(mixer.NewMixer(3, env.Config)).(*mixer.Mixer)
+	drumMixer := env.AddModule(mixer.New(3, env.Config)).(*mixer.Mixer)
 	drumMixer.SetMix([]float64{1.0, 1.0, 0.8})
 	kickPlayer.Connect(0, drumMixer, 0)
 	snarePlayer.Connect(0, drumMixer, 1)
 	hihatPlayer.Connect(0, drumMixer, 2)
 
-	drumEcho := env.AddModule(allpass.NewAllpass(5000.0, 60000.0/float64(bpm)*1.25, 0.3, env.Config))
+	drumEcho := env.AddModule(allpass.New(5000.0, 60000.0/float64(bpm)*1.25, 0.3, env.Config))
 	drumEchoAmp := env.AddModule(functor.NewAmp(0.3, env.Config))
 	drumMixer.Connect(0, drumEcho, 0)
 	drumEcho.Connect(0, drumEchoAmp, 0)
 
-	leftMixer := env.AddModule(mixer.NewMixer(4, env.Config)).(*mixer.Mixer)
-	rightMixer := env.AddModule(mixer.NewMixer(4, env.Config)).(*mixer.Mixer)
+	leftMixer := env.AddModule(mixer.New(4, env.Config)).(*mixer.Mixer)
+	rightMixer := env.AddModule(mixer.New(4, env.Config)).(*mixer.Mixer)
 
 	leftMixer.SetMix([]float64{0.7, 0.6, 0.2, 0.2})
 	rightMixer.SetMix([]float64{0.7, 0.6, 0.2, 0.2})

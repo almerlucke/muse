@@ -32,7 +32,7 @@ type Moog struct {
 	drive float64
 }
 
-func NewMoog(fc float64, res float64, drive float64, config *muse.Configuration) *Moog {
+func New(fc float64, res float64, drive float64, config *muse.Configuration) *Moog {
 	m := &Moog{
 		BaseModule: muse.NewBaseModule(4, 1, config, ""),
 	}

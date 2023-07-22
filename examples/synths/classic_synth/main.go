@@ -65,16 +65,16 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 
 	synth.ampEnv = ampEnv
 	synth.filterEnv = filterEnv
-	synth.Poly = classic.NewSynth(20, ampEnv, filterEnv, config).Named("poly").(*polyphony.Polyphony)
-	synth.chorus1 = chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, config)
-	synth.chorus2 = chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, config)
+	synth.Poly = classic.New(20, ampEnv, filterEnv, config).Named("poly").(*polyphony.Polyphony)
+	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil, config)
+	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil, config)
 
 	synth.AddModule(synth.Poly)
 	synth.AddModule(synth.chorus1)
 	synth.AddModule(synth.chorus2)
 
-	synthAmp1 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, config))
-	synthAmp2 := synth.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, config))
+	synthAmp1 := synth.AddModule(functor.NewAmp(0.85, config))
+	synthAmp2 := synth.AddModule(functor.NewAmp(0.85, config))
 
 	synth.Poly.Connect(0, synthAmp1, 0)
 	synth.Poly.Connect(1, synthAmp2, 0)

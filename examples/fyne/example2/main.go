@@ -52,13 +52,13 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 
 	testVoice.SetSelf(testVoice)
 
-	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	filterEnv := testVoice.AddModule(adsr.NewADSR(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
-	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*5000.0 + 100.0 }, config))
-	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config))
-	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.7, 1.0, config))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.superSaw, 0, nil, nil, config))
+	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
+	filterEnv := testVoice.AddModule(adsr.New(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
+	multiplier := testVoice.AddModule(functor.NewMult(2, config))
+	filterEnvScaler := testVoice.AddModule(functor.NewScale(5000.0, 100.0, config))
+	osc := testVoice.AddModule(phasor.New(140.0, 0.0, config))
+	filter := testVoice.AddModule(moog.New(1400.0, 0.7, 1.0, config))
+	shape := testVoice.AddModule(waveshaper.New(testVoice.superSaw, 0, nil, nil, config))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)
@@ -131,8 +131,8 @@ func main() {
 		voices = append(voices, voice)
 	}
 
-	poly := polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony").Add(env)
-	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config))
+	poly := polyphony.New(1, voices, env.Config).Named("polyphony").Add(env)
+	allpass := env.AddModule(allpass.New(50, 50, 0.3, env.Config))
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 

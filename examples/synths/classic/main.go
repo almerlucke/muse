@@ -88,15 +88,15 @@ func main() {
 
 	bpm := 100
 
-	synth := classic.NewSynth(20, ampEnv, filterEnv, env.Config).Named("poly").Add(env)
-	synthAmp1 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, env.Config))
-	synthAmp2 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.85 }, env.Config))
-	allpass1 := env.AddModule(allpass.NewAllpass(2500.0, 60000.0/float64(bpm)*1.666, 0.5, env.Config))
-	allpass2 := env.AddModule(allpass.NewAllpass(2500.0, 60000.0/float64(bpm)*1.75, 0.4, env.Config))
-	allpassAmp1 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config))
-	allpassAmp2 := env.AddModule(functor.NewFunctor(1, func(v []float64) float64 { return v[0] * 0.5 }, env.Config))
-	chor1 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, env.Config))
-	chor2 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, env.Config))
+	synth := classic.New(20, ampEnv, filterEnv, env.Config).Named("poly").Add(env)
+	synthAmp1 := env.AddModule(functor.NewAmp(0.85, env.Config))
+	synthAmp2 := env.AddModule(functor.NewAmp(0.85, env.Config))
+	allpass1 := env.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.666, 0.5, env.Config))
+	allpass2 := env.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.75, 0.4, env.Config))
+	allpassAmp1 := env.AddModule(functor.NewAmp(0.5, env.Config))
+	allpassAmp2 := env.AddModule(functor.NewAmp(0.5, env.Config))
+	chor1 := env.AddModule(chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil, env.Config))
+	chor2 := env.AddModule(chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil, env.Config))
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
 		"command":   "trigger",

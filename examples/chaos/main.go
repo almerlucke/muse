@@ -10,15 +10,15 @@ import (
 	"github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/controls/gen"
 	"github.com/almerlucke/muse/messengers/lfo"
-	"github.com/almerlucke/muse/modules/blosc"
 	"github.com/almerlucke/muse/modules/generator"
+	"github.com/almerlucke/muse/modules/osc"
 	"github.com/almerlucke/muse/plot"
 	"gonum.org/v1/plot/plotter"
 )
 
 func genPlot() {
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
-	iter := iterator.NewIterator([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.978, f))
+	iter := iterator.New([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.978, f))
 
 	pts := make(plotter.XYs, 20000)
 	vecX := make([]float64, 20000)
@@ -43,15 +43,15 @@ func genSound() {
 	env := muse.NewEnvironment(1, 44100.0, 128)
 
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
-	iter := iterator.NewIterator([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.878, f))
+	iter := iterator.New([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.878, f))
 	mirror := waveshaping.NewMirror(-1.0, 1.0)
-	wrapper := interpolator.NewInterpolator(
+	wrapper := interpolator.New(
 		waveshaping.NewGeneratorWrapper(iter, []waveshaping.Shaper{mirror, mirror}),
 		interpolator.Cubic,
 		60,
 	)
 
-	sgen := env.AddModule(generator.NewBasicGenerator(wrapper, env.Config))
+	sgen := env.AddModule(generator.NewBasic(wrapper, env.Config))
 
 	sgen.Connect(0, env, 0)
 	// sgen.Connect(1, env, 1)
@@ -65,12 +65,12 @@ func genFreq() {
 
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
 	aron := chaos.NewAronsonWithFunc(1.698, f)
-	iter := iterator.NewIterator([]float64{0.4, 0.4}, aron)
+	iter := iterator.New([]float64{0.4, 0.4}, aron)
 	mirror := waveshaping.NewMirror(-1.0, 1.0)
 	uni := waveshaping.NewUnipolar()
 	scale := waveshaping.NewLinear(1400.0, 50.0)
 	chain := waveshaping.NewSerial(mirror, uni, scale)
-	wrapper := interpolator.NewInterpolator(
+	wrapper := interpolator.New(
 		waveshaping.NewGeneratorWrapper(iter, []waveshaping.Shaper{chain, chain}),
 		interpolator.Cubic,
 		5,
@@ -90,7 +90,7 @@ func genFreq() {
 	chaosLfo.CtrlConnect(0, cgen, 0)
 	freqLfo.CtrlConnect(0, cgen, 1)
 
-	osc1 := env.AddModule(blosc.NewOsc(100.0, 0.0, env.Config))
+	osc1 := env.AddModule(osc.New(100.0, 0.0, env.Config))
 
 	cgen.CtrlConnect(1, osc1, 0)
 

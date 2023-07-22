@@ -231,7 +231,7 @@ func (freeverb *FreeVerb) update() {
 }
 
 // NewFreeVerbModule generate new freeverb module
-func NewFreeVerb(config *muse.Configuration) *FreeVerb {
+func New(config *muse.Configuration) *FreeVerb {
 
 	scale := config.SampleRate / 44100.0
 

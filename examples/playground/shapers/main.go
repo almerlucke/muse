@@ -104,10 +104,10 @@ func main() {
 	freqTimer.CtrlConnect(0, freqGen, 0)
 	freqTimer.CtrlConnect(0, shapersControlGen, 0)
 
-	phase := env.AddModule(phasor.NewPhasor(200.0, 0.0, env.Config))
+	phase := env.AddModule(phasor.New(200.0, 0.0, env.Config))
 
 	shaper := env.AddModule(
-		waveshaper.NewWaveShaper(newShapeSwitcher(), 1, switchControlFunction, nil, env.Config),
+		waveshaper.New(newShapeSwitcher(), 1, switchControlFunction, nil, env.Config),
 	)
 
 	freqGen.CtrlConnect(0, phase, 0)

@@ -63,10 +63,10 @@ func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *Te
 
 	testVoice.SetSelf(testVoice)
 
-	adsrEnv := testVoice.AddModule(adsr.NewADSR(stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
-	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(shaping.NewSineTable(512), 0, nil, nil, config))
+	adsrEnv := testVoice.AddModule(adsr.New(stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
+	multiplier := testVoice.AddModule(functor.NewMult(2, config))
+	osc := testVoice.AddModule(phasor.New(140.0, 0.0, config))
+	shape := testVoice.AddModule(waveshaper.New(shaping.NewSineTable(512), 0, nil, nil, config))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)
@@ -710,7 +710,7 @@ func main() {
 		voices = append(voices, voice)
 	}
 
-	poly := polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony").Add(env)
+	poly := polyphony.New(1, voices, env.Config).Named("polyphony").Add(env)
 	// allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.1, env.Config, "allpass"))
 
 	// muse.Connect(voicePlayer, 0, allpass, 0)

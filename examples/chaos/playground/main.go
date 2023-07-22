@@ -36,13 +36,13 @@ type ChaosVoice struct {
 	filterEnv      *adsr.ADSR
 	genMod         *generator.Generator
 	waveShape      *waveshaper.WaveShaper
-	panner         *pan.StereoPan
+	panner         *pan.Pan
 }
 
 func NewChaosVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider) *ChaosVoice {
 	verhulst := chaos.NewVerhulstWithFunc(3.6951, chaos.Iter1)
-	iter := iterator.NewIterator([]float64{0.1231}, verhulst)
-	interpol := interpolator.NewInterpolator(iter, interpolator.Linear, 1.0/120.0)
+	iter := iterator.New([]float64{0.1231}, verhulst)
+	interpol := interpolator.New(iter, interpolator.Linear, 1.0/120.0)
 
 	voice := &ChaosVoice{
 		BasePatch:      muse.NewPatch(0, 2, config),
@@ -51,12 +51,12 @@ func NewChaosVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, f
 		interpol:       interpol,
 		ampEnvSteps:    ampEnvSteps,
 		filterEnvSteps: filterEnvSteps,
-		panner:         pan.NewStereoPan(0.5, config),
-		filter:         korg35.NewKorg35LPF(1500.0, 1.6, 1.0, config),
-		genMod:         generator.NewGenerator(interpol, nil, nil, config),
-		waveShape:      waveshaper.NewWaveShaper(waveshaping.NewSerial(waveshaping.NewMirror(0.0, 1.0), waveshaping.NewBipolar()), 0, nil, nil, config),
-		ampEnv:         adsr.NewADSR(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
-		filterEnv:      adsr.NewADSR(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
+		panner:         pan.New(0.5, config),
+		filter:         korg35.New(1500.0, 1.6, 1.0, config),
+		genMod:         generator.New(interpol, nil, nil, config),
+		waveShape:      waveshaper.New(waveshaping.NewSerial(waveshaping.NewMirror(0.0, 1.0), waveshaping.NewBipolar()), 0, nil, nil, config),
+		ampEnv:         adsr.New(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
+		filterEnv:      adsr.New(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
 	}
 
 	voice.SetSelf(voice)
@@ -68,16 +68,7 @@ func NewChaosVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, f
 	voice.AddModule(voice.filter)
 	voice.AddModule(voice.panner)
 
-	filterScaler := voice.AddModule(functor.NewFunctor(1, func(v []float64) float64 {
-		min := 50.0
-		max := 7000.0
-		if min > max {
-			tmp := max
-			max = min
-			min = tmp
-		}
-		return v[0]*(max-min) + min
-	}, config))
+	filterScaler := voice.AddModule(functor.NewBetween(50.0, 7000.0, config))
 
 	ampVCA := voice.AddModule(functor.NewMult(2, config))
 
@@ -151,7 +142,7 @@ func main() {
 		voices[i] = NewChaosVoice(env.Config, ampEnv, filterEnv)
 	}
 
-	poly := polyphony.NewPolyphony(2, voices, env.Config).Named("chaosSynth").Add(env)
+	poly := polyphony.New(2, voices, env.Config).Named("chaosSynth").Add(env)
 	timer := env.AddControl(timer.NewControlTimer(500.0, env.Config, ""))
 	randomizeTimer := val.NewVal[float64](value.NewFunction(func() float64 {
 		return randMinMax(100, 5500.0)
@@ -184,8 +175,8 @@ func main() {
 	timer.CtrlConnect(0, trigger, 0)
 	trigger.CtrlConnect(0, poly, 0)
 
-	chorus1 := env.AddModule(chorus.NewChorus(false, 30.0, 20.0, 0.4, 1.21, 0.4, nil, env.Config))
-	chorus2 := env.AddModule(chorus.NewChorus(false, 31.0, 21.0, 0.31, 1.31, 0.5, nil, env.Config))
+	chorus1 := env.AddModule(chorus.New(false, 30.0, 20.0, 0.4, 1.21, 0.4, nil, env.Config))
+	chorus2 := env.AddModule(chorus.New(false, 31.0, 21.0, 0.31, 1.31, 0.5, nil, env.Config))
 
 	poly.Connect(0, chorus1, 0)
 	poly.Connect(1, chorus2, 0)

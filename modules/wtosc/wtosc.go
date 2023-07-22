@@ -12,10 +12,10 @@ type Osc struct {
 	component *wtoscc.Osc
 }
 
-func NewOsc(sf *io.WaveTableSoundFile, fc float64, phase float64, tableIndex float64, amp float64, config *muse.Configuration) *Osc {
+func New(sf *io.WaveTableSoundFile, fc float64, phase float64, tableIndex float64, amp float64, config *muse.Configuration) *Osc {
 	osc := &Osc{
 		BaseModule: muse.NewBaseModule(3, 1, config, ""),
-		component:  wtoscc.NewOsc(sf, fc, config.SampleRate, phase, tableIndex, amp),
+		component:  wtoscc.New(sf, fc, config.SampleRate, phase, tableIndex, amp),
 	}
 
 	osc.SetSelf(osc)

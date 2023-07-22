@@ -69,15 +69,15 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 
 	synth.ampEnv = ampEnv
 	synth.filterEnv = filterEnv
-	synth.poly = classic.NewSynth(20, ampEnv, filterEnv, config).Named("poly").Add(synth).(*polyphony.Polyphony)
+	synth.poly = classic.New(20, ampEnv, filterEnv, config).Named("poly").Add(synth).(*polyphony.Polyphony)
 	synthAmp1 := functor.NewAmp(0.85, config).Add(synth).In(synth.poly)
 	synthAmp2 := functor.NewAmp(0.85, config).Add(synth).In(synth.poly, 1)
-	allpass1 := allpass.NewAllpass(2500.0, 60000/bpm*1.666, 0.5, config).Add(synth).In(synthAmp1)
-	allpass2 := allpass.NewAllpass(2500.0, 60000/bpm*1.75, 0.4, config).Add(synth).In(synthAmp2)
+	allpass1 := allpass.New(2500.0, 60000/bpm*1.666, 0.5, config).Add(synth).In(synthAmp1)
+	allpass2 := allpass.New(2500.0, 60000/bpm*1.75, 0.4, config).Add(synth).In(synthAmp2)
 	allpassAmp1 := functor.NewAmp(0.5, config).Add(synth).In(allpass1)
 	allpassAmp2 := functor.NewAmp(0.5, config).Add(synth).In(allpass2)
-	synth.chorus1 = chorus.NewChorus(false, 15, 10, 0.3, 1.42, 0.5, nil, config).Add(synth).In(synthAmp1, allpassAmp1, 0, 0).(*chorus.Chorus)
-	synth.chorus2 = chorus.NewChorus(false, 15, 10, 0.31, 1.43, 0.55, nil, config).Add(synth).In(synthAmp2, allpassAmp2, 0, 0).(*chorus.Chorus)
+	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil, config).Add(synth).In(synthAmp1, allpassAmp1, 0, 0).(*chorus.Chorus)
+	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil, config).Add(synth).In(synthAmp2, allpassAmp2, 0, 0).(*chorus.Chorus)
 
 	synth.In(synth.chorus1, synth.chorus2)
 	synth.SetupControls()

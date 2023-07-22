@@ -7,7 +7,7 @@ type XFade struct {
 	fade float64
 }
 
-func NewXFade(fade float64, config *muse.Configuration) *XFade {
+func New(fade float64, config *muse.Configuration) *XFade {
 	xf := &XFade{
 		BaseModule: muse.NewBaseModule(3, 1, config, ""),
 		fade:       fade,

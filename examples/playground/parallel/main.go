@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/modules/blosc"
 	"github.com/almerlucke/muse/modules/functor"
+	"github.com/almerlucke/muse/modules/osc"
 )
 
 func existingDependency(deps []muse.Module, m muse.Module) bool {
@@ -135,9 +135,9 @@ func main() {
 	bufferSize := 128
 	config := &muse.Configuration{SampleRate: sr, BufferSize: bufferSize}
 
-	o1 := blosc.NewOsc(100.0, 0.0, config).Named("osc1")
-	o2 := blosc.NewOsc(100.0, 0.0, config).Named("osc2")
-	o3 := blosc.NewOsc(100.0, 0.0, config).Named("osc3")
+	o1 := osc.New(100.0, 0.0, config).Named("osc1")
+	o2 := osc.New(100.0, 0.0, config).Named("osc2")
+	o3 := osc.New(100.0, 0.0, config).Named("osc3")
 	m1 := functor.NewMult(2, config)
 	m1.SetIdentifier("m1")
 	m2 := functor.NewMult(2, config)

@@ -31,7 +31,7 @@ type Interpolator struct {
 	outVector     []float64
 }
 
-func NewInterpolator(generator generator.Generator, method Method, dt float64) *Interpolator {
+func New(generator generator.Generator, method Method, dt float64) *Interpolator {
 	numDimensions := generator.NumDimensions()
 
 	interpol := &Interpolator{

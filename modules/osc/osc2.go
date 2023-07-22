@@ -1,4 +1,4 @@
-package blosc
+package osc
 
 import (
 	"math"

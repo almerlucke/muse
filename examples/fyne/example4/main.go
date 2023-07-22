@@ -62,13 +62,13 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 
 	testVoice.SetSelf(testVoice)
 
-	ampEnv := testVoice.AddModule(adsr.NewADSR(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	filterEnv := testVoice.AddModule(adsr.NewADSR(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	multiplier := testVoice.AddModule(functor.NewFunctor(2, functor.FunctorMult, config))
-	filterEnvScaler := testVoice.AddModule(functor.NewFunctor(1, func(in []float64) float64 { return in[0]*8000.0 + 100.0 }, config))
-	osc := testVoice.AddModule(phasor.NewPhasor(140.0, 0.0, config))
-	filter := testVoice.AddModule(moog.NewMoog(1400.0, 0.5, 1, config))
-	shape := testVoice.AddModule(waveshaper.NewWaveShaper(testVoice.shaper, 0, nil, nil, config))
+	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
+	filterEnv := testVoice.AddModule(adsr.New(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
+	multiplier := testVoice.AddModule(functor.NewMult(2, config))
+	filterEnvScaler := testVoice.AddModule(functor.NewScale(8000.0, 100.0, config))
+	osc := testVoice.AddModule(phasor.New(140.0, 0.0, config))
+	filter := testVoice.AddModule(moog.New(1400.0, 0.5, 1, config))
+	shape := testVoice.AddModule(waveshaper.New(testVoice.shaper, 0, nil, nil, config))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)
@@ -175,7 +175,7 @@ func addDrumTrack(env *muse.Environment, moduleName string, soundBuffer *io.Soun
 		"bang":  true,
 	}, identifier))
 
-	return env.AddModule(player.NewPlayer(soundBuffer, 1.0, amp, true, env.Config).Named(moduleName))
+	return env.AddModule(player.New(soundBuffer, 1.0, amp, true, env.Config).Named(moduleName))
 }
 
 func main() {
@@ -207,8 +207,8 @@ func main() {
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly := env.AddModule(polyphony.NewPolyphony(1, voices, env.Config).Named("polyphony"))
-	allpass := env.AddModule(allpass.NewAllpass(50, 50, 0.3, env.Config))
+	poly := env.AddModule(polyphony.New(1, voices, env.Config).Named("polyphony"))
+	allpass := env.AddModule(allpass.New(50, 50, 0.3, env.Config))
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
@@ -315,7 +315,7 @@ func main() {
 
 	mult := env.AddModule(functor.NewAmp(0.5, env.Config))
 
-	chor1 := env.AddModule(chorus.NewChorus(false, 15, 10, 0.9, 1.3, 0.3, waveshaping.NewSineTable(512), env.Config))
+	chor1 := env.AddModule(chorus.New(false, 15, 10, 0.9, 1.3, 0.3, waveshaping.NewSineTable(512), env.Config))
 
 	kickPlayer.Connect(0, mult, 0)
 	hihatPlayer.Connect(0, mult, 0)

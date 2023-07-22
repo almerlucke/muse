@@ -6,9 +6,9 @@ import (
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
-	"github.com/almerlucke/muse/modules/blosc"
 	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/filters/moog"
+	"github.com/almerlucke/muse/modules/osc"
 	"github.com/almerlucke/muse/utils/notes"
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/template"
@@ -79,12 +79,12 @@ func main() {
 		"mix4": template.NewParameter("mix", nil),
 	}))
 
-	osc := env.AddModule(blosc.NewOscX(100.0, 0.0, 0.2, [4]float64{0.1, 0.1, 0.4, 0.1}, env.Config).Named("osc"))
-	osc2 := env.AddModule(blosc.NewOscX(100.0, 0.5, 0.2, [4]float64{0.1, 0.1, 0.4, 0.1}, env.Config).Named("osc2"))
-	filter := env.AddModule(moog.NewMoog(300.0, 0.63, 0.7, env.Config))
-	ch := env.AddModule(chorus.NewChorus(true, 15, 10, 0.4, 1.6, 0.6, shaping.NewSineTable(512.0), env.Config))
+	osc1 := env.AddModule(osc.NewX(100.0, 0.0, 0.2, [4]float64{0.1, 0.1, 0.4, 0.1}, env.Config).Named("osc"))
+	osc2 := env.AddModule(osc.NewX(100.0, 0.5, 0.2, [4]float64{0.1, 0.1, 0.4, 0.1}, env.Config).Named("osc2"))
+	filter := env.AddModule(moog.New(300.0, 0.63, 0.7, env.Config))
+	ch := env.AddModule(chorus.New(true, 15, 10, 0.4, 1.6, 0.6, shaping.NewSineTable(512.0), env.Config))
 
-	osc.Connect(4, filter, 0)
+	osc1.Connect(4, filter, 0)
 	osc2.Connect(4, filter, 0)
 	filter.Connect(0, ch, 0)
 	ch.Connect(0, env, 0)

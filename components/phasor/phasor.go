@@ -6,7 +6,7 @@ type Phasor struct {
 	outVector [1]float64
 }
 
-func NewPhasor(fc float64, fs float64, phase float64) *Phasor {
+func New(fc float64, fs float64, phase float64) *Phasor {
 	p := &Phasor{}
 	p.SetFrequency(fc, fs)
 	p.SetPhase(phase)
