@@ -8,7 +8,7 @@ type Msg struct {
 	addresses []string
 }
 
-func NewMsg(sender muse.Patch, addresses []string, id string) *Msg {
+func New(sender muse.Patch, addresses []string, id string) *Msg {
 	m := &Msg{BaseControl: muse.NewBaseControl(id), sender: sender, addresses: addresses}
 	m.SetSelf(m)
 	return m

@@ -1,4 +1,4 @@
-package clog
+package log
 
 import (
 	"log"
@@ -12,7 +12,6 @@ type Log struct {
 
 func NewLog(id string) *Log {
 	l := &Log{BaseControl: muse.NewBaseControl(id)}
-	// Always set self so we can reference embedding struct from base control
 	l.SetSelf(l)
 	return l
 }

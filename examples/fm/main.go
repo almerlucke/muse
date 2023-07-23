@@ -115,7 +115,7 @@ func main() {
 		"level":    1.0,
 	}, "notes"))
 
-	env.AddMessenger(timer.NewTimer(250.0, []string{"notes"}, env.Config, ""))
+	env.AddMessenger(timer.NewTimer(250.0, []string{"notes"}, env.Config))
 
 	stream, err := env.InitializeAudio()
 	if err != nil {

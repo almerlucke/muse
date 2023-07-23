@@ -10,7 +10,7 @@ type Seq[T any] struct {
 	sequence *value.Sequence[T]
 }
 
-func NewSeq[T any](s *value.Sequence[T], id string) *Seq[T] {
+func New[T any](s *value.Sequence[T], id string) *Seq[T] {
 	sq := &Seq[T]{
 		BaseControl: muse.NewBaseControl(id),
 		sequence:    s,

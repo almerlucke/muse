@@ -19,6 +19,8 @@ type MessageReceiver interface {
 type Messenger interface {
 	Control
 	Stater
+	MsgrNamed(string) Messenger
+	MsgrAdd(Patch) Messenger
 	Messages(timestamp int64, config *Configuration) []*Message
 }
 
@@ -49,4 +51,14 @@ func (m *BaseMessenger) SetState(state map[string]any) {
 func (m *BaseMessenger) GetState() map[string]any {
 	// STUB
 	return map[string]any{}
+}
+
+func (m *BaseMessenger) MsgrNamed(name string) Messenger {
+	self := m.Self().(Messenger)
+	self.SetIdentifier(name)
+	return self
+}
+
+func (m *BaseMessenger) MsgrAdd(p Patch) Messenger {
+	return p.AddMessenger(m.Self().(Messenger))
 }

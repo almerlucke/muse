@@ -6,7 +6,7 @@ type Rcv struct {
 	*muse.BaseControl
 }
 
-func NewRcv(id string) *Rcv {
+func New(id string) *Rcv {
 	r := &Rcv{BaseControl: muse.NewBaseControl(id)}
 	r.SetSelf(r)
 	return r

@@ -14,13 +14,14 @@ type Control interface {
 	MessageReceiver
 	ControlReceiver
 	ControlSender
+	CtrlNamed(string) Control
 	CtrlAdd(Patch) Control
 	AddControlInputConnection(int, Control, int)
 	AddControlOutputConnection(int, Control, int)
 	RemoveControlInputConnection(int, Control, int)
 	RemoveControlOutputConnection(int, Control, int)
-	CIConns([]*IConn) Control
-	CIn(...any) Control
+	CtrlIConns([]*IConn) Control
+	CtrlIn(...any) Control
 	CtrlConnect(int, Control, int)
 	CtrlDisconnect()
 	Tick(int64, *Configuration)
@@ -57,6 +58,12 @@ func (c *BaseControl) Identifier() string {
 
 func (c *BaseControl) SetIdentifier(id string) {
 	c.identifier = id
+}
+
+func (c *BaseControl) CtrlNamed(name string) Control {
+	self := c.Self().(Control)
+	self.SetIdentifier(name)
+	return self
 }
 
 func (c *BaseControl) Self() any {
@@ -145,7 +152,7 @@ func (c *BaseControl) CtrlAdd(p Patch) Control {
 	return p.AddControl(c.Self().(Control))
 }
 
-func (c *BaseControl) CIConns(iConns []*IConn) Control {
+func (c *BaseControl) CtrlIConns(iConns []*IConn) Control {
 	self := c.Self().(Control)
 	for _, iConn := range iConns {
 		iConn.Object.(Control).CtrlConnect(iConn.OutIndex, self, iConn.InIndex)
@@ -153,8 +160,8 @@ func (c *BaseControl) CIConns(iConns []*IConn) Control {
 	return self
 }
 
-func (c *BaseControl) CIn(rawIconns ...any) Control {
-	return c.Self().(Control).CIConns(IConns(rawIconns...))
+func (c *BaseControl) CtrlIn(rawIconns ...any) Control {
+	return c.Self().(Control).CtrlIConns(IConns(rawIconns...))
 }
 
 func (c *BaseControl) CtrlConnect(outIndex int, receiver Control, inIndex int) {
