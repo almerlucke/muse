@@ -9,7 +9,7 @@ type Once struct {
 }
 
 func NewOnce(addresses []string) *Once {
-	o := &Once{BaseMessenger: muse.NewBaseMessenger(""), addresses: addresses}
+	o := &Once{BaseMessenger: muse.NewBaseMessenger(), addresses: addresses}
 	o.SetSelf(o)
 	return o
 }

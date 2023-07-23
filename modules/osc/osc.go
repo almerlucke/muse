@@ -16,13 +16,13 @@ type Osc struct {
 	mix        [4]float64
 }
 
-func New(frequency float64, phase float64, config *muse.Configuration) *Osc {
-	return NewX(frequency, phase, 0.5, [4]float64{0.5, 0.01, 0.1, 0.5}, config)
+func New(frequency float64, phase float64) *Osc {
+	return NewX(frequency, phase, 0.5, [4]float64{0.5, 0.01, 0.1, 0.5})
 }
 
-func NewX(frequency float64, phase float64, pw float64, mix [4]float64, config *muse.Configuration) *Osc {
+func NewX(frequency float64, phase float64, pw float64, mix [4]float64) *Osc {
 	osc := &Osc{
-		BaseModule: muse.NewBaseModule(3, 5, config, ""),
+		BaseModule: muse.NewBaseModule(3, 5),
 		frequency:  frequency,
 		phase:      phase,
 		pw:         pw,

@@ -16,9 +16,9 @@ type Gen struct {
 	messageFunction MessageFunction
 }
 
-func NewGen(generator generator.Generator, controlFunction ControlFunction, messageFunction MessageFunction, id string) *Gen {
+func NewGen(generator generator.Generator, controlFunction ControlFunction, messageFunction MessageFunction) *Gen {
 	g := &Gen{
-		BaseControl:     muse.NewBaseControl(id),
+		BaseControl:     muse.NewBaseControl(),
 		generator:       generator,
 		controlFunction: controlFunction,
 		messageFunction: messageFunction,
@@ -29,8 +29,8 @@ func NewGen(generator generator.Generator, controlFunction ControlFunction, mess
 	return g
 }
 
-func NewBasicGen(generator generator.Generator, id string) *Gen {
-	return NewGen(generator, nil, nil, id)
+func NewBasicGen(generator generator.Generator) *Gen {
+	return NewGen(generator, nil, nil)
 }
 
 func (g *Gen) bang() {

@@ -31,21 +31,21 @@ type Voice struct {
 	filterFcMax    float64
 }
 
-func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider) *Voice {
+func NewVoice(ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider) *Voice {
 	osc1Mix := 0.6
 	osc2Mix := 0.35
 	noiseMix := 0.05
 
 	voice := &Voice{
-		BasePatch:      muse.NewPatch(0, 2, config),
-		ampEnv:         adsr.New(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
-		filterEnv:      adsr.New(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config),
-		Osc1:           osc.New(100.0, 0.0, config),
-		Osc2:           osc.New(100.0, 0.5, config),
-		noiseGen:       noise.New(1, config),
-		SourceMixer:    mixer.New(3, config),
-		filter:         korg35.New(1500.0, 0.7, 2.0, config),
-		panner:         pan.New(0.5, config),
+		BasePatch:      muse.NewPatch(0, 2),
+		ampEnv:         adsr.New(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0),
+		filterEnv:      adsr.New(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0),
+		Osc1:           osc.New(100.0, 0.0),
+		Osc2:           osc.New(100.0, 0.5),
+		noiseGen:       noise.New(1),
+		SourceMixer:    mixer.New(3),
+		filter:         korg35.New(1500.0, 0.7, 2.0),
+		panner:         pan.New(0.5),
 		ampEnvSteps:    ampEnvSteps,
 		filterEnvSteps: filterEnvSteps,
 		osc2Tuning:     2.03,
@@ -75,9 +75,9 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 			min = tmp
 		}
 		return v[0]*(max-min) + min
-	}, config))
+	}))
 
-	ampVCA := voice.AddModule(functor.NewMult(2, config))
+	ampVCA := voice.AddModule(functor.NewMult(2))
 
 	voice.Osc1.Connect(4, voice.SourceMixer, 0)
 	voice.Osc2.Connect(4, voice.SourceMixer, 1)
@@ -94,14 +94,14 @@ func NewVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filter
 	return voice
 }
 
-func New(numVoices int, ampEnv adsrc.StepProvider, filterEnv adsrc.StepProvider, config *muse.Configuration) *polyphony.Polyphony {
+func New(numVoices int, ampEnv adsrc.StepProvider, filterEnv adsrc.StepProvider) *polyphony.Polyphony {
 	voices := make([]polyphony.Voice, numVoices)
 
 	for i := 0; i < numVoices; i++ {
-		voices[i] = NewVoice(config, ampEnv, filterEnv)
+		voices[i] = NewVoice(ampEnv, filterEnv)
 	}
 
-	return polyphony.New(2, voices, config)
+	return polyphony.New(2, voices)
 }
 
 func (v *Voice) IsActive() bool {

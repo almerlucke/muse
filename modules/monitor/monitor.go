@@ -15,14 +15,14 @@ type Monitor struct {
 	raster  *canvas.Raster
 }
 
-func NewMonitor(width int, height int, config *muse.Configuration) *Monitor {
+func NewMonitor(width int, height int) *Monitor {
 	ctx := gg.NewContext(width, height)
 
 	raster := canvas.NewRasterFromImage(ctx.Image())
 	raster.ScaleMode = canvas.ImageScaleFastest
 
 	m := &Monitor{
-		BaseModule: muse.NewBaseModule(1, 0, config, ""),
+		BaseModule: muse.NewBaseModule(1, 0),
 		context:    ctx,
 		raster:     raster,
 		width:      width,

@@ -7,15 +7,13 @@ import (
 
 func Mult(args ...any) muse.Module {
 	iConns := muse.IConns(args...)
-	// Use config from first input module
-	config := iConns[0].Object.(muse.Module).Configuration()
-	return functor.NewMult(len(iConns), config).IConns(iConns)
+	return functor.NewMult(len(iConns)).IConns(iConns)
 }
 
 func Scale(mod muse.Module, outIndex int, scale float64, offset float64) muse.Module {
-	return functor.NewScale(scale, offset, mod.Configuration()).In(mod, outIndex)
+	return functor.NewScale(scale, offset).In(mod, outIndex)
 }
 
 func Amp(mod muse.Module, outIndex int, scale float64) muse.Module {
-	return functor.NewScale(scale, 0, mod.Configuration()).In(mod, outIndex)
+	return functor.NewScale(scale, 0).In(mod, outIndex)
 }

@@ -49,8 +49,8 @@ type LFO struct {
 	targets    []*Target
 }
 
-func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shapes []shaping.Shaper, config *muse.Configuration, identifier string) *LFO {
-	sampleRate := config.SampleRate / float64(config.BufferSize)
+func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shapes []shaping.Shaper) *LFO {
+	sampleRate := muse.SampleRate() / float64(muse.BufferSize())
 
 	if min > max {
 		tmp := min
@@ -59,14 +59,14 @@ func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shap
 	}
 
 	lfo := &LFO{
-		BaseMessenger: muse.NewBaseMessenger(identifier),
+		BaseMessenger: muse.NewBaseMessenger(),
 		delta:         speed / sampleRate,
 		speed:         speed,
 		min:           min,
 		max:           max,
 		shapes:        shapes,
 		shapeIndex:    shapeIndex,
-		config:        config,
+		config:        muse.CurrentConfiguration(),
 	}
 
 	lfo.SetSelf(lfo)
@@ -74,22 +74,22 @@ func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shap
 	return lfo
 }
 
-func NewBasicControlLFO(speed float64, min float64, max float64, config *muse.Configuration, identifier string) *LFO {
-	return NewControlLFO(speed, min, max, 0, []shaping.Shaper{lfoSineShaper}, config, identifier)
+func NewBasicControlLFO(speed float64, min float64, max float64) *LFO {
+	return NewControlLFO(speed, min, max, 0, []shaping.Shaper{lfoSineShaper})
 }
 
-func NewLFO(speed float64, targets []*Target, config *muse.Configuration, identifier string) *LFO {
-	sampleRate := config.SampleRate / float64(config.BufferSize)
+func NewLFO(speed float64, targets []*Target) *LFO {
+	sampleRate := muse.SampleRate() / float64(muse.BufferSize())
 
 	lfo := &LFO{
-		BaseMessenger: muse.NewBaseMessenger(identifier),
+		BaseMessenger: muse.NewBaseMessenger(),
 		delta:         speed / sampleRate,
 		speed:         speed,
 		targets:       targets,
 		min:           0.0,
 		max:           1.0,
 		shapes:        []shaping.Shaper{lfoSineShaper},
-		config:        config,
+		config:        muse.CurrentConfiguration(),
 	}
 
 	lfo.SetSelf(lfo)
@@ -97,13 +97,13 @@ func NewLFO(speed float64, targets []*Target, config *muse.Configuration, identi
 	return lfo
 }
 
-func NewBasicLFO(speed float64, scale float64, offset float64, addresses []string, config *muse.Configuration, param string, templ template.Template) *LFO {
+func NewBasicLFO(speed float64, scale float64, offset float64, addresses []string, param string, templ template.Template) *LFO {
 	ts := make([]*Target, len(addresses))
 	for i, address := range addresses {
 		ts[i] = NewTarget(address, shaping.NewSerial(lfoSineShaper, shaping.NewLinear(scale, offset)), param, templ)
 	}
 
-	return NewLFO(speed, ts, config, "")
+	return NewLFO(speed, ts)
 }
 
 func (lfo *LFO) ReceiveControlValue(value any, index int) {

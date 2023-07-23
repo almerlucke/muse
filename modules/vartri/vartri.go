@@ -10,11 +10,11 @@ type VarTri struct {
 	fc    float64
 }
 
-func New(freq float64, phase float64, w float64, config *muse.Configuration) *VarTri {
+func New(freq float64, phase float64, w float64) *VarTri {
 	v := &VarTri{
-		BaseModule: muse.NewBaseModule(3, 1, config, ""),
+		BaseModule: muse.NewBaseModule(3, 1),
 		phase:      phase,
-		delta:      freq / config.SampleRate,
+		delta:      freq / muse.SampleRate(),
 		w:          w,
 	}
 

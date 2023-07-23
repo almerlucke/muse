@@ -231,12 +231,12 @@ func (freeverb *FreeVerb) update() {
 }
 
 // NewFreeVerbModule generate new freeverb module
-func New(config *muse.Configuration) *FreeVerb {
+func New() *FreeVerb {
 
-	scale := config.SampleRate / 44100.0
+	scale := muse.SampleRate() / 44100.0
 
 	freeverb := &FreeVerb{
-		BaseModule: muse.NewBaseModule(2, 2, config, ""),
+		BaseModule: muse.NewBaseModule(2, 2),
 	}
 
 	freeverb.combL = make([]*freeVerbComb, numcombs)

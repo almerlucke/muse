@@ -10,8 +10,8 @@ type Log struct {
 	*muse.BaseControl
 }
 
-func NewLog(id string) *Log {
-	l := &Log{BaseControl: muse.NewBaseControl(id)}
+func NewLog() *Log {
+	l := &Log{BaseControl: muse.NewBaseControl()}
 	l.SetSelf(l)
 	return l
 }

@@ -12,11 +12,12 @@ type Delay struct {
 	readLocationMS float64
 }
 
-func New(length float64, location float64, config *muse.Configuration) *Delay {
+func New(length float64, location float64) *Delay {
+	sr := muse.SampleRate()
 	d := &Delay{
-		BaseModule:     muse.NewBaseModule(2, 1, config, ""),
-		delay:          delayc.New(int(length * config.SampleRate * 0.001)),
-		readLocation:   location * config.SampleRate * 0.001,
+		BaseModule:     muse.NewBaseModule(2, 1),
+		delay:          delayc.New(int(length * sr * 0.001)),
+		readLocation:   location * sr * 0.001,
 		readLocationMS: location,
 	}
 

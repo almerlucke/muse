@@ -13,13 +13,13 @@ type Timer struct {
 	sampleRate    float64
 }
 
-func NewTimer(intervalMilli float64, addresses []string, config *muse.Configuration) *Timer {
+func NewTimer(intervalMilli float64, addresses []string) *Timer {
 	t := &Timer{
-		BaseMessenger: muse.NewBaseMessenger(""),
+		BaseMessenger: muse.NewBaseMessenger(),
 		addresses:     addresses,
-		interval:      intervalMilli * 0.001 * config.SampleRate,
+		interval:      intervalMilli * 0.001 * muse.SampleRate(),
 		intervalMilli: intervalMilli,
-		sampleRate:    config.SampleRate,
+		sampleRate:    muse.SampleRate(),
 	}
 
 	t.SetSelf(t)
@@ -27,8 +27,8 @@ func NewTimer(intervalMilli float64, addresses []string, config *muse.Configurat
 	return t
 }
 
-func NewControlTimer(intervalMilli float64, config *muse.Configuration) *Timer {
-	return NewTimer(intervalMilli, nil, config)
+func NewControlTimer(intervalMilli float64) *Timer {
+	return NewTimer(intervalMilli, nil)
 }
 
 func (t *Timer) ReceiveControlValue(value any, index int) {

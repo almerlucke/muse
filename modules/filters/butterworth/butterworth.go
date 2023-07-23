@@ -12,14 +12,14 @@ type Butterworth struct {
 	q      float64
 }
 
-func New(fc float64, q float64, config *muse.Configuration) *Butterworth {
+func New(fc float64, q float64) *Butterworth {
 	b := &Butterworth{
-		BaseModule: muse.NewBaseModule(3, 1, config, ""),
+		BaseModule: muse.NewBaseModule(3, 1),
 		fc:         fc,
 		q:          q,
 	}
 
-	b.filter.Set(fc, q, config.SampleRate)
+	b.filter.Set(fc, q, muse.SampleRate())
 
 	b.SetSelf(b)
 

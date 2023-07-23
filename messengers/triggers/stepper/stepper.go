@@ -17,9 +17,9 @@ type Stepper struct {
 	provider  StepProvider
 }
 
-func NewStepper(provider StepProvider, addresses []string, identifier string) *Stepper {
+func NewStepper(provider StepProvider, addresses []string) *Stepper {
 	s := &Stepper{
-		BaseMessenger: muse.NewBaseMessenger(identifier),
+		BaseMessenger: muse.NewBaseMessenger(),
 		addresses:     addresses,
 		provider:      provider,
 	}
@@ -29,8 +29,8 @@ func NewStepper(provider StepProvider, addresses []string, identifier string) *S
 	return s
 }
 
-func NewControlStepper(provider StepProvider, identifier string) *Stepper {
-	return NewStepper(provider, nil, identifier)
+func NewControlStepper(provider StepProvider) *Stepper {
+	return NewStepper(provider, nil)
 }
 
 func (s *Stepper) tick(timestamp int64, config *muse.Configuration) (bool, float64) {

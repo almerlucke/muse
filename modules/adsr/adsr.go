@@ -13,15 +13,15 @@ type ADSR struct {
 	duration float64
 }
 
-func New(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode adsrc.ReleaseMode, maxLevel float64, config *muse.Configuration) *ADSR {
+func New(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode adsrc.ReleaseMode, maxLevel float64) *ADSR {
 	a := &ADSR{
-		BaseModule: muse.NewBaseModule(0, 1, config, ""),
+		BaseModule: muse.NewBaseModule(0, 1),
 	}
 
 	a.maxLevel = maxLevel
 	a.duration = 250.0
 	a.adsr = &adsrc.ADSR{}
-	a.adsr.Initialize(steps, durationMode, releaseMode, config.SampleRate)
+	a.adsr.Initialize(steps, durationMode, releaseMode, muse.SampleRate())
 
 	a.SetSelf(a)
 

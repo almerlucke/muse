@@ -20,12 +20,12 @@ type Player struct {
 	soundBank   io.SoundBank
 }
 
-func New(sf io.SoundFiler, speed float64, amp float64, oneShot bool, config *muse.Configuration) *Player {
-	return NewX(sf, speed, amp, 0.0, sf.Duration(), oneShot, config)
+func New(sf io.SoundFiler, speed float64, amp float64, oneShot bool) *Player {
+	return NewX(sf, speed, amp, 0.0, sf.Duration(), oneShot)
 }
 
-func NewX(sf io.SoundFiler, speed float64, amp float64, startOffset float64, endOffset float64, oneShot bool, config *muse.Configuration) *Player {
-	inc := (speed * sf.SampleRate() / config.SampleRate) / float64(sf.NumFrames())
+func NewX(sf io.SoundFiler, speed float64, amp float64, startOffset float64, endOffset float64, oneShot bool) *Player {
+	inc := (speed * sf.SampleRate() / muse.SampleRate()) / float64(sf.NumFrames())
 
 	depth := io.SpeedToMipMapDepth(speed)
 	if depth >= sf.Depth() {
@@ -33,7 +33,7 @@ func NewX(sf io.SoundFiler, speed float64, amp float64, startOffset float64, end
 	}
 
 	p := &Player{
-		BaseModule: muse.NewBaseModule(0, sf.NumChannels(), config, ""),
+		BaseModule: muse.NewBaseModule(0, sf.NumChannels()),
 		inc:        inc,
 		speed:      speed,
 		oneShot:    oneShot,

@@ -93,12 +93,13 @@ type Korg35LPF struct {
 	nlp  bool
 }
 
-func New(fc float64, res float64, sat float64, config *muse.Configuration) *Korg35LPF {
+func New(fc float64, res float64, sat float64) *Korg35LPF {
+	sr := muse.SampleRate()
 	korg := &Korg35LPF{
-		BaseModule: muse.NewBaseModule(4, 1, config, ""),
-		lpf1:       newOnePole(fc, config.SampleRate),
-		lpf2:       newOnePole(fc, config.SampleRate),
-		hpf1:       newOnePole(fc, config.SampleRate),
+		BaseModule: muse.NewBaseModule(4, 1),
+		lpf1:       newOnePole(fc, sr),
+		lpf2:       newOnePole(fc, sr),
+		hpf1:       newOnePole(fc, sr),
 		fc:         fc,
 		k:          res,
 		sat:        sat,

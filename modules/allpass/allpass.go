@@ -14,11 +14,11 @@ type Allpass struct {
 	readLocationMS float64
 }
 
-func New(length float64, location float64, feedback float64, config *muse.Configuration) *Allpass {
+func New(length float64, location float64, feedback float64) *Allpass {
 	all := &Allpass{
-		BaseModule:     muse.NewBaseModule(3, 1, config, ""),
-		allpass:        allpassc.New(int(config.SampleRate*length*0.001), feedback),
-		readLocation:   config.SampleRate * location * 0.001,
+		BaseModule:     muse.NewBaseModule(3, 1),
+		allpass:        allpassc.New(int(muse.SampleRate()*length*0.001), feedback),
+		readLocation:   muse.SampleRate() * location * 0.001,
 		readLocationMS: location,
 	}
 

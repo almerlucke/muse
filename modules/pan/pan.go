@@ -13,9 +13,9 @@ type Pan struct {
 	pan float64
 }
 
-func New(pan float64, config *muse.Configuration) *Pan {
+func New(pan float64) *Pan {
 	p := &Pan{
-		BaseModule: muse.NewBaseModule(2, 2, config, ""),
+		BaseModule: muse.NewBaseModule(2, 2),
 		pan:        pan,
 	}
 

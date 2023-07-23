@@ -29,18 +29,18 @@ type FMSynth struct {
 	ReleaseMode      ops.EnvelopeReleaseMode
 }
 
-func New(numVoices int, table []float64, config *muse.Configuration) *FMSynth {
+func New(numVoices int, table []float64) *FMSynth {
 	voices := make([]*voice, numVoices)
 
 	for i := 0; i < numVoices; i++ {
 		voices[i] = &voice{
 			identifier: 0,
-			ops:        ops.NewOps(table, 400.0, config.SampleRate),
+			ops:        ops.NewOps(table, 400.0, muse.SampleRate()),
 		}
 	}
 
 	fmSynth := &FMSynth{
-		BaseModule: muse.NewBaseModule(0, 1, config, ""),
+		BaseModule: muse.NewBaseModule(0, 1),
 		voices:     voices,
 	}
 

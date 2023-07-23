@@ -69,13 +69,13 @@ type Moog2 struct {
 	c, ct2, cp2, cp3, cp4 float64
 }
 
-func New(fc float64, q float64, config *muse.Configuration) *Moog2 {
+func New(fc float64, q float64) *Moog2 {
 	m := &Moog2{
-		BaseModule: muse.NewBaseModule(1, 1, config, ""),
+		BaseModule: muse.NewBaseModule(1, 1),
 		gain:       1.0,
 	}
 
-	m.setFreq(fc / config.SampleRate)
+	m.setFreq(fc / muse.SampleRate())
 	m.setQ(q)
 	m.setType(0)
 

@@ -4,9 +4,9 @@ type ThruModule struct {
 	*BaseModule
 }
 
-func NewThruModule(config *Configuration) *ThruModule {
+func NewThruModule() *ThruModule {
 	return &ThruModule{
-		BaseModule: NewBaseModule(1, 1, config, ""),
+		BaseModule: NewBaseModule(1, 1),
 	}
 }
 

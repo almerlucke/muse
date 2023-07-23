@@ -11,9 +11,9 @@ type Noise struct {
 	r *rand.Rand
 }
 
-func New(seed uint64, config *muse.Configuration) *Noise {
+func New(seed uint64) *Noise {
 	n := &Noise{
-		BaseModule: muse.NewBaseModule(0, 1, config, ""),
+		BaseModule: muse.NewBaseModule(0, 1),
 		r:          rand.NewRandWithSeed(seed),
 	}
 

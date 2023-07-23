@@ -77,19 +77,21 @@ type Granulator struct {
 	outBufs       [][]float64
 }
 
-func New(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], grainPoolSize int, paramGen ParameterGenerator, config *muse.Configuration) *Granulator {
+func New(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], grainPoolSize int, paramGen ParameterGenerator) *Granulator {
+	config := muse.CurrentConfiguration()
+
 	gl := &Granulator{
-		BaseModule:   muse.NewBaseModule(0, numOutputs, config, ""),
+		BaseModule:   muse.NewBaseModule(0, numOutputs),
 		freeGrains:   pool.NewPool[*grain](),
 		activeGrains: pool.NewPool[*grain](),
 		paramGen:     paramGen,
 		sourceBufs:   make([][]float64, numOutputs),      // synthesize buffer for grain source
-		envBuf:       make([]float64, config.BufferSize), // synthesize buffer for grain envelope
+		envBuf:       make([]float64, muse.BufferSize()), // synthesize buffer for grain envelope
 		outBufs:      make([][]float64, numOutputs),      // output buffers
 	}
 
 	for i := 0; i < numOutputs; i++ {
-		gl.sourceBufs[i] = make([]float64, config.BufferSize)
+		gl.sourceBufs[i] = make([]float64, muse.BufferSize())
 		gl.outBufs[i] = gl.Outputs[i].Buffer
 	}
 

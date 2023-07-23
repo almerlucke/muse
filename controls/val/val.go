@@ -10,9 +10,9 @@ type Val[T any] struct {
 	v value.Valuer[T]
 }
 
-func New[T any](v value.Valuer[T], id string) *Val[T] {
+func New[T any](v value.Valuer[T]) *Val[T] {
 	val := &Val[T]{
-		BaseControl: muse.NewBaseControl(id),
+		BaseControl: muse.NewBaseControl(),
 		v:           v,
 	}
 

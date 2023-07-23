@@ -32,7 +32,9 @@ type BaseModule struct {
 	didSynthesize bool
 }
 
-func NewBaseModule(numInputs int, numOutputs int, config *Configuration, identifier string) *BaseModule {
+func NewBaseModule(numInputs int, numOutputs int) *BaseModule {
+	config := CurrentConfiguration()
+
 	inputs := make([]*Socket, numInputs)
 
 	for i := 0; i < numInputs; i++ {
@@ -46,7 +48,7 @@ func NewBaseModule(numInputs int, numOutputs int, config *Configuration, identif
 	}
 
 	return &BaseModule{
-		BaseControl: NewBaseControl(identifier),
+		BaseControl: NewBaseControl(),
 		Inputs:      inputs,
 		Outputs:     outputs,
 		Config:      config,

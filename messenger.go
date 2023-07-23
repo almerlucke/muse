@@ -28,9 +28,9 @@ type BaseMessenger struct {
 	*BaseControl
 }
 
-func NewBaseMessenger(identifier string) *BaseMessenger {
+func NewBaseMessenger() *BaseMessenger {
 	return &BaseMessenger{
-		BaseControl: NewBaseControl(identifier),
+		BaseControl: NewBaseControl(),
 	}
 }
 

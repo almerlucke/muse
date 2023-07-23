@@ -9,11 +9,11 @@ type Phasor struct {
 	fc    float64
 }
 
-func New(freq float64, phase float64, config *muse.Configuration) *Phasor {
+func New(freq float64, phase float64) *Phasor {
 	p := &Phasor{
-		BaseModule: muse.NewBaseModule(2, 1, config, ""),
+		BaseModule: muse.NewBaseModule(2, 1),
 		phase:      phase,
-		delta:      freq / config.SampleRate,
+		delta:      freq / muse.SampleRate(),
 		fc:         freq,
 	}
 

@@ -20,9 +20,9 @@ type Generator struct {
 	banger Banger
 }
 
-func NewGenerator(banger Banger, identifier string) *Generator {
+func NewGenerator(banger Banger) *Generator {
 	g := &Generator{
-		BaseMessenger: muse.NewBaseMessenger(identifier),
+		BaseMessenger: muse.NewBaseMessenger(),
 		banger:        banger,
 	}
 
@@ -67,8 +67,8 @@ func NewValueBang(val value.Valuer[[]*muse.Message]) *ValueBang {
 	}
 }
 
-func NewValueGenerator(val value.Valuer[[]*muse.Message], identifier string) *Generator {
-	return NewGenerator(NewValueBang(val), identifier)
+func NewValueGenerator(val value.Valuer[[]*muse.Message]) *Generator {
+	return NewGenerator(NewValueBang(val))
 }
 
 func (vb *ValueBang) ReceiveControlValue(value any, index int) {
@@ -119,12 +119,12 @@ func newTemplateDestination(addresses []string, template template.Template) *tem
 	}
 }
 
-func NewTemplateGenerator(addresses []string, template template.Template, identifier string) *Generator {
-	return NewGenerator(newTemplateDestination(addresses, template), identifier)
+func NewTemplateGenerator(addresses []string, template template.Template) *Generator {
+	return NewGenerator(newTemplateDestination(addresses, template))
 }
 
-func NewControlTemplateGenerator(template template.Template, identifier string) *Generator {
-	return NewGenerator(newTemplateDestination(nil, template), identifier)
+func NewControlTemplateGenerator(template template.Template) *Generator {
+	return NewGenerator(newTemplateDestination(nil, template))
 }
 
 func (d *templateDestination) ReceiveControlValue(value any, index int) {

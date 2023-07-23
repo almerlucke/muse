@@ -40,23 +40,23 @@ type BasePatch struct {
 	timestamp             int64
 }
 
-func NewPatch(numInputs int, numOutputs int, config *Configuration) *BasePatch {
+func NewPatch(numInputs int, numOutputs int) *BasePatch {
 	subModules := []Module{}
 
 	inputModules := make([]*ThruModule, numInputs)
 	for i := 0; i < numInputs; i++ {
-		inputModules[i] = NewThruModule(config)
+		inputModules[i] = NewThruModule()
 		subModules = append(subModules, inputModules[i])
 	}
 
 	outputModules := make([]*ThruModule, numOutputs)
 	for i := 0; i < numOutputs; i++ {
-		outputModules[i] = NewThruModule(config)
+		outputModules[i] = NewThruModule()
 		subModules = append(subModules, outputModules[i])
 	}
 
 	p := &BasePatch{
-		BaseModule:            NewBaseModule(0, 0, config, ""),
+		BaseModule:            NewBaseModule(0, 0),
 		internalInputControl:  NewControlThru(),
 		internalOutputControl: NewControlThru(),
 		subModules:            subModules,

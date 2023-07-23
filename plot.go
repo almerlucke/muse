@@ -16,7 +16,7 @@ type PlotModule struct {
 
 func NewPlotModule(n int, config *Configuration) *PlotModule {
 	pc := &PlotModule{
-		BaseModule: NewBaseModule(1, 0, config, ""),
+		BaseModule: NewBaseModule(1, 0),
 		samples:    make([]float64, n),
 	}
 

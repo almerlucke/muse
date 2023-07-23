@@ -10,9 +10,9 @@ type Functor struct {
 	inVec []float64
 }
 
-func New(numInputs int, f FunctorFunction, config *muse.Configuration) *Functor {
+func New(numInputs int, f FunctorFunction) *Functor {
 	fctr := &Functor{
-		BaseModule: muse.NewBaseModule(numInputs, 1, config, ""),
+		BaseModule: muse.NewBaseModule(numInputs, 1),
 		f:          f,
 		inVec:      make([]float64, numInputs),
 	}
@@ -22,20 +22,20 @@ func New(numInputs int, f FunctorFunction, config *muse.Configuration) *Functor 
 	return fctr
 }
 
-func NewMult(numInputs int, config *muse.Configuration) *Functor {
-	return New(numInputs, Mult, config)
+func NewMult(numInputs int) *Functor {
+	return New(numInputs, Mult)
 }
 
-func NewScale(scale float64, offset float64, config *muse.Configuration) *Functor {
-	return New(1, Scale(scale, offset), config)
+func NewScale(scale float64, offset float64) *Functor {
+	return New(1, Scale(scale, offset))
 }
 
-func NewAmp(amp float64, config *muse.Configuration) *Functor {
-	return New(1, Scale(amp, 0), config)
+func NewAmp(amp float64) *Functor {
+	return New(1, Scale(amp, 0))
 }
 
-func NewBetween(min float64, max float64, config *muse.Configuration) *Functor {
-	return New(1, Between(min, max), config)
+func NewBetween(min float64, max float64) *Functor {
+	return New(1, Between(min, max))
 }
 
 func Mult(vec []float64) float64 {

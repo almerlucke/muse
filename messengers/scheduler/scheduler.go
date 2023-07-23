@@ -18,7 +18,7 @@ type Scheduler struct {
 	index  int
 }
 
-func NewSchedulerWithJSONData(data []byte, identifier string) (*Scheduler, error) {
+func NewSchedulerWithJSONData(data []byte) (*Scheduler, error) {
 	var events []*Event
 
 	err := json.Unmarshal(data, &events)
@@ -26,12 +26,12 @@ func NewSchedulerWithJSONData(data []byte, identifier string) (*Scheduler, error
 		return nil, err
 	}
 
-	return NewSchedulerWithEvents(events, identifier), nil
+	return NewSchedulerWithEvents(events), nil
 }
 
-func NewSchedulerWithEvents(events []*Event, identifier string) *Scheduler {
+func NewSchedulerWithEvents(events []*Event) *Scheduler {
 	s := &Scheduler{
-		BaseMessenger: muse.NewBaseMessenger(identifier),
+		BaseMessenger: muse.NewBaseMessenger(),
 		events:        events,
 	}
 

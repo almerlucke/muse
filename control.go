@@ -40,11 +40,10 @@ type BaseControl struct {
 	outConnections map[int][]*ControlConnection
 }
 
-func NewBaseControl(id string) *BaseControl {
+func NewBaseControl() *BaseControl {
 	bc := &BaseControl{
 		inConnections:  map[int][]*ControlConnection{},
 		outConnections: map[int][]*ControlConnection{},
-		identifier:     id,
 	}
 
 	bc.self = bc
@@ -191,7 +190,7 @@ type ControlThru struct {
 }
 
 func NewControlThru() *ControlThru {
-	return &ControlThru{BaseControl: NewBaseControl("")}
+	return &ControlThru{BaseControl: NewBaseControl()}
 }
 
 func (ct *ControlThru) ReceiveControlValue(value any, index int) {

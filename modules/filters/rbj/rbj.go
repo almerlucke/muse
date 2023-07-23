@@ -12,10 +12,10 @@ type RBJFilter struct {
 	q      float64
 }
 
-func New(filterType rbjc.RBJFilterType, fc float64, q float64, config *muse.Configuration) *RBJFilter {
+func New(filterType rbjc.RBJFilterType, fc float64, q float64) *RBJFilter {
 	rbj := &RBJFilter{
-		BaseModule: muse.NewBaseModule(3, 1, config, ""),
-		filter:     rbjc.NewRBJFilter(filterType, fc, q, 0, false, config.SampleRate),
+		BaseModule: muse.NewBaseModule(3, 1),
+		filter:     rbjc.NewRBJFilter(filterType, fc, q, 0, false, muse.SampleRate()),
 		fc:         fc,
 		q:          q,
 	}

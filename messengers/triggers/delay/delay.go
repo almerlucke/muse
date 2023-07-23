@@ -10,16 +10,16 @@ type Delay struct {
 	delay          int64
 }
 
-func NewControlDelay(control muse.Control, delay float64, config *muse.Configuration) *Delay {
-	return NewDelay(nil, control, delay, config)
+func NewControlDelay(control muse.Control, delay float64) *Delay {
+	return NewDelay(nil, control, delay)
 }
 
-func NewDelay(messenger muse.Messenger, control muse.Control, delay float64, config *muse.Configuration) *Delay {
+func NewDelay(messenger muse.Messenger, control muse.Control, delay float64) *Delay {
 	d := &Delay{
-		BaseMessenger: muse.NewBaseMessenger(""),
+		BaseMessenger: muse.NewBaseMessenger(),
 		control:       control,
 		messenger:     messenger,
-		delay:         int64(delay * config.SampleRate * 0.001),
+		delay:         int64(delay * muse.SampleRate() * 0.001),
 	}
 	d.SetSelf(d)
 	return d
