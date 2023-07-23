@@ -122,14 +122,13 @@ func (m *BaseModule) Add(p Patch) Module {
 func (m *BaseModule) IConns(iConns []*IConn) Module {
 	self := m.Self().(Module)
 	for _, iConn := range iConns {
-		iConn.Module.Connect(iConn.OutIndex, self, iConn.InIndex)
+		iConn.Object.(Module).Connect(iConn.OutIndex, self, iConn.InIndex)
 	}
 	return self
 }
 
 func (m *BaseModule) In(rawIconns ...any) Module {
-	self := m.Self().(Module)
-	return self.IConns(IConns(rawIconns...))
+	return m.Self().(Module).IConns(IConns(rawIconns...))
 }
 
 func (m *BaseModule) Connect(outIndex int, to Module, inIndex int) {

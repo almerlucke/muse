@@ -5,9 +5,9 @@ type Connection struct {
 	Index  int
 }
 
-// IConn for quick connecting multiple module outputs to inputs of module
+// IConn for quick connecting multiple module/control outputs to inputs of module/control
 type IConn struct {
-	Module   Module
+	Object   any
 	OutIndex int
 	InIndex  int
 }
@@ -29,7 +29,7 @@ func IConns(args ...any) []*IConn {
 	var ok bool
 
 	for argIndex < len(args) {
-		mod := args[argIndex].(Module)
+		obj := args[argIndex]
 		argIndex++
 
 		outIndex = 0
@@ -47,7 +47,7 @@ func IConns(args ...any) []*IConn {
 			}
 		}
 
-		iConns = append(iConns, &IConn{Module: mod, OutIndex: outIndex, InIndex: inIndex})
+		iConns = append(iConns, &IConn{Object: obj, OutIndex: outIndex, InIndex: inIndex})
 
 		inIndexCnt++
 	}

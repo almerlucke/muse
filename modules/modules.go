@@ -8,7 +8,7 @@ import (
 func Mult(args ...any) muse.Module {
 	iConns := muse.IConns(args...)
 	// Use config from first input module
-	config := iConns[0].Module.Configuration()
+	config := iConns[0].Object.(muse.Module).Configuration()
 	return functor.NewMult(len(iConns), config).IConns(iConns)
 }
 

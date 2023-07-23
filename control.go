@@ -14,10 +14,13 @@ type Control interface {
 	MessageReceiver
 	ControlReceiver
 	ControlSender
+	CtrlAdd(Patch) Control
 	AddControlInputConnection(int, Control, int)
 	AddControlOutputConnection(int, Control, int)
 	RemoveControlInputConnection(int, Control, int)
 	RemoveControlOutputConnection(int, Control, int)
+	CIConns([]*IConn) Control
+	CIn(...any) Control
 	CtrlConnect(int, Control, int)
 	CtrlDisconnect()
 	Tick(int64, *Configuration)
@@ -136,6 +139,22 @@ func (c *BaseControl) RemoveControlOutputConnection(outputIndex int, receiver Co
 	if removeIndex > -1 {
 		c.outConnections[outputIndex] = append(conns[:removeIndex], conns[removeIndex+1:]...)
 	}
+}
+
+func (c *BaseControl) CtrlAdd(p Patch) Control {
+	return p.AddControl(c.Self().(Control))
+}
+
+func (c *BaseControl) CIConns(iConns []*IConn) Control {
+	self := c.Self().(Control)
+	for _, iConn := range iConns {
+		iConn.Object.(Control).CtrlConnect(iConn.OutIndex, self, iConn.InIndex)
+	}
+	return self
+}
+
+func (c *BaseControl) CIn(rawIconns ...any) Control {
+	return c.Self().(Control).CIConns(IConns(rawIconns...))
 }
 
 func (c *BaseControl) CtrlConnect(outIndex int, receiver Control, inIndex int) {
