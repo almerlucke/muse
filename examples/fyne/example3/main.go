@@ -52,9 +52,9 @@ type TestVoice struct {
 	filterStepProvider adsrctrl.ADSRStepProvider
 }
 
-func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepProvider, filterStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
+func NewTestVoice(ampStepProvider adsrctrl.ADSRStepProvider, filterStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch:          muse.NewPatch(0, 1, config),
+		BasePatch:          muse.NewPatch(0, 1),
 		ampStepProvider:    ampStepProvider,
 		filterStepProvider: filterStepProvider,
 		shaper:             shaping.NewPulseWidthMod(),
@@ -62,13 +62,13 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 
 	testVoice.SetSelf(testVoice)
 
-	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	filterEnv := testVoice.AddModule(adsr.New(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	multiplier := testVoice.AddModule(functor.NewMult(2, config))
-	filterEnvScaler := testVoice.AddModule(functor.NewScale(5000.0, 30.0, config))
-	osc := testVoice.AddModule(phasor.New(140.0, 0.0, config))
-	filter := testVoice.AddModule(moog.New(1400.0, 0.8, 1.5, config))
-	shape := testVoice.AddModule(waveshaper.New(testVoice.shaper, 0, nil, nil, config))
+	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0))
+	filterEnv := testVoice.AddModule(adsr.New(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0))
+	multiplier := testVoice.AddModule(functor.NewMult(2))
+	filterEnvScaler := testVoice.AddModule(functor.NewScale(5000.0, 30.0))
+	osc := testVoice.AddModule(phasor.New(140.0, 0.0))
+	filter := testVoice.AddModule(moog.New(1400.0, 0.8, 1.5))
+	shape := testVoice.AddModule(waveshaper.New(testVoice.shaper, 0, nil, nil))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)
@@ -168,14 +168,14 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 func addDrumTrack(env *muse.Environment, moduleName string, soundFile *io.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, steps value.Valuer[*swing.Step]) muse.Module {
 	identifier := moduleName + "Speed"
 
-	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
+	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{moduleName}, template.Template{
 		"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 		"bang":  true,
-	}, identifier))
+	}).MsgrNamed(identifier))
 
-	return env.AddModule(player.New(soundFile, 1.0, 1.0, true, env.Config).Named(moduleName))
+	return env.AddModule(player.New(soundFile, 1.0, 1.0, true).Named(moduleName))
 }
 
 type Nums []float64
@@ -183,14 +183,14 @@ type Nums []float64
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100, 512)
+	env := muse.NewEnvironment(2)
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 	filterEnvControl := adsrctrl.NewADSRControl("Filter ADSR")
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 40; i++ {
-		voice := NewTestVoice(env.Config, ampEnvControl, filterEnvControl)
+		voice := NewTestVoice(ampEnvControl, filterEnvControl)
 		voices = append(voices, voice)
 	}
 
@@ -224,9 +224,9 @@ func main() {
 		{Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.1, ShuffleRand: 0.1},
 	}))
 
-	mult := env.AddModule(functor.NewAmp(0.3, env.Config))
-	poly := env.AddModule(polyphony.New(1, voices, env.Config).Named("polyphony"))
-	allpass := env.AddModule(allpass.New(milliPerBeat*1.5, milliPerBeat*1.5, 0.3, env.Config))
+	mult := env.AddModule(functor.NewAmp(0.3))
+	poly := env.AddModule(polyphony.New(1, voices).Named("polyphony"))
+	allpass := env.AddModule(allpass.New(milliPerBeat*1.5, milliPerBeat*1.5, 0.3))
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
@@ -240,8 +240,8 @@ func main() {
 		"adsrDecayLevel": template.NewParameter("adsrDecayLevel", nil),
 	})
 
-	env.AddMessenger(lfo.NewLFO(0.05, []*lfo.Target{targetShaper}, env.Config, "lfo1"))
-	env.AddMessenger(lfo.NewLFO(0.1, []*lfo.Target{targetFilter}, env.Config, "lfo2"))
+	env.AddMessenger(lfo.NewLFO(0.05, []*lfo.Target{targetShaper}).MsgrNamed("lfo1"))
+	env.AddMessenger(lfo.NewLFO(0.1, []*lfo.Target{targetFilter}).MsgrNamed("lfo2"))
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
@@ -257,13 +257,13 @@ func main() {
 				"phase": 0.0,
 			},
 		},
-	}, "template1"))
+	}).MsgrNamed("template1"))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(40, 2, value.NewSequence([]*swing.Step{
 			{}, {}, {}, {},
 		})),
-		[]string{"template1"}, "",
+		[]string{"template1"},
 	))
 
 	kickPlayer.Connect(0, mult, 0)

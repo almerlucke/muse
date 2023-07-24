@@ -20,7 +20,7 @@ import (
 func addDrumTrack(env *muse.Environment, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) {
 	identifier := sounds[0] + "Drum"
 
-	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
+	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{polyName}, template.Template{
 		"command":   "trigger",
@@ -30,7 +30,7 @@ func addDrumTrack(env *muse.Environment, polyName string, sounds []string, tempo
 			"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 			"sound": value.NewSequence(utils.ToAnySlice(sounds)),
 		},
-	}, identifier))
+	}).MsgrNamed(identifier))
 }
 
 func kickRhythm() value.Valuer[*swing.Step] {
@@ -173,7 +173,7 @@ func hihatRhythm() value.Valuer[*swing.Step] {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100.0, 512)
+	env := muse.NewEnvironment(2)
 
 	bpm := 80
 
@@ -188,7 +188,7 @@ func main() {
 	soundBank["808_4"], _ = io.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav", 4)
 	soundBank["shaker"], _ = io.NewMipMapSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav", 4)
 
-	drums := drums.NewDrums(soundBank, 20, env.Config).Named("drums").Add(env)
+	drums := drums.NewDrums(soundBank, 20).Named("drums").Add(env)
 
 	addDrumTrack(env, "drums", []string{"hihat"}, bpm, 8, 0.575, 3.525, 0.6, hihatRhythm())
 	addDrumTrack(env, "drums", []string{"kick"}, bpm, 8, 0.575, 3.525, 1.0, kickRhythm())

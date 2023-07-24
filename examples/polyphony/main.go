@@ -44,9 +44,9 @@ func paramMapper(param int, value any, shaper shaping.Shaper) {
 	}
 }
 
-func NewTestVoice(config *muse.Configuration) *TestVoice {
+func NewTestVoice() *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch: muse.NewPatch(0, 1, config),
+		BasePatch: muse.NewPatch(0, 1),
 	}
 
 	steps := []adsrc.Step{
@@ -56,12 +56,12 @@ func NewTestVoice(config *muse.Configuration) *TestVoice {
 		{Duration: 350, Shape: 0.1},
 	}
 
-	adsrEnv := adsr.New(steps, adsrc.Absolute, adsrc.Duration, 1.0, config).Add(testVoice)
-	osc := phasor.New(140.0, 0.0, config).Add(testVoice)
-	shape := waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, config).
+	adsrEnv := adsr.New(steps, adsrc.Absolute, adsrc.Duration, 1.0).Add(testVoice)
+	osc := phasor.New(140.0, 0.0).Add(testVoice)
+	shape := waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil).
 		Add(testVoice).In(osc)
 	mult := modules.Mult(shape, adsrEnv).Add(testVoice)
-	filter := moog.New(1700.0, 0.48, 1.0, config).Add(testVoice).In(mult)
+	filter := moog.New(1700.0, 0.48, 1.0).Add(testVoice).In(mult)
 
 	testVoice.In(filter)
 
@@ -93,7 +93,7 @@ func (tv *TestVoice) NoteOff() {
 }
 
 func main() {
-	env := muse.NewEnvironment(2, 3*44100, 512)
+	env := muse.NewEnvironment(2)
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
@@ -105,7 +105,7 @@ func main() {
 				"phase":     0.0,
 			},
 		},
-	}, "prototype"))
+	}).MsgrNamed("prototype"))
 
 	bpm := 120
 
@@ -113,17 +113,17 @@ func main() {
 		swing.New(bpm, 4, value.NewSequence([]*swing.Step{
 			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipChance: 0.3},
 		})),
-		[]string{"prototype"}, "",
+		[]string{"prototype"},
 	))
 
 	milliPerBeat := 60000.0 / float64(bpm) / 4.0
 
-	superSawDrive := modules.Scale(vartri.New(0.265, 0.0, 0.5, env.Config).Add(env), 0, 0.84, 0.15).Add(env)
-	filterCutOff := modules.Scale(vartri.New(0.325, 0.0, 0.5, env.Config).Add(env), 0, 3200.0, 40.0).Add(env)
+	superSawDrive := modules.Scale(vartri.New(0.265, 0.0, 0.5).Add(env), 0, 0.84, 0.15).Add(env)
+	filterCutOff := modules.Scale(vartri.New(0.325, 0.0, 0.5).Add(env), 0, 3200.0, 40.0).Add(env)
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
-		voice := NewTestVoice(env.Config)
+		voice := NewTestVoice()
 		voices = append(voices, voice)
 		// connect lfo to voices
 		superSawDrive.Connect(0, voice.Shaper, 1)
@@ -132,10 +132,10 @@ func main() {
 
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
-	poly := polyphony.New(1, voices, env.Config).Named("polyphony").Add(env).In(superSawDrive, filterCutOff, 0, 0)
-	allpass := allpass.New(milliPerBeat*3, milliPerBeat*3, 0.4, env.Config).Add(env).In(poly)
+	poly := polyphony.New(1, voices).Named("polyphony").Add(env).In(superSawDrive, filterCutOff, 0, 0)
+	allpass := allpass.New(milliPerBeat*3, milliPerBeat*3, 0.4).Add(env).In(poly)
 	allpassAmp := modules.Scale(allpass, 0, 0.5, 0.0).Add(env)
-	reverb := freeverb.New(env.Config).Add(env).In(poly, allpassAmp).(*freeverb.FreeVerb)
+	reverb := freeverb.New().Add(env).In(poly, allpassAmp).(*freeverb.FreeVerb)
 
 	reverb.SetDamp(0.1)
 	reverb.SetDry(0.7)

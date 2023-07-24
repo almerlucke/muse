@@ -47,7 +47,7 @@ type ClassicSynth struct {
 
 func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	synth := &ClassicSynth{
-		BasePatch: muse.NewPatch(0, 2, config),
+		BasePatch: muse.NewPatch(0, 2),
 		controls:  controls.NewGroup("group.main", "Classic Synth"),
 	}
 
@@ -69,15 +69,15 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 
 	synth.ampEnv = ampEnv
 	synth.filterEnv = filterEnv
-	synth.poly = classic.New(20, ampEnv, filterEnv, config).Named("poly").Add(synth).(*polyphony.Polyphony)
-	synthAmp1 := functor.NewAmp(0.85, config).Add(synth).In(synth.poly)
-	synthAmp2 := functor.NewAmp(0.85, config).Add(synth).In(synth.poly, 1)
-	allpass1 := allpass.New(2500.0, 60000/bpm*1.666, 0.5, config).Add(synth).In(synthAmp1)
-	allpass2 := allpass.New(2500.0, 60000/bpm*1.75, 0.4, config).Add(synth).In(synthAmp2)
-	allpassAmp1 := functor.NewAmp(0.5, config).Add(synth).In(allpass1)
-	allpassAmp2 := functor.NewAmp(0.5, config).Add(synth).In(allpass2)
-	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil, config).Add(synth).In(synthAmp1, allpassAmp1, 0, 0).(*chorus.Chorus)
-	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil, config).Add(synth).In(synthAmp2, allpassAmp2, 0, 0).(*chorus.Chorus)
+	synth.poly = classic.New(20, ampEnv, filterEnv).Named("poly").Add(synth).(*polyphony.Polyphony)
+	synthAmp1 := functor.NewAmp(0.85).Add(synth).In(synth.poly)
+	synthAmp2 := functor.NewAmp(0.85).Add(synth).In(synth.poly, 1)
+	allpass1 := allpass.New(2500.0, 60000/bpm*1.666, 0.5).Add(synth).In(synthAmp1)
+	allpass2 := allpass.New(2500.0, 60000/bpm*1.75, 0.4).Add(synth).In(synthAmp2)
+	allpassAmp1 := functor.NewAmp(0.5).Add(synth).In(allpass1)
+	allpassAmp2 := functor.NewAmp(0.5).Add(synth).In(allpass2)
+	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil).Add(synth).In(synthAmp1, allpassAmp1, 0, 0).(*chorus.Chorus)
+	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil).Add(synth).In(synthAmp2, allpassAmp2, 0, 0).(*chorus.Chorus)
 
 	synth.In(synth.chorus1, synth.chorus2)
 	synth.SetupControls()
@@ -234,7 +234,7 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 func addDrumTrack(env *muse.Environment, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) {
 	identifier := sounds[0] + "Drum"
 
-	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}, ""))
+	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{polyName}, template.Template{
 		"command":   "trigger",
@@ -244,7 +244,7 @@ func addDrumTrack(env *muse.Environment, polyName string, sounds []string, tempo
 			"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 			"sound": value.NewSequence(utils.ToAnySlice(sounds)),
 		},
-	}, identifier))
+	}).MsgrNamed(identifier))
 }
 
 func kickRhythm() value.Valuer[*swing.Step] {
@@ -387,7 +387,12 @@ func hihatRhythm() value.Valuer[*swing.Step] {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100.0, 256)
+	muse.PushConfiguration(&muse.Configuration{
+		SampleRate: 44100.0,
+		BufferSize: 512,
+	})
+
+	env := muse.NewEnvironment(2)
 
 	bpm := 80.0
 
@@ -402,7 +407,7 @@ func main() {
 	soundBank["808_4"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
 	soundBank["shaker"], _ = io.NewSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
 
-	drumMachine := drums.NewDrums(soundBank, 20, env.Config).Named("drums").Add(env)
+	drumMachine := drums.NewDrums(soundBank, 20).Named("drums").Add(env)
 
 	addDrumTrack(env, "drums", []string{"hihat"}, int(bpm), 8, 0.875, 1.125, 0.6, hihatRhythm())
 	addDrumTrack(env, "drums", []string{"kick"}, int(bpm), 8, 0.875, 1.125, 1.0, kickRhythm())
@@ -434,56 +439,56 @@ func main() {
 			"osc2TriMix":   value.NewSequence([]any{1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7}),
 			"frequency":    noteSequence(notes.O3),
 		},
-	}, "control"))
+	}).MsgrNamed("control"))
 
 	synth.AddMessenger(stepper.NewStepper(
 		swing.New(int(bpm), 4,
 			value.NewSequence([]*swing.Step{{}, {Skip: true}}),
 		),
-		[]string{"control"}, "",
+		[]string{"control"},
 	))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"synth"}, "val", template.Template{
 		"voice.osc1PulseWidth": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"synth"}, "val", template.Template{
 		"voice.osc2PulseWidth": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.085, 0.8, 0.25, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.085, 0.8, 0.25, []string{"synth"}, "val", template.Template{
 		"voice.filterResonance": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.115, 0.08, 4.0, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.115, 0.08, 4.0, []string{"synth"}, "val", template.Template{
 		"voice.osc2Tuning": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"synth"}, "val", template.Template{
 		"voice.noiseMix": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"synth"}, "val", template.Template{
 		"voice.osc1Mix": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"synth"}, "val", template.Template{
 		"voice.osc2Mix": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"synth"}, "val", template.Template{
 		"voice.pan": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0767, 20.0, 5.0, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.0767, 20.0, 5.0, []string{"synth"}, "val", template.Template{
 		"adsr.filter.attackDuration": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0867, 0.2, 0.1, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.0867, 0.2, 0.1, []string{"synth"}, "val", template.Template{
 		"adsr.filter.decayLevel": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.0817, 120.0, 10.0, []string{"synth"}, env.Config, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.0817, 120.0, 10.0, []string{"synth"}, "val", template.Template{
 		"adsr.filter.decayDuration": template.NewParameter("val", nil),
 	}))
 

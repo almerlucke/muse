@@ -47,16 +47,16 @@ type TestVoice struct {
 
 func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch:       muse.NewPatch(0, 1, config),
+		BasePatch:       muse.NewPatch(0, 1),
 		ampStepProvider: ampStepProvider,
 		shaper:          shaping.NewSineTable(512),
 	}
 
 	testVoice.SetSelf(testVoice)
 
-	ampEnv := adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config).Add(testVoice)
-	osc := phasor.New(140.0, 0.0, config).Add(testVoice)
-	shape := waveshaper.New(testVoice.shaper, 0, nil, nil, config).Add(testVoice).In(osc)
+	ampEnv := adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0).Add(testVoice)
+	osc := phasor.New(140.0, 0.0).Add(testVoice)
+	shape := waveshaper.New(testVoice.shaper, 0, nil, nil).Add(testVoice).In(osc)
 	mult := modules.Mult(shape, ampEnv).Add(testVoice)
 
 	testVoice.In(mult)
@@ -95,7 +95,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(1, 44100, 1024)
+	env := muse.NewEnvironment(1)
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 
@@ -109,7 +109,7 @@ func main() {
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly := polyphony.New(1, voices, env.Config).Named("polyphony").Add(env)
+	poly := polyphony.New(1, voices).Named("polyphony").Add(env)
 
 	octave := notes.O3
 
@@ -144,7 +144,7 @@ func main() {
 				}),
 			},
 		},
-	}, "template"))
+	}).MsgrNamed("template"))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 1, value.NewSequence(
@@ -166,7 +166,7 @@ func main() {
 				{}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true},
 			},
 		)),
-		[]string{"template"}, "",
+		[]string{"template"},
 	))
 
 	poly.Connect(0, env, 0)

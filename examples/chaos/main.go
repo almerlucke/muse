@@ -40,7 +40,7 @@ func genPlot() {
 }
 
 func genSound() {
-	env := muse.NewEnvironment(1, 44100.0, 128)
+	env := muse.NewEnvironment(1)
 
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
 	iter := iterator.New([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.878, f))
@@ -51,7 +51,7 @@ func genSound() {
 		60,
 	)
 
-	sgen := env.AddModule(generator.NewBasic(wrapper, env.Config))
+	sgen := env.AddModule(generator.NewBasic(wrapper))
 
 	sgen.Connect(0, env, 0)
 	// sgen.Connect(1, env, 1)
@@ -61,7 +61,7 @@ func genSound() {
 }
 
 func genFreq() {
-	env := muse.NewEnvironment(1, 44100.0, 128)
+	env := muse.NewEnvironment(1)
 
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
 	aron := chaos.NewAronsonWithFunc(1.698, f)
@@ -82,15 +82,15 @@ func genFreq() {
 		} else if index == 1 {
 			scale.Scale = value.(float64)
 		}
-	}, nil, ""))
+	}, nil))
 
-	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.089, 1.467, 1.998, env.Config, ""))
-	freqLfo := env.AddControl(lfo.NewBasicControlLFO(0.067, 200.0, 2300.0, env.Config, ""))
+	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.089, 1.467, 1.998))
+	freqLfo := env.AddControl(lfo.NewBasicControlLFO(0.067, 200.0, 2300.0))
 
 	chaosLfo.CtrlConnect(0, cgen, 0)
 	freqLfo.CtrlConnect(0, cgen, 1)
 
-	osc1 := env.AddModule(osc.New(100.0, 0.0, env.Config))
+	osc1 := env.AddModule(osc.New(100.0, 0.0))
 
 	cgen.CtrlConnect(1, osc1, 0)
 

@@ -17,20 +17,20 @@ import (
 )
 
 func main() {
-	env := muse.NewEnvironment(1, 44100, 128)
+	env := muse.NewEnvironment(1)
 
 	sequence := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/osc/sequence1.json"))
 
-	env.AddMessenger(banger.NewValueGenerator(sequence, "sequencer"))
+	banger.NewValueGenerator(sequence).MsgrNamed("sequencer").MsgrAdd(env)
 
-	env.AddMessenger(stepper.NewStepper(
+	stepper.NewStepper(
 		stepper.NewValueStepProvider(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
-		[]string{"sequencer"}, "",
-	))
+		[]string{"sequencer"},
+	).MsgrAdd(env)
 
-	osc := env.AddModule(osc.New(100.0, 0.0, env.Config))
+	osc := osc.New(100.0, 0.0).Add(env)
 
-	osc.Connect(3, env, 0)
+	env.In(osc, 3)
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 10.0, env.Config.SampleRate, false, sndfile.SF_FORMAT_AIFF)
 

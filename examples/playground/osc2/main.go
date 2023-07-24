@@ -7,13 +7,13 @@ import (
 )
 
 func main() {
-	env := muse.NewEnvironment(1, 44100, 512)
+	env := muse.NewEnvironment(1)
 
-	lfo := env.AddControl(lfo.NewBasicControlLFO(0.2, 0.1, 0.9, env.Config, ""))
-	osc := env.AddModule(osc.NewOsc2(100.0, 0, 0.2, 1.0, osc.MODIFIED_TRIANGLE, env.Config))
+	lfo := lfo.NewBasicControlLFO(0.2, 0.1, 0.9).CtrlAdd(env)
+	osc := osc.NewOsc2(100.0, 0, 0.2, 1.0, osc.MODIFIED_TRIANGLE).Add(env)
 
-	lfo.CtrlConnect(0, osc, 1)
-	osc.Connect(0, env, 0)
+	osc.CtrlIn(lfo, 0, 1)
+	env.In(osc)
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/rect.aiff", 2.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
 	env.QuickPlayAudio()

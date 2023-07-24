@@ -74,7 +74,7 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100.0, 512)
+	env := muse.NewEnvironment(2)
 
 	ampEnv := adsr.NewBasicStepProvider()
 	ampEnv.Steps[0] = adsr.Step{Level: 1.0, Duration: 25.0}
@@ -88,15 +88,15 @@ func main() {
 
 	bpm := 100
 
-	synth := classic.New(20, ampEnv, filterEnv, env.Config).Named("poly").Add(env)
-	synthAmp1 := env.AddModule(functor.NewAmp(0.85, env.Config))
-	synthAmp2 := env.AddModule(functor.NewAmp(0.85, env.Config))
-	allpass1 := env.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.666, 0.5, env.Config))
-	allpass2 := env.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.75, 0.4, env.Config))
-	allpassAmp1 := env.AddModule(functor.NewAmp(0.5, env.Config))
-	allpassAmp2 := env.AddModule(functor.NewAmp(0.5, env.Config))
-	chor1 := env.AddModule(chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil, env.Config))
-	chor2 := env.AddModule(chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil, env.Config))
+	synth := classic.New(20, ampEnv, filterEnv).Named("poly").Add(env)
+	synthAmp1 := env.AddModule(functor.NewAmp(0.85))
+	synthAmp2 := env.AddModule(functor.NewAmp(0.85))
+	allpass1 := env.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.666, 0.5))
+	allpass2 := env.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.75, 0.4))
+	allpassAmp1 := env.AddModule(functor.NewAmp(0.5))
+	allpassAmp2 := env.AddModule(functor.NewAmp(0.5))
+	chor1 := env.AddModule(chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil))
+	chor2 := env.AddModule(chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil))
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
 		"command":   "trigger",
@@ -113,51 +113,51 @@ func main() {
 			"osc2TriMix":   value.NewSequence([]any{1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7}),
 			"frequency":    noteSequence(notes.O3),
 		},
-	}, "control"))
+	}).MsgrNamed("control"))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 2,
 			value.NewSequence([]*swing.Step{{}, {Skip: true}}),
 		),
-		[]string{"control"}, "",
+		[]string{"control"},
 	))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"poly"}, env.Config, "pw", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"poly"}, "pw", template.Template{
 		"command":        "voice",
 		"osc1PulseWidth": template.NewParameter("pw", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"poly"}, env.Config, "pw", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"poly"}, "pw", template.Template{
 		"command":        "voice",
 		"osc2PulseWidth": template.NewParameter("pw", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.085, 0.6, 0.25, []string{"poly"}, env.Config, "resonance", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.085, 0.6, 0.25, []string{"poly"}, "resonance", template.Template{
 		"command":         "voice",
 		"filterResonance": template.NewParameter("resonance", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.115, 0.06, 4.0, []string{"poly"}, env.Config, "tuning", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.115, 0.06, 4.0, []string{"poly"}, "tuning", template.Template{
 		"command":    "voice",
 		"osc2Tuning": template.NewParameter("tuning", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"poly"}, env.Config, "noise", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"poly"}, "noise", template.Template{
 		"command":  "voice",
 		"noiseMix": template.NewParameter("noise", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"poly"}, env.Config, "noise", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"poly"}, "noise", template.Template{
 		"command": "voice",
 		"osc1Mix": template.NewParameter("noise", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"poly"}, env.Config, "noise", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"poly"}, "noise", template.Template{
 		"command": "voice",
 		"osc2Mix": template.NewParameter("noise", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"poly"}, env.Config, "pan", template.Template{
+	env.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"poly"}, "pan", template.Template{
 		"command": "voice",
 		"pan":     template.NewParameter("pan", nil),
 	}))

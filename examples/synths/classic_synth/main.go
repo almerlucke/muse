@@ -43,7 +43,7 @@ type ClassicSynth struct {
 
 func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 	synth := &ClassicSynth{
-		BasePatch: muse.NewPatch(0, 2, config),
+		BasePatch: muse.NewPatch(0, 2),
 		controls:  controls.NewGroup("group.main", "Classic Synth"),
 	}
 
@@ -65,16 +65,16 @@ func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
 
 	synth.ampEnv = ampEnv
 	synth.filterEnv = filterEnv
-	synth.Poly = classic.New(20, ampEnv, filterEnv, config).Named("poly").(*polyphony.Polyphony)
-	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil, config)
-	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil, config)
+	synth.Poly = classic.New(20, ampEnv, filterEnv).Named("poly").(*polyphony.Polyphony)
+	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil)
+	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil)
 
 	synth.AddModule(synth.Poly)
 	synth.AddModule(synth.chorus1)
 	synth.AddModule(synth.chorus2)
 
-	synthAmp1 := synth.AddModule(functor.NewAmp(0.85, config))
-	synthAmp2 := synth.AddModule(functor.NewAmp(0.85, config))
+	synthAmp1 := synth.AddModule(functor.NewAmp(0.85))
+	synthAmp2 := synth.AddModule(functor.NewAmp(0.85))
 
 	synth.Poly.Connect(0, synthAmp1, 0)
 	synth.Poly.Connect(1, synthAmp2, 0)
@@ -204,7 +204,7 @@ func (cs *ClassicSynth) ReceiveMessage(msg any) []*muse.Message {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100.0, 2048)
+	env := muse.NewEnvironment(2)
 
 	bpm := 100.0
 	synth := NewClassicSynth(bpm, env.Config)

@@ -12,9 +12,9 @@ import (
 )
 
 func main() {
-	env := muse.NewEnvironment(1, 44100, 1024)
+	env := muse.NewEnvironment(1)
 
-	fm := fmsynth.New(18, waveshaping.NewSineTable(2048), env.Config).Named("fm").(*fmsynth.FMSynth)
+	fm := fmsynth.New(18, waveshaping.NewSineTable(2048)).Named("fm").(*fmsynth.FMSynth)
 	fm.OperatorSettings[1].Level = 0.5
 	fm.OperatorSettings[5].Level = 0.5
 	fm.PitchEnvLevels = [4]float64{0.49, 0.51, 0.495, 0.5}
@@ -27,9 +27,9 @@ func main() {
 		"noteOn":   value.NewSequence([]any{36, 36, 48, 41, 51, 51, 49, 47, 32, 33}),
 		"duration": value.NewSequence([]any{500.0, 300.0, 250.0, 150.0, 300.0, 125.0, 125.0, 500.0, 375.0}),
 		"level":    1.0,
-	}, "notes"))
+	}).MsgrNamed("notes"))
 
-	env.AddMessenger(timer.NewTimer(250.0, []string{"notes"}, env.Config))
+	env.AddMessenger(timer.NewTimer(250.0, []string{"notes"}))
 
 	fm.Connect(0, env, 0)
 

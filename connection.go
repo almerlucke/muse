@@ -26,7 +26,6 @@ func IConns(args ...any) []*IConn {
 
 	var inIndex int
 	var outIndex int
-	var ok bool
 
 	for argIndex < len(args) {
 		obj := args[argIndex]
@@ -36,13 +35,15 @@ func IConns(args ...any) []*IConn {
 		inIndex = inIndexCnt
 
 		if argIndex < n {
-			if outIndex, ok = args[argIndex].(int); ok {
+			if givenOutIndex, ok := args[argIndex].(int); ok {
+				outIndex = givenOutIndex
 				argIndex++
 			}
 		}
 
 		if argIndex < n {
-			if inIndex, ok = args[argIndex].(int); ok {
+			if givenInIndex, ok := args[argIndex].(int); ok {
+				inIndex = givenInIndex
 				argIndex++
 			}
 		}

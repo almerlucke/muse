@@ -235,7 +235,7 @@ func main() {
 
 	numChannels := sfb.NumChannels()
 
-	env := muse.NewEnvironment(numChannels, 44100, 1024)
+	env := muse.NewEnvironment(numChannels)
 
 	paramGen := &SFParameterGenerator{}
 
@@ -247,7 +247,7 @@ func main() {
 	paramGen.panClustering = museRand.NewClusterRand(0.5, 0.3, 0.3, 0.2, 0.5)
 	paramGen.reversePlayChance = 0.1
 
-	gr := env.AddModule(granular.New(numChannels, &SFSourceFactory{SoundFile: sfb}, &trapezoidal.Factory{}, 400, paramGen, env.Config))
+	gr := env.AddModule(granular.New(numChannels, &SFSourceFactory{SoundFile: sfb}, &trapezoidal.Factory{}, 400, paramGen))
 
 	for i := 0; i < numChannels; i++ {
 		gr.Connect(i, env, i)

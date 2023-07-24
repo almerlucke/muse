@@ -42,9 +42,9 @@ type TestVoice struct {
 	filterStepProvider adsrctrl.ADSRStepProvider
 }
 
-func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepProvider, filterStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
+func NewTestVoice(ampStepProvider adsrctrl.ADSRStepProvider, filterStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch:          muse.NewPatch(0, 1, config),
+		BasePatch:          muse.NewPatch(0, 1),
 		ampStepProvider:    ampStepProvider,
 		filterStepProvider: filterStepProvider,
 		superSaw:           shaping.NewSuperSaw(1.5, 0.25, 0.88),
@@ -52,13 +52,13 @@ func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepP
 
 	testVoice.SetSelf(testVoice)
 
-	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	filterEnv := testVoice.AddModule(adsr.New(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	multiplier := testVoice.AddModule(functor.NewMult(2, config))
-	filterEnvScaler := testVoice.AddModule(functor.NewScale(5000.0, 100.0, config))
-	osc := testVoice.AddModule(phasor.New(140.0, 0.0, config))
-	filter := testVoice.AddModule(moog.New(1400.0, 0.7, 1.0, config))
-	shape := testVoice.AddModule(waveshaper.New(testVoice.superSaw, 0, nil, nil, config))
+	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0))
+	filterEnv := testVoice.AddModule(adsr.New(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0))
+	multiplier := testVoice.AddModule(functor.NewMult(2))
+	filterEnvScaler := testVoice.AddModule(functor.NewScale(5000.0, 100.0))
+	osc := testVoice.AddModule(phasor.New(140.0, 0.0))
+	filter := testVoice.AddModule(moog.New(1400.0, 0.7, 1.0))
+	shape := testVoice.AddModule(waveshaper.New(testVoice.superSaw, 0, nil, nil))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)
@@ -120,19 +120,19 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 }
 
 func main() {
-	env := muse.NewEnvironment(2, 44100, 512)
+	env := muse.NewEnvironment(2)
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 	filterEnvControl := adsrctrl.NewADSRControl("Filter ADSR")
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
-		voice := NewTestVoice(env.Config, ampEnvControl, filterEnvControl)
+		voice := NewTestVoice(ampEnvControl, filterEnvControl)
 		voices = append(voices, voice)
 	}
 
-	poly := polyphony.New(1, voices, env.Config).Named("polyphony").Add(env)
-	allpass := env.AddModule(allpass.New(50, 50, 0.3, env.Config))
+	poly := polyphony.New(1, voices).Named("polyphony").Add(env)
+	allpass := env.AddModule(allpass.New(50, 50, 0.3))
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
@@ -146,8 +146,8 @@ func main() {
 		"filterFrequency": template.NewParameter("frequency", nil),
 	})
 
-	env.AddMessenger(lfo.NewLFO(0.23, []*lfo.Target{targetSuperSaw}, env.Config, "lfo1"))
-	env.AddMessenger(lfo.NewLFO(0.13, []*lfo.Target{targetFilter}, env.Config, "lfo2"))
+	env.AddMessenger(lfo.NewLFO(0.23, []*lfo.Target{targetSuperSaw}).MsgrNamed("lfo1"))
+	env.AddMessenger(lfo.NewLFO(0.13, []*lfo.Target{targetFilter}).MsgrNamed("lfo2"))
 
 	poly.Connect(0, allpass, 0)
 	poly.Connect(0, env, 0)

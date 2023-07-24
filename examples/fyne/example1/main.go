@@ -57,16 +57,16 @@ type TestVoice struct {
 
 func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch:    muse.NewPatch(0, 1, config),
+		BasePatch:    muse.NewPatch(0, 1),
 		stepProvider: stepProvider,
 	}
 
 	testVoice.SetSelf(testVoice)
 
-	adsrEnv := testVoice.AddModule(adsr.New(stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	multiplier := testVoice.AddModule(functor.NewMult(2, config))
-	osc := testVoice.AddModule(phasor.New(140.0, 0.0, config))
-	shape := testVoice.AddModule(waveshaper.New(shaping.NewSineTable(512), 0, nil, nil, config))
+	adsrEnv := testVoice.AddModule(adsr.New(stepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0))
+	multiplier := testVoice.AddModule(functor.NewMult(2))
+	osc := testVoice.AddModule(phasor.New(140.0, 0.0))
+	shape := testVoice.AddModule(waveshaper.New(shaping.NewSineTable(512), 0, nil, nil))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)
@@ -665,7 +665,7 @@ func NewSwingControl(bpm float64, noteDivision float64) *SwingControl {
 }
 
 func main() {
-	env := muse.NewEnvironment(1, 44100, 512)
+	env := muse.NewEnvironment(1)
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
@@ -679,7 +679,7 @@ func main() {
 				"phase": 0.0,
 			},
 		},
-	}, "prototype1"))
+	}).MsgrNamed("prototype1"))
 
 	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
@@ -693,7 +693,7 @@ func main() {
 				"phase": 0.0,
 			},
 		},
-	}, "prototype2"))
+	}).MsgrNamed("prototype2"))
 
 	adsrControl := NewADSRControl()
 	swingControl := NewSwingControl(80.0, 4.0)
@@ -701,7 +701,6 @@ func main() {
 	env.AddMessenger(stepper.NewStepper(
 		swingControl.Swing(),
 		[]string{"prototype1", "prototype2"},
-		"",
 	))
 
 	voices := []polyphony.Voice{}
@@ -710,7 +709,7 @@ func main() {
 		voices = append(voices, voice)
 	}
 
-	poly := polyphony.New(1, voices, env.Config).Named("polyphony").Add(env)
+	poly := polyphony.New(1, voices).Named("polyphony").Add(env)
 	// allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.1, env.Config, "allpass"))
 
 	// muse.Connect(voicePlayer, 0, allpass, 0)

@@ -227,7 +227,7 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100, 1024)
+	env := muse.NewEnvironment(2)
 
 	paramGen := &SFParameterGenerator{}
 
@@ -244,19 +244,14 @@ func main() {
 	paramGen.attackClustering = museRand.NewClusterRand(0.04, 0.03, 0.9, 1.0, 1.0)
 	paramGen.releaseClustering = museRand.NewClusterRand(0.81, 0.12, 0.9, 1.0, 1.0)
 
-	gr := env.AddModule(granular.New(2, NewSourceFactory(env.Config.SampleRate), &trapezoidal.Factory{}, 40, paramGen, env.Config))
+	gr := env.AddModule(granular.New(2, NewSourceFactory(env.Config.SampleRate), &trapezoidal.Factory{}, 40, paramGen))
 
-	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.36, 1.767, env.Config, ""))
-	chaosLfo.CtrlConnect(0, gr, 0)
+	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.36, 1.767))
+	freqLowLfo := env.AddControl(lfo.NewBasicControlLFO(0.0821, 150.0, 300.0))
+	freqHighLfo := env.AddControl(lfo.NewBasicControlLFO(0.0621, 800, 2000))
+	deltaLfo := env.AddControl(lfo.NewBasicControlLFO(0.0521, 0.01, 0.0001))
 
-	freqLowLfo := env.AddControl(lfo.NewBasicControlLFO(0.0821, 150.0, 300.0, env.Config, ""))
-	freqLowLfo.CtrlConnect(0, gr, 1)
-
-	freqHighLfo := env.AddControl(lfo.NewBasicControlLFO(0.0621, 800, 2000, env.Config, ""))
-	freqHighLfo.CtrlConnect(0, gr, 2)
-
-	deltaLfo := env.AddControl(lfo.NewBasicControlLFO(0.0521, 0.01, 0.0001, env.Config, ""))
-	deltaLfo.CtrlConnect(0, gr, 7)
+	gr.CtrlIn(chaosLfo, freqLowLfo, freqHighLfo, deltaLfo, 0, 7)
 
 	// offsetLfo := env.AddControl(lfo.NewBasicControlLFO(0.04, 0.1, 0.9, env.Config, ""))
 	// offsetLfo.CtrlConnect(0, gr, 0)

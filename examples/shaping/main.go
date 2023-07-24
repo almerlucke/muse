@@ -36,14 +36,14 @@ func paramMapper(param int, value any, shaper shaping.Shaper) {
 }
 
 func main() {
-	env := muse.NewEnvironment(2, 3*44100, 512)
+	env := muse.NewEnvironment(2)
 
 	sequence := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/shaping/sequence1.json"))
-	env.AddMessenger(banger.NewValueGenerator(sequence, "sequencer1"))
+	env.AddMessenger(banger.NewValueGenerator(sequence).MsgrNamed("sequencer1"))
 
 	env.AddMessenger(stepper.NewStepper(
 		stepper.NewValueStepProvider(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
-		[]string{"sequencer1", "adsr1"}, "",
+		[]string{"sequencer1", "adsr1"},
 	))
 
 	steps := []adsrc.Step{
@@ -53,20 +53,20 @@ func main() {
 		{Duration: 100, Shape: 0.0},
 	}
 
-	paramVarTri1 := vartri.New(0.25, 0.0, 0.5, env.Config).Add(env)
-	paramVarTri2 := vartri.New(0.325, 0.0, 0.5, env.Config).Add(env)
-	superSawParam := env.AddModule(functor.NewScale(0.82, 0.15, env.Config))
-	adsrEnv1 := env.AddModule(adsr.New(steps, adsrc.Absolute, adsrc.Automatic, 1.0, env.Config).Named("adsr1"))
-	mult1 := env.AddModule(functor.NewMult(2, env.Config))
-	filterParam := env.AddModule(functor.NewScale(2200.0, 40.0, env.Config))
-	osc1 := env.AddModule(phasor.New(140.0, 0.0, env.Config).Named("osc1"))
-	shaper1 := env.AddModule(waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil, env.Config))
-	allpass := env.AddModule(allpass.New(375.0, 375.0, 0.3, env.Config))
-	allpassAmp := env.AddModule(functor.NewAmp(0.5, env.Config))
+	paramVarTri1 := vartri.New(0.25, 0.0, 0.5).Add(env)
+	paramVarTri2 := vartri.New(0.325, 0.0, 0.5).Add(env)
+	superSawParam := env.AddModule(functor.NewScale(0.82, 0.15))
+	adsrEnv1 := env.AddModule(adsr.New(steps, adsrc.Absolute, adsrc.Automatic, 1.0).Named("adsr1"))
+	mult1 := env.AddModule(functor.NewMult(2))
+	filterParam := env.AddModule(functor.NewScale(2200.0, 40.0))
+	osc1 := env.AddModule(phasor.New(140.0, 0.0).Named("osc1"))
+	shaper1 := env.AddModule(waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil))
+	allpass := env.AddModule(allpass.New(375.0, 375.0, 0.3))
+	allpassAmp := env.AddModule(functor.NewAmp(0.5))
 	// filter := env.AddModule(butterworth.NewButterworth(300.0, 0.4, env.Config, "filter"))
 	// filter := env.AddModule(rbj.NewRBJFilter(rbjc.Lowpass, 300.0, 10.0, env.Config, "filter"))
-	filter := env.AddModule(moog.New(300.0, 0.45, 1.0, env.Config))
-	reverb := freeverb.New(env.Config).Add(env)
+	filter := env.AddModule(moog.New(300.0, 0.45, 1.0))
+	reverb := freeverb.New().Add(env)
 
 	reverb.(*freeverb.FreeVerb).SetDamp(0.1)
 	reverb.(*freeverb.FreeVerb).SetDry(0.7)

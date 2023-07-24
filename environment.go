@@ -12,16 +12,12 @@ import (
 
 type Environment struct {
 	*BasePatch
-	Config *Configuration
 	stream *portaudio.Stream
 }
 
-func NewEnvironment(numOutputs int, sampleRate float64, bufferSize int) *Environment {
-	config := &Configuration{SampleRate: sampleRate, BufferSize: bufferSize}
-
+func NewEnvironment(numOutputs int) *Environment {
 	e := &Environment{
-		BasePatch: NewPatch(0, numOutputs, config),
-		Config:    config,
+		BasePatch: NewPatch(0, numOutputs),
 	}
 
 	e.SetSelf(e)

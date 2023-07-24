@@ -49,15 +49,15 @@ type TestVoice struct {
 
 func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch:       muse.NewPatch(0, 1, config),
+		BasePatch:       muse.NewPatch(0, 1),
 		ampStepProvider: ampStepProvider,
 		shaper:          shaping.NewJP8000triMod(0.3),
 	}
 
-	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0, config))
-	multiplier := testVoice.AddModule(functor.NewMult(2, config))
-	osc := testVoice.AddModule(phasor.New(140.0, 0.0, config))
-	shape := testVoice.AddModule(waveshaper.New(testVoice.shaper, 0, nil, nil, config))
+	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0))
+	multiplier := testVoice.AddModule(functor.NewMult(2))
+	osc := testVoice.AddModule(phasor.New(140.0, 0.0))
+	shape := testVoice.AddModule(waveshaper.New(testVoice.shaper, 0, nil, nil))
 
 	osc.Connect(0, shape, 0)
 	shape.Connect(0, multiplier, 0)
@@ -98,7 +98,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2, 44100, 1024)
+	env := muse.NewEnvironment(2)
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 
@@ -115,8 +115,8 @@ func main() {
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly1 := polyphony.New(1, voices1, env.Config).Named("polyphony1").Add(env)
-	chor := chorus.New(true, 15, 10, 0.2, 3.42, 0.5, nil, env.Config).Add(env)
+	poly1 := polyphony.New(1, voices1).Named("polyphony1").Add(env)
+	chor := chorus.New(true, 15, 10, 0.2, 3.42, 0.5, nil).Add(env)
 
 	octave := notes.O4
 
@@ -172,7 +172,7 @@ func main() {
 					}, true),
 			},
 		},
-	}, "template1"))
+	}).MsgrNamed("template1"))
 
 	env.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 2, value.NewSequence(
@@ -180,7 +180,7 @@ func main() {
 				{}, {}, {}, {}, {}, {}, {}, {Shuffle: 0.1}, {}, {}, {}, {}, {}, {}, {}, {Shuffle: 0.1, ShuffleRand: 0.05},
 			},
 		)),
-		[]string{"template1"}, "",
+		[]string{"template1"},
 	))
 
 	poly1.Connect(0, chor, 0)
