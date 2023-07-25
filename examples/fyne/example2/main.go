@@ -9,8 +9,6 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/gordonklaus/portaudio"
-
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
@@ -120,7 +118,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 }
 
 func main() {
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 	filterEnvControl := adsrctrl.NewADSRControl("Filter ADSR")
@@ -131,8 +129,8 @@ func main() {
 		voices = append(voices, voice)
 	}
 
-	poly := polyphony.New(1, voices).Named("polyphony").Add(env)
-	allpass := env.AddModule(allpass.New(50, 50, 0.3))
+	poly := polyphony.New(1, voices).Named("polyphony").Add(root)
+	allpass := root.AddModule(allpass.New(50, 50, 0.3))
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
@@ -146,22 +144,19 @@ func main() {
 		"filterFrequency": template.NewParameter("frequency", nil),
 	})
 
-	env.AddMessenger(lfo.NewLFO(0.23, []*lfo.Target{targetSuperSaw}).MsgrNamed("lfo1"))
-	env.AddMessenger(lfo.NewLFO(0.13, []*lfo.Target{targetFilter}).MsgrNamed("lfo2"))
+	root.AddMessenger(lfo.NewLFO(0.23, []*lfo.Target{targetSuperSaw}).MsgrNamed("lfo1"))
+	root.AddMessenger(lfo.NewLFO(0.13, []*lfo.Target{targetFilter}).MsgrNamed("lfo2"))
 
 	poly.Connect(0, allpass, 0)
-	poly.Connect(0, env, 0)
-	allpass.Connect(0, env, 1)
+	poly.Connect(0, root, 0)
+	allpass.Connect(0, root, 1)
 
-	portaudio.Initialize()
-	defer portaudio.Terminate()
-
-	stream, err := env.PortaudioStream()
+	err := root.InitializeAudio()
 	if err != nil {
 		log.Fatalf("error opening portaudio stream, %v", err)
 	}
 
-	defer stream.Close()
+	defer root.TerminateAudio()
 
 	a := app.New()
 
@@ -259,10 +254,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					stream.Start()
+					root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					stream.Stop()
+					root.StopAudio()
 				}),
 				widget.NewButton("Notes Off", func() {
 					poly.(*polyphony.Polyphony).AllNotesOff()

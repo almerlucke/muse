@@ -39,7 +39,7 @@ type ChaosVoice struct {
 	panner         *pan.Pan
 }
 
-func NewChaosVoice(config *muse.Configuration, ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider) *ChaosVoice {
+func NewChaosVoice(ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider) *ChaosVoice {
 	verhulst := chaos.NewVerhulstWithFunc(3.6951, chaos.Iter1a)
 	iter := iterator.New([]float64{0.1231}, verhulst)
 	interpol := interpolator.New(iter, interpolator.Cubic, 1.0/120.0)
@@ -123,7 +123,7 @@ func randMinMax(min float64, max float64) float64 {
 }
 
 func main() {
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
 	ampEnv := adsrc.NewBasicStepProvider()
 	ampEnv.Steps[0] = adsrc.Step{Level: 1.0, Duration: 450.0}
@@ -139,11 +139,11 @@ func main() {
 	voices := make([]polyphony.Voice, numVoices)
 
 	for i := 0; i < numVoices; i++ {
-		voices[i] = NewChaosVoice(env.Config, ampEnv, filterEnv)
+		voices[i] = NewChaosVoice(ampEnv, filterEnv)
 	}
 
-	poly := polyphony.New(2, voices).Named("chaosSynth").Add(env)
-	timer := env.AddControl(timer.NewControlTimer(500.0))
+	poly := polyphony.New(2, voices).Named("chaosSynth").Add(root)
+	timer := root.AddControl(timer.NewControlTimer(500.0))
 	randomizeTimer := val.New[float64](value.NewFunction(func() float64 {
 		return randMinMax(100, 2500.0)
 	}))
@@ -175,18 +175,18 @@ func main() {
 	timer.CtrlConnect(0, trigger, 0)
 	trigger.CtrlConnect(0, poly, 0)
 
-	chorus1 := env.AddModule(chorus.New(false, 20.0, 10.0, 0.3, 1.21, 0.3, nil))
-	chorus2 := env.AddModule(chorus.New(false, 21.0, 11.0, 0.31, 1.21, 0.3, nil))
+	chorus1 := root.AddModule(chorus.New(false, 20.0, 10.0, 0.3, 1.21, 0.3, nil))
+	chorus2 := root.AddModule(chorus.New(false, 21.0, 11.0, 0.31, 1.21, 0.3, nil))
 
 	poly.Connect(0, chorus1, 0)
 	poly.Connect(1, chorus2, 0)
 
-	chorus1.Connect(0, env, 0)
-	chorus2.Connect(0, env, 1)
+	chorus1.Connect(0, root, 0)
+	chorus2.Connect(0, root, 1)
 
 	// chorus2.Connect(0, env, 0)
 	// chorus2.Connect(1, env, 1)
 
-	env.QuickPlayAudio()
+	root.RenderLive()
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/chaos2.aiff", 360.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

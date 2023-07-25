@@ -22,7 +22,6 @@ import (
 	"github.com/almerlucke/muse/ui/controls"
 	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils/notes"
-	"github.com/gordonklaus/portaudio"
 
 	museMidi "github.com/almerlucke/muse/midi"
 
@@ -41,7 +40,7 @@ type ClassicSynth struct {
 	chorus2   *chorus.Chorus
 }
 
-func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
+func NewClassicSynth(bpm float64) *ClassicSynth {
 	synth := &ClassicSynth{
 		BasePatch: muse.NewPatch(0, 2),
 		controls:  controls.NewGroup("group.main", "Classic Synth"),
@@ -204,15 +203,13 @@ func (cs *ClassicSynth) ReceiveMessage(msg any) []*muse.Message {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
 	bpm := 100.0
-	synth := NewClassicSynth(bpm, env.Config)
+	synth := NewClassicSynth(bpm)
 
-	env.AddModule(synth)
-
-	synth.Connect(0, env, 0)
-	synth.Connect(1, env, 1)
+	synth.Add(root)
+	root.In(synth, synth, 1)
 
 	// synth.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
 	// 	"command":   "trigger",
@@ -313,15 +310,12 @@ func main() {
 
 	defer listener.Close()
 
-	portaudio.Initialize()
-	defer portaudio.Terminate()
-
-	stream, err := env.PortaudioStream()
+	err = root.InitializeAudio()
 	if err != nil {
-		log.Fatalf("error opening portaudio stream, %v", err)
+		log.Fatalf("error opening audio stream, %v", err)
 	}
 
-	defer stream.Close()
+	defer root.TerminateAudio()
 
 	a := app.New()
 
@@ -340,10 +334,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					stream.Start()
+					root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					stream.Stop()
+					root.StopAudio()
 				}),
 			),
 			container.NewHScroll(synth.controls.UI()),

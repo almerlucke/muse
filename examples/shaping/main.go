@@ -36,12 +36,12 @@ func paramMapper(param int, value any, shaper shaping.Shaper) {
 }
 
 func main() {
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
 	sequence := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/shaping/sequence1.json"))
-	env.AddMessenger(banger.NewValueGenerator(sequence).MsgrNamed("sequencer1"))
+	root.AddMessenger(banger.NewValueGenerator(sequence).MsgrNamed("sequencer1"))
 
-	env.AddMessenger(stepper.NewStepper(
+	root.AddMessenger(stepper.NewStepper(
 		stepper.NewValueStepProvider(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
 		[]string{"sequencer1", "adsr1"},
 	))
@@ -53,20 +53,20 @@ func main() {
 		{Duration: 100, Shape: 0.0},
 	}
 
-	paramVarTri1 := vartri.New(0.25, 0.0, 0.5).Add(env)
-	paramVarTri2 := vartri.New(0.325, 0.0, 0.5).Add(env)
-	superSawParam := env.AddModule(functor.NewScale(0.82, 0.15))
-	adsrEnv1 := env.AddModule(adsr.New(steps, adsrc.Absolute, adsrc.Automatic, 1.0).Named("adsr1"))
-	mult1 := env.AddModule(functor.NewMult(2))
-	filterParam := env.AddModule(functor.NewScale(2200.0, 40.0))
-	osc1 := env.AddModule(phasor.New(140.0, 0.0).Named("osc1"))
-	shaper1 := env.AddModule(waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil))
-	allpass := env.AddModule(allpass.New(375.0, 375.0, 0.3))
-	allpassAmp := env.AddModule(functor.NewAmp(0.5))
+	paramVarTri1 := vartri.New(0.25, 0.0, 0.5).Add(root)
+	paramVarTri2 := vartri.New(0.325, 0.0, 0.5).Add(root)
+	superSawParam := root.AddModule(functor.NewScale(0.82, 0.15))
+	adsrEnv1 := root.AddModule(adsr.New(steps, adsrc.Absolute, adsrc.Automatic, 1.0).Named("adsr1"))
+	mult1 := root.AddModule(functor.NewMult(2))
+	filterParam := root.AddModule(functor.NewScale(2200.0, 40.0))
+	osc1 := root.AddModule(phasor.New(140.0, 0.0).Named("osc1"))
+	shaper1 := root.AddModule(waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil))
+	allpass := root.AddModule(allpass.New(375.0, 375.0, 0.3))
+	allpassAmp := root.AddModule(functor.NewAmp(0.5))
 	// filter := env.AddModule(butterworth.NewButterworth(300.0, 0.4, env.Config, "filter"))
 	// filter := env.AddModule(rbj.NewRBJFilter(rbjc.Lowpass, 300.0, 10.0, env.Config, "filter"))
-	filter := env.AddModule(moog.New(300.0, 0.45, 1.0))
-	reverb := freeverb.New().Add(env)
+	filter := root.AddModule(moog.New(300.0, 0.45, 1.0))
+	reverb := freeverb.New().Add(root)
 
 	reverb.(*freeverb.FreeVerb).SetDamp(0.1)
 	reverb.(*freeverb.FreeVerb).SetDry(0.7)
@@ -86,10 +86,10 @@ func main() {
 	allpass.Connect(0, allpassAmp, 0)
 	filter.Connect(0, reverb, 0)
 	allpassAmp.Connect(0, reverb, 1)
-	reverb.Connect(0, env, 0)
-	reverb.Connect(1, env, 1)
+	reverb.Connect(0, root, 0)
+	reverb.Connect(1, root, 1)
 
-	env.QuickPlayAudio()
+	root.RenderLive()
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/shaper.aiff", 24.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

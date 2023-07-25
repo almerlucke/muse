@@ -1,160 +1,120 @@
 package muse
 
-import (
-	"bufio"
-	"log"
-	"os"
+// type Environment struct {
+// 	*BasePatch
+// 	stream *portaudio.Stream
+// }
 
-	"github.com/almerlucke/muse/io"
-	"github.com/gordonklaus/portaudio"
-	"github.com/mkb218/gosndfile/sndfile"
-)
+// func NewEnvironment(numOutputs int) *Environment {
+// 	e := &Environment{
+// 		BasePatch: NewPatch(0, numOutputs),
+// 	}
 
-type Environment struct {
-	*BasePatch
-	stream *portaudio.Stream
-}
+// 	e.SetSelf(e)
 
-func NewEnvironment(numOutputs int) *Environment {
-	e := &Environment{
-		BasePatch: NewPatch(0, numOutputs),
-	}
+// 	return e
+// }
 
-	e.SetSelf(e)
+// func (e *Environment) Synthesize() bool {
+// 	e.PrepareSynthesis()
+// 	return e.BasePatch.Synthesize()
+// }
 
-	return e
-}
+// func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64, outputSampleRate float64, normalizeOutput bool, format sndfile.Format) error {
+// 	numChannels := e.NumOutputs()
 
-func (e *Environment) Synthesize() bool {
-	e.PrepareSynthesis()
-	return e.BasePatch.Synthesize()
-}
+// 	swr := io.NewSoundWriter(numChannels, int(e.Config.SampleRate), int(outputSampleRate), normalizeOutput)
 
-func (e *Environment) SynthesizeToFile(filePath string, numSeconds float64, outputSampleRate float64, normalizeOutput bool, format sndfile.Format) error {
-	numChannels := e.NumOutputs()
+// 	interleaveBuffer := make([]float64, e.NumOutputs()*e.Config.BufferSize)
 
-	swr := io.NewSoundWriter(numChannels, int(e.Config.SampleRate), int(outputSampleRate), normalizeOutput)
+// 	framesToProduce := int64(e.Config.SampleRate * numSeconds)
 
-	interleaveBuffer := make([]float64, e.NumOutputs()*e.Config.BufferSize)
+// 	for framesToProduce > 0 {
+// 		e.Synthesize()
 
-	framesToProduce := int64(e.Config.SampleRate * numSeconds)
+// 		interleaveIndex := 0
 
-	for framesToProduce > 0 {
-		e.Synthesize()
+// 		numFrames := e.Config.BufferSize
 
-		interleaveIndex := 0
+// 		if framesToProduce <= int64(e.Config.BufferSize) {
+// 			numFrames = int(framesToProduce)
+// 		}
 
-		numFrames := e.Config.BufferSize
+// 		for i := 0; i < numFrames; i++ {
+// 			for c := 0; c < numChannels; c++ {
+// 				interleaveBuffer[interleaveIndex] = e.OutputAtIndex(c).Buffer[i]
+// 				interleaveIndex++
+// 			}
+// 		}
 
-		if framesToProduce <= int64(e.Config.BufferSize) {
-			numFrames = int(framesToProduce)
-		}
+// 		swr.WriteFrames(interleaveBuffer[:numFrames*numChannels])
 
-		for i := 0; i < numFrames; i++ {
-			for c := 0; c < numChannels; c++ {
-				interleaveBuffer[interleaveIndex] = e.OutputAtIndex(c).Buffer[i]
-				interleaveIndex++
-			}
-		}
+// 		framesToProduce -= int64(numFrames)
+// 	}
 
-		swr.WriteFrames(interleaveBuffer[:numFrames*numChannels])
+// 	return swr.Finish(filePath, format)
+// }
 
-		framesToProduce -= int64(numFrames)
-	}
+// func (e *Environment) PortaudioStream() (*portaudio.Stream, error) {
+// 	return portaudio.OpenDefaultStream(
+// 		1,
+// 		e.NumOutputs(),
+// 		e.Config.SampleRate,
+// 		e.Config.BufferSize,
+// 		e.portaudioCallback,
+// 	)
+// }
 
-	return swr.Finish(filePath, format)
-}
+// func (e *Environment) portaudioCallback(in, out [][]float32) {
+// 	e.Synthesize()
 
-func (e *Environment) PortaudioStream() (*portaudio.Stream, error) {
-	return portaudio.OpenDefaultStream(
-		1,
-		e.NumOutputs(),
-		e.Config.SampleRate,
-		e.Config.BufferSize,
-		e.portaudioCallback,
-	)
-}
+// 	numOutputs := e.NumOutputs()
 
-func (e *Environment) portaudioCallback(in, out [][]float32) {
-	e.Synthesize()
+// 	for i := 0; i < e.Config.BufferSize; i++ {
+// 		for j := 0; j < numOutputs; j++ {
+// 			out[j][i] = float32(e.OutputAtIndex(j).Buffer[i])
+// 		}
+// 	}
+// }
 
-	numOutputs := e.NumOutputs()
+// func (e *Environment) InitializeAudio() (*portaudio.Stream, error) {
+// 	portaudio.Initialize()
 
-	for i := 0; i < e.Config.BufferSize; i++ {
-		for j := 0; j < numOutputs; j++ {
-			out[j][i] = float32(e.OutputAtIndex(j).Buffer[i])
-		}
-	}
-}
+// 	stream, err := e.PortaudioStream()
+// 	if err != nil {
+// 		portaudio.Terminate()
+// 		return nil, err
+// 	}
 
-func (e *Environment) InitializeAudio() (*portaudio.Stream, error) {
-	portaudio.Initialize()
+// 	e.stream = stream
 
-	stream, err := e.PortaudioStream()
-	if err != nil {
-		portaudio.Terminate()
-		return nil, err
-	}
+// 	return e.stream, nil
+// }
 
-	e.stream = stream
+// func (e *Environment) TerminateAudio() {
+// 	if e.stream != nil {
+// 		e.stream.Close()
+// 		e.stream = nil
+// 	}
 
-	return e.stream, nil
-}
+// 	portaudio.Terminate()
+// }
 
-func (e *Environment) TerminateAudio() {
-	if e.stream != nil {
-		e.stream.Close()
-		e.stream = nil
-	}
+// func (e *Environment) QuickPlayAudio() error {
+// 	stream, err := e.InitializeAudio()
+// 	if err != nil {
+// 		return err
+// 	}
 
-	portaudio.Terminate()
-}
+// 	defer e.TerminateAudio()
 
-func (e *Environment) QuickPlayAudio() error {
-	stream, err := e.InitializeAudio()
-	if err != nil {
-		return err
-	}
+// 	stream.Start()
 
-	defer e.TerminateAudio()
+// 	log.Printf("Press enter to quit...")
 
-	stream.Start()
+// 	reader := bufio.NewReader(os.Stdin)
 
-	log.Printf("Press enter to quit...")
+// 	reader.ReadString('\n')
 
-	reader := bufio.NewReader(os.Stdin)
-
-	reader.ReadString('\n')
-
-	return nil
-}
-
-func (e *Environment) PlotControl(ctrl Control, outIndex int, frames int, w float64, h float64, filePath string) error {
-	pm := NewPlotModule(frames, e.Config)
-
-	ctrl.CtrlConnect(outIndex, pm, 0)
-
-	for i := 0; i < frames; i++ {
-		e.Synthesize()
-	}
-
-	pm.CtrlDisconnect()
-
-	return pm.Save(w, h, true, filePath)
-}
-
-func (e *Environment) PlotModule(module Module, outIndex int, frames int, w float64, h float64, filePath string) error {
-	pm := NewPlotModule(frames*e.Config.BufferSize, e.Config)
-
-	e.AddModule(pm)
-
-	module.Connect(outIndex, pm, 0)
-
-	for i := 0; i < frames; i++ {
-		e.Synthesize()
-	}
-
-	e.RemoveModule(pm)
-
-	return pm.Save(w, h, false, filePath)
-}
+// 	return nil
+// }

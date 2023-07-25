@@ -10,8 +10,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/gordonklaus/portaudio"
-
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
@@ -47,7 +45,7 @@ type TestVoice struct {
 	ampStepProvider adsrctrl.ADSRStepProvider
 }
 
-func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
+func NewTestVoice(ampStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
 		BasePatch:       muse.NewPatch(0, 1),
 		ampStepProvider: ampStepProvider,
@@ -98,7 +96,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 
@@ -106,7 +104,7 @@ func main() {
 	for i := 0; i < 20; i++ {
 		var voice polyphony.Voice
 
-		voice = NewTestVoice(env.Config, ampEnvControl)
+		voice = NewTestVoice(ampEnvControl)
 
 		voices1 = append(voices1, voice)
 	}
@@ -115,12 +113,12 @@ func main() {
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly1 := polyphony.New(1, voices1).Named("polyphony1").Add(env)
-	chor := chorus.New(true, 15, 10, 0.2, 3.42, 0.5, nil).Add(env)
+	poly1 := polyphony.New(1, voices1).Named("polyphony1").Add(root)
+	chor := chorus.New(true, 15, 10, 0.2, 3.42, 0.5, nil).Add(root)
 
 	octave := notes.O4
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony1"}, template.Template{
+	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony1"}, template.Template{
 		"command":   "trigger",
 		"duration":  value.NewSequence([]any{375.0}),
 		"amplitude": value.NewConst[any](0.7),
@@ -174,7 +172,7 @@ func main() {
 		},
 	}).MsgrNamed("template1"))
 
-	env.AddMessenger(stepper.NewStepper(
+	root.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 2, value.NewSequence(
 			[]*swing.Step{
 				{}, {}, {}, {}, {}, {}, {}, {Shuffle: 0.1}, {}, {}, {}, {}, {}, {}, {}, {Shuffle: 0.1, ShuffleRand: 0.05},
@@ -184,18 +182,15 @@ func main() {
 	))
 
 	poly1.Connect(0, chor, 0)
-	chor.Connect(0, env, 0)
-	chor.Connect(1, env, 1)
+	chor.Connect(0, root, 0)
+	chor.Connect(1, root, 1)
 
-	portaudio.Initialize()
-	defer portaudio.Terminate()
-
-	stream, err := env.PortaudioStream()
+	err := root.InitializeAudio()
 	if err != nil {
-		log.Fatalf("error opening portaudio stream, %v", err)
+		log.Fatalf("error opening audio stream, %v", err)
 	}
 
-	defer stream.Close()
+	defer root.TerminateAudio()
 
 	a := app.New()
 
@@ -212,10 +207,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					stream.Start()
+					root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					stream.Stop()
+					root.StopAudio()
 				}),
 			),
 			container.NewHBox(

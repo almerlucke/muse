@@ -67,7 +67,7 @@ func operatorControls(index int, setting fmsynth.OperatorSetting) *controls.Grou
 }
 
 func main() {
-	env := muse.NewEnvironment(1)
+	root := muse.New(1)
 
 	fm := fmsynth.New(18, waveshaping.NewSineTable(2048)).Named("fm").(*fmsynth.FMSynth)
 
@@ -77,8 +77,8 @@ func main() {
 	fm.PitchEnvRates = [4]float64{0.95, 0.95, 0.95, 0.95}
 	fm.ReleaseMode = ops.EnvelopeDurationRelease
 	fm.ApplySettingsChange()
-	fm.Add(env)
-	env.In(fm)
+	fm.Add(root)
+	root.In(fm)
 
 	opsGroup := controls.NewGroup("ops.group", "FM Synth")
 	for i := 0; i < 6; i++ {
@@ -109,20 +109,20 @@ func main() {
 		fm.ApplySettingsChange()
 	}))
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{"fm"}, template.Template{
+	root.AddMessenger(banger.NewTemplateGenerator([]string{"fm"}, template.Template{
 		"noteOn":   value.NewSequence([]any{36, 36, 48, 41, 51, 51, 49, 47, 32, 33}),
 		"duration": value.NewSequence([]any{500.0, 300.0, 250.0, 150.0, 300.0, 125.0, 125.0, 500.0, 375.0}),
 		"level":    1.0,
 	}).MsgrNamed("notes"))
 
-	env.AddMessenger(timer.NewTimer(250.0, []string{"notes"}))
+	root.AddMessenger(timer.NewTimer(250.0, []string{"notes"}))
 
-	stream, err := env.InitializeAudio()
+	err := root.InitializeAudio()
 	if err != nil {
 		log.Fatalf("error initializing audio: %v", err)
 	}
 
-	defer env.TerminateAudio()
+	defer root.TerminateAudio()
 
 	a := app.New()
 
@@ -140,10 +140,10 @@ func main() {
 			container.NewHBox(
 				widget.NewButton("Start", func() {
 					// env.SynthesizeToFile("/Users/almerlucke/Desktop/waterFlow.aiff", 240.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
-					stream.Start()
+					root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					stream.Stop()
+					root.StopAudio()
 				}),
 				// widget.NewButton("Notes Off", func() {
 				// 	poly.(*polyphony.Polyphony).AllNotesOff()

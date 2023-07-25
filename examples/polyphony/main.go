@@ -93,9 +93,9 @@ func (tv *TestVoice) NoteOff() {
 }
 
 func main() {
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
 		"duration":  value.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}),
 		"amplitude": value.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}),
@@ -109,7 +109,7 @@ func main() {
 
 	bpm := 120
 
-	env.AddMessenger(stepper.NewStepper(
+	root.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 4, value.NewSequence([]*swing.Step{
 			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipChance: 0.3},
 		})),
@@ -118,8 +118,8 @@ func main() {
 
 	milliPerBeat := 60000.0 / float64(bpm) / 4.0
 
-	superSawDrive := modules.Scale(vartri.New(0.265, 0.0, 0.5).Add(env), 0, 0.84, 0.15).Add(env)
-	filterCutOff := modules.Scale(vartri.New(0.325, 0.0, 0.5).Add(env), 0, 3200.0, 40.0).Add(env)
+	superSawDrive := modules.Scale(vartri.New(0.265, 0.0, 0.5).Add(root), 0, 0.84, 0.15).Add(root)
+	filterCutOff := modules.Scale(vartri.New(0.325, 0.0, 0.5).Add(root), 0, 3200.0, 40.0).Add(root)
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
@@ -132,10 +132,10 @@ func main() {
 
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
-	poly := polyphony.New(1, voices).Named("polyphony").Add(env).In(superSawDrive, filterCutOff, 0, 0)
-	allpass := allpass.New(milliPerBeat*3, milliPerBeat*3, 0.4).Add(env).In(poly)
-	allpassAmp := modules.Scale(allpass, 0, 0.5, 0.0).Add(env)
-	reverb := freeverb.New().Add(env).In(poly, allpassAmp).(*freeverb.FreeVerb)
+	poly := polyphony.New(1, voices).Named("polyphony").Add(root).In(superSawDrive, filterCutOff, 0, 0)
+	allpass := allpass.New(milliPerBeat*3, milliPerBeat*3, 0.4).Add(root).In(poly)
+	allpassAmp := modules.Scale(allpass, 0, 0.5, 0.0).Add(root)
+	reverb := freeverb.New().Add(root).In(poly, allpassAmp).(*freeverb.FreeVerb)
 
 	reverb.SetDamp(0.1)
 	reverb.SetDry(0.7)
@@ -143,9 +143,9 @@ func main() {
 	reverb.SetRoomSize(0.8)
 	reverb.SetWidth(0.8)
 
-	env.In(reverb, reverb, 1)
+	root.In(reverb, reverb, 1)
 
-	env.QuickPlayAudio()
+	root.RenderLive()
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/voices.aiff", 24.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

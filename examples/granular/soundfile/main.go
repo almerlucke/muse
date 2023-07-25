@@ -235,7 +235,7 @@ func main() {
 
 	numChannels := sfb.NumChannels()
 
-	env := muse.NewEnvironment(numChannels)
+	root := muse.New(numChannels)
 
 	paramGen := &SFParameterGenerator{}
 
@@ -247,13 +247,13 @@ func main() {
 	paramGen.panClustering = museRand.NewClusterRand(0.5, 0.3, 0.3, 0.2, 0.5)
 	paramGen.reversePlayChance = 0.1
 
-	gr := env.AddModule(granular.New(numChannels, &SFSourceFactory{SoundFile: sfb}, &trapezoidal.Factory{}, 400, paramGen))
+	gr := root.AddModule(granular.New(numChannels, &SFSourceFactory{SoundFile: sfb}, &trapezoidal.Factory{}, 400, paramGen))
 
 	for i := 0; i < numChannels; i++ {
-		gr.Connect(i, env, i)
+		gr.Connect(i, root, i)
 	}
 
-	env.QuickPlayAudio()
+	root.RenderLive()
 
 	//env.SynthesizeToFile("/Users/almerlucke/Desktop/children.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

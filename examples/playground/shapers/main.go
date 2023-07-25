@@ -69,10 +69,10 @@ func switchControlTemplate() template.Template {
 }
 
 func main() {
-	env := muse.NewEnvironment(1)
+	root := muse.New(1)
 
-	timer1 := timer.NewControlTimer(250.0).CtrlAdd(env)
-	timer2 := timer.NewControlTimer(1500.0).CtrlAdd(env)
+	timer1 := timer.NewControlTimer(250.0).CtrlAdd(root)
+	timer2 := timer.NewControlTimer(1500.0).CtrlAdd(root)
 
 	freqGen := val.New[float64](value.NewSequence[float64]([]float64{40.0, 60.0, 80.0, 90.0, 95.0}))
 	shapersControlGen := banger.NewControlTemplateGenerator(switchControlTemplate())
@@ -80,14 +80,14 @@ func main() {
 	freqGen.CtrlIn(timer1)
 	shapersControlGen.CtrlIn(timer2)
 
-	phase := phasor.New(200.0, 0.0).Add(env)
-	shaper := waveshaper.New(newShapeSwitcher(), 1, switchControlFunction, nil).Add(env)
+	phase := phasor.New(200.0, 0.0).Add(root)
+	shaper := waveshaper.New(newShapeSwitcher(), 1, switchControlFunction, nil).Add(root)
 
 	phase.CtrlIn(freqGen)
 	shaper.In(phase)
 	shaper.CtrlIn(shapersControlGen)
-	env.In(shaper)
+	root.In(shaper)
 
 	//env.SynthesizeToFile("/Users/almerlucke/Desktop/notaliased.aiff", 10.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
-	env.QuickPlayAudio()
+	root.RenderLive()
 }

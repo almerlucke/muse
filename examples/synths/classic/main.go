@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
-	"log"
 	"math/rand"
-	"os"
 	"time"
 
 	"github.com/almerlucke/muse"
@@ -21,7 +18,6 @@ import (
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/arpeggio"
 	"github.com/almerlucke/muse/value/template"
-	"github.com/gordonklaus/portaudio"
 )
 
 func noteSequence(octave notes.Note) value.Valuer[any] {
@@ -74,7 +70,7 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
 	ampEnv := adsr.NewBasicStepProvider()
 	ampEnv.Steps[0] = adsr.Step{Level: 1.0, Duration: 25.0}
@@ -88,17 +84,17 @@ func main() {
 
 	bpm := 100
 
-	synth := classic.New(20, ampEnv, filterEnv).Named("poly").Add(env)
-	synthAmp1 := env.AddModule(functor.NewAmp(0.85))
-	synthAmp2 := env.AddModule(functor.NewAmp(0.85))
-	allpass1 := env.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.666, 0.5))
-	allpass2 := env.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.75, 0.4))
-	allpassAmp1 := env.AddModule(functor.NewAmp(0.5))
-	allpassAmp2 := env.AddModule(functor.NewAmp(0.5))
-	chor1 := env.AddModule(chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil))
-	chor2 := env.AddModule(chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil))
+	synth := classic.New(20, ampEnv, filterEnv).Named("poly").Add(root)
+	synthAmp1 := root.AddModule(functor.NewAmp(0.85))
+	synthAmp2 := root.AddModule(functor.NewAmp(0.85))
+	allpass1 := root.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.666, 0.5))
+	allpass2 := root.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.75, 0.4))
+	allpassAmp1 := root.AddModule(functor.NewAmp(0.5))
+	allpassAmp2 := root.AddModule(functor.NewAmp(0.5))
+	chor1 := root.AddModule(chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil))
+	chor2 := root.AddModule(chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil))
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
+	root.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
 		"command":   "trigger",
 		"duration":  value.NewSequence([]any{375.0, 750.0, 1000.0, 250.0, 250.0, 375.0, 750.0}),
 		"amplitude": value.NewConst[any](1.0),
@@ -115,49 +111,49 @@ func main() {
 		},
 	}).MsgrNamed("control"))
 
-	env.AddMessenger(stepper.NewStepper(
+	root.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 2,
 			value.NewSequence([]*swing.Step{{}, {Skip: true}}),
 		),
 		[]string{"control"},
 	))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"poly"}, "pw", template.Template{
+	root.AddMessenger(lfo.NewBasicLFO(0.14, 0.7, 0.15, []string{"poly"}, "pw", template.Template{
 		"command":        "voice",
 		"osc1PulseWidth": template.NewParameter("pw", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"poly"}, "pw", template.Template{
+	root.AddMessenger(lfo.NewBasicLFO(0.103, 0.7, 0.15, []string{"poly"}, "pw", template.Template{
 		"command":        "voice",
 		"osc2PulseWidth": template.NewParameter("pw", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.085, 0.6, 0.25, []string{"poly"}, "resonance", template.Template{
+	root.AddMessenger(lfo.NewBasicLFO(0.085, 0.6, 0.25, []string{"poly"}, "resonance", template.Template{
 		"command":         "voice",
 		"filterResonance": template.NewParameter("resonance", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.115, 0.06, 4.0, []string{"poly"}, "tuning", template.Template{
+	root.AddMessenger(lfo.NewBasicLFO(0.115, 0.06, 4.0, []string{"poly"}, "tuning", template.Template{
 		"command":    "voice",
 		"osc2Tuning": template.NewParameter("tuning", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"poly"}, "noise", template.Template{
+	root.AddMessenger(lfo.NewBasicLFO(0.0367, 0.1, 0.01, []string{"poly"}, "noise", template.Template{
 		"command":  "voice",
 		"noiseMix": template.NewParameter("noise", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"poly"}, "noise", template.Template{
+	root.AddMessenger(lfo.NewBasicLFO(0.0567, 0.4, 0.3, []string{"poly"}, "noise", template.Template{
 		"command": "voice",
 		"osc1Mix": template.NewParameter("noise", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"poly"}, "noise", template.Template{
+	root.AddMessenger(lfo.NewBasicLFO(0.0667, 0.4, 0.2, []string{"poly"}, "noise", template.Template{
 		"command": "voice",
 		"osc2Mix": template.NewParameter("noise", nil),
 	}))
 
-	env.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"poly"}, "pan", template.Template{
+	root.AddMessenger(lfo.NewBasicLFO(0.1067, 0.3, 0.35, []string{"poly"}, "pan", template.Template{
 		"command": "voice",
 		"pan":     template.NewParameter("pan", nil),
 	}))
@@ -172,24 +168,10 @@ func main() {
 	allpass2.Connect(0, allpassAmp2, 0)
 	allpassAmp1.Connect(0, chor1, 0)
 	allpassAmp2.Connect(0, chor2, 0)
-	chor1.Connect(0, env, 0)
-	chor2.Connect(0, env, 1)
+	chor1.Connect(0, root, 0)
+	chor2.Connect(0, root, 1)
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 240.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
-	portaudio.Initialize()
-	defer portaudio.Terminate()
-
-	stream, err := env.PortaudioStream()
-	if err != nil {
-		log.Fatalf("error opening portaudio stream, %v", err)
-	}
-
-	defer stream.Close()
-
-	stream.Start()
-
-	reader := bufio.NewReader(os.Stdin)
-
-	reader.ReadString('\n')
+	root.RenderLive()
 }

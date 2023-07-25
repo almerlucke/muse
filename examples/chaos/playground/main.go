@@ -123,7 +123,7 @@ func randMinMax(min float64, max float64) float64 {
 }
 
 func main() {
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
 	ampEnv := adsrc.NewBasicStepProvider()
 	ampEnv.Steps[0] = adsrc.Step{Level: 1.0, Duration: 5.0}
@@ -142,8 +142,8 @@ func main() {
 		voices[i] = NewChaosVoice(ampEnv, filterEnv)
 	}
 
-	poly := polyphony.New(2, voices).Named("chaosSynth").Add(env)
-	timer := timer.NewControlTimer(500.0).CtrlAdd(env)
+	poly := polyphony.New(2, voices).Named("chaosSynth").Add(root)
+	timer := timer.NewControlTimer(500.0).CtrlAdd(root)
 	randomizeTimer := val.New[float64](value.NewFunction(func() float64 {
 		return randMinMax(100, 5500.0)
 	}))
@@ -175,18 +175,18 @@ func main() {
 	timer.CtrlConnect(0, trigger, 0)
 	trigger.CtrlConnect(0, poly, 0)
 
-	chorus1 := env.AddModule(chorus.New(false, 30.0, 20.0, 0.4, 1.21, 0.4, nil))
-	chorus2 := env.AddModule(chorus.New(false, 31.0, 21.0, 0.31, 1.31, 0.5, nil))
+	chorus1 := root.AddModule(chorus.New(false, 30.0, 20.0, 0.4, 1.21, 0.4, nil))
+	chorus2 := root.AddModule(chorus.New(false, 31.0, 21.0, 0.31, 1.31, 0.5, nil))
 
 	poly.Connect(0, chorus1, 0)
 	poly.Connect(1, chorus2, 0)
 
-	chorus1.Connect(0, env, 0)
-	chorus2.Connect(0, env, 1)
+	chorus1.Connect(0, root, 0)
+	chorus2.Connect(0, root, 1)
 
 	// chorus2.Connect(0, env, 0)
 	// chorus2.Connect(1, env, 1)
 
-	env.QuickPlayAudio()
+	root.RenderLive()
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/chaosPing1.aiff", 360.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

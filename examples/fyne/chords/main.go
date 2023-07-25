@@ -2,15 +2,11 @@ package main
 
 import (
 	"log"
-	"math/rand"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/gordonklaus/portaudio"
 
 	"github.com/almerlucke/muse"
 
@@ -45,7 +41,7 @@ type TestVoice struct {
 	ampStepProvider adsrctrl.ADSRStepProvider
 }
 
-func NewTestVoice(config *muse.Configuration, ampStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
+func NewTestVoice(ampStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
 		BasePatch:       muse.NewPatch(0, 1),
 		ampStepProvider: ampStepProvider,
@@ -93,15 +89,13 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
-	env := muse.NewEnvironment(1)
+	root := muse.New(1)
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
-		voice := NewTestVoice(env.Config, ampEnvControl)
+		voice := NewTestVoice(ampEnvControl)
 		voices = append(voices, voice)
 	}
 
@@ -109,11 +103,11 @@ func main() {
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly := polyphony.New(1, voices).Named("polyphony").Add(env)
+	poly := polyphony.New(1, voices).Named("polyphony").Add(root)
 
 	octave := notes.O3
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command": "trigger",
 		"duration": value.NewSequence([]any{
 			750.0, 750.0, 750.0, 750.0, 375.0, 375.0, 750.0, 750.0,
@@ -146,7 +140,7 @@ func main() {
 		},
 	}).MsgrNamed("template"))
 
-	env.AddMessenger(stepper.NewStepper(
+	root.AddMessenger(stepper.NewStepper(
 		swing.New(bpm, 1, value.NewSequence(
 			[]*swing.Step{
 				// Row 1
@@ -169,17 +163,14 @@ func main() {
 		[]string{"template"},
 	))
 
-	poly.Connect(0, env, 0)
+	poly.Connect(0, root, 0)
 
-	portaudio.Initialize()
-	defer portaudio.Terminate()
-
-	stream, err := env.PortaudioStream()
+	err := root.InitializeAudio()
 	if err != nil {
-		log.Fatalf("error opening portaudio stream, %v", err)
+		log.Fatalf("error opening audio stream, %v", err)
 	}
 
-	defer stream.Close()
+	defer root.TerminateAudio()
 
 	a := app.New()
 
@@ -196,10 +187,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					stream.Start()
+					root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					stream.Stop()
+					root.StopAudio()
 				}),
 			),
 			container.NewHBox(

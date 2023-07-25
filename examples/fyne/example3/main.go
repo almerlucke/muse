@@ -3,14 +3,11 @@ package main
 import (
 	"log"
 	"math/rand"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/gordonklaus/portaudio"
 
 	"github.com/almerlucke/muse"
 
@@ -165,25 +162,23 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func addDrumTrack(env *muse.Environment, moduleName string, soundFile *io.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, steps value.Valuer[*swing.Step]) muse.Module {
+func addDrumTrack(p muse.Patch, moduleName string, soundFile *io.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, steps value.Valuer[*swing.Step]) muse.Module {
 	identifier := moduleName + "Speed"
 
-	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
+	p.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{moduleName}, template.Template{
+	p.AddMessenger(banger.NewTemplateGenerator([]string{moduleName}, template.Template{
 		"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 		"bang":  true,
 	}).MsgrNamed(identifier))
 
-	return env.AddModule(player.New(soundFile, 1.0, 1.0, true).Named(moduleName))
+	return p.AddModule(player.New(soundFile, 1.0, 1.0, true).Named(moduleName))
 }
 
 type Nums []float64
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
 	filterEnvControl := adsrctrl.NewADSRControl("Filter ADSR")
@@ -202,7 +197,7 @@ func main() {
 	kickSound, _ := io.NewSoundFile("resources/drums/kick/Cymatics - Humble Friday Kick - E.wav")
 	snareSound, _ := io.NewSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
 
-	hihatPlayer := addDrumTrack(env, "hihat", hihatSound, bpm, 8, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
+	hihatPlayer := addDrumTrack(root, "hihat", hihatSound, bpm, 8, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
 		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
 			{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipChance: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
 		}), 2, 3),
@@ -211,7 +206,7 @@ func main() {
 		}), 1, 2),
 	}, true))
 
-	kickPlayer := addDrumTrack(env, "kick", kickSound, bpm, 4, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
+	kickPlayer := addDrumTrack(root, "kick", kickSound, bpm, 4, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
 		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
 			{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipChance: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
 		}), 2, 3),
@@ -220,13 +215,13 @@ func main() {
 		}), 1, 2),
 	}, true))
 
-	snarePlayer := addDrumTrack(env, "snare", snareSound, bpm, 2, 0.875, 1.125, value.NewSequence([]*swing.Step{
+	snarePlayer := addDrumTrack(root, "snare", snareSound, bpm, 2, 0.875, 1.125, value.NewSequence([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.1, ShuffleRand: 0.1},
 	}))
 
-	mult := env.AddModule(functor.NewAmp(0.3))
-	poly := env.AddModule(polyphony.New(1, voices).Named("polyphony"))
-	allpass := env.AddModule(allpass.New(milliPerBeat*1.5, milliPerBeat*1.5, 0.3))
+	mult := root.AddModule(functor.NewAmp(0.3))
+	poly := root.AddModule(polyphony.New(1, voices).Named("polyphony"))
+	allpass := root.AddModule(allpass.New(milliPerBeat*1.5, milliPerBeat*1.5, 0.3))
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
@@ -240,10 +235,10 @@ func main() {
 		"adsrDecayLevel": template.NewParameter("adsrDecayLevel", nil),
 	})
 
-	env.AddMessenger(lfo.NewLFO(0.05, []*lfo.Target{targetShaper}).MsgrNamed("lfo1"))
-	env.AddMessenger(lfo.NewLFO(0.1, []*lfo.Target{targetFilter}).MsgrNamed("lfo2"))
+	root.AddMessenger(lfo.NewLFO(0.05, []*lfo.Target{targetShaper}).MsgrNamed("lfo1"))
+	root.AddMessenger(lfo.NewLFO(0.1, []*lfo.Target{targetFilter}).MsgrNamed("lfo2"))
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
 		"duration":  value.NewSequence([]any{Nums{125.0, 300.0}, Nums{125.0, 400.0}, Nums{125.0, 500.0}, Nums{250.0, 300.0}, Nums{250.0, 400.0}}),
 		"amplitude": value.NewConst[any](1.0),
@@ -259,7 +254,7 @@ func main() {
 		},
 	}).MsgrNamed("template1"))
 
-	env.AddMessenger(stepper.NewStepper(
+	root.AddMessenger(stepper.NewStepper(
 		swing.New(40, 2, value.NewSequence([]*swing.Step{
 			{}, {}, {}, {},
 		})),
@@ -269,21 +264,18 @@ func main() {
 	kickPlayer.Connect(0, mult, 0)
 	hihatPlayer.Connect(0, mult, 0)
 	snarePlayer.Connect(0, mult, 0)
-	mult.Connect(0, env, 0)
-	mult.Connect(0, env, 1)
+	mult.Connect(0, root, 0)
+	mult.Connect(0, root, 1)
 	poly.Connect(0, allpass, 0)
-	poly.Connect(0, env, 0)
-	allpass.Connect(0, env, 1)
+	poly.Connect(0, root, 0)
+	allpass.Connect(0, root, 1)
 
-	portaudio.Initialize()
-	defer portaudio.Terminate()
-
-	stream, err := env.PortaudioStream()
+	err := root.InitializeAudio()
 	if err != nil {
 		log.Fatalf("error opening portaudio stream, %v", err)
 	}
 
-	defer stream.Close()
+	defer root.TerminateAudio()
 
 	a := app.New()
 
@@ -381,10 +373,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					stream.Start()
+					root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					stream.Stop()
+					root.StopAudio()
 				}),
 				// widget.NewButton("Notes Off", func() {
 				// 	poly.(*polyphony.Polyphony).AllNotesOff()

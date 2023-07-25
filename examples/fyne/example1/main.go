@@ -17,8 +17,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/gordonklaus/portaudio"
-
 	"github.com/almerlucke/muse"
 
 	// Components
@@ -55,7 +53,7 @@ type TestVoice struct {
 	stepProvider ADSRStepProvider
 }
 
-func NewTestVoice(config *muse.Configuration, stepProvider ADSRStepProvider) *TestVoice {
+func NewTestVoice(stepProvider ADSRStepProvider) *TestVoice {
 	testVoice := &TestVoice{
 		BasePatch:    muse.NewPatch(0, 1),
 		stepProvider: stepProvider,
@@ -665,9 +663,9 @@ func NewSwingControl(bpm float64, noteDivision float64) *SwingControl {
 }
 
 func main() {
-	env := muse.NewEnvironment(1)
+	root := muse.New(1)
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
 		"duration":  value.NewSequence([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}),
 		"amplitude": value.NewConst[any](1.0),
@@ -681,7 +679,7 @@ func main() {
 		},
 	}).MsgrNamed("prototype1"))
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
 		"duration":  value.NewSequence([]any{250.0, 250.0, 375.0, 375.0, 375.0, 250.0}),
 		"amplitude": value.NewConst[any](0.3),
@@ -698,33 +696,30 @@ func main() {
 	adsrControl := NewADSRControl()
 	swingControl := NewSwingControl(80.0, 4.0)
 
-	env.AddMessenger(stepper.NewStepper(
+	root.AddMessenger(stepper.NewStepper(
 		swingControl.Swing(),
 		[]string{"prototype1", "prototype2"},
 	))
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
-		voice := NewTestVoice(env.Config, adsrControl)
+		voice := NewTestVoice(adsrControl)
 		voices = append(voices, voice)
 	}
 
-	poly := polyphony.New(1, voices).Named("polyphony").Add(env)
+	poly := polyphony.New(1, voices).Named("polyphony").Add(root)
 	// allpass := env.AddModule(allpass.NewAllpass(milliPerBeat*1.5, milliPerBeat*1.5, 0.1, env.Config, "allpass"))
 
 	// muse.Connect(voicePlayer, 0, allpass, 0)
-	poly.Connect(0, env, 0)
+	poly.Connect(0, root, 0)
 	// muse.Connect(allpass, 0, env, 1)
 
-	portaudio.Initialize()
-	defer portaudio.Terminate()
-
-	stream, err := env.PortaudioStream()
+	err := root.InitializeAudio()
 	if err != nil {
 		log.Fatalf("error opening portaudio stream, %v", err)
 	}
 
-	defer stream.Close()
+	defer root.TerminateAudio()
 
 	a := app.New()
 
@@ -741,10 +736,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					stream.Start()
+					root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					stream.Stop()
+					root.StopAudio()
 				}),
 				widget.NewButton("Save", func() {
 					d := dialog.NewFileSave(func(wc fyne.URIWriteCloser, err error) {

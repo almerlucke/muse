@@ -45,7 +45,7 @@ type ClassicSynth struct {
 	chorus2   *chorus.Chorus
 }
 
-func NewClassicSynth(bpm float64, config *muse.Configuration) *ClassicSynth {
+func NewClassicSynth(bpm float64) *ClassicSynth {
 	synth := &ClassicSynth{
 		BasePatch: muse.NewPatch(0, 2),
 		controls:  controls.NewGroup("group.main", "Classic Synth"),
@@ -231,12 +231,12 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 		}, true)
 }
 
-func addDrumTrack(env *muse.Environment, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) {
+func addDrumTrack(p muse.Patch, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) {
 	identifier := sounds[0] + "Drum"
 
-	env.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
+	p.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
 
-	env.AddMessenger(banger.NewTemplateGenerator([]string{polyName}, template.Template{
+	p.AddMessenger(banger.NewTemplateGenerator([]string{polyName}, template.Template{
 		"command":   "trigger",
 		"duration":  0.0,
 		"amplitude": amp,
@@ -392,7 +392,7 @@ func main() {
 		BufferSize: 512,
 	})
 
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
 	bpm := 80.0
 
@@ -407,21 +407,21 @@ func main() {
 	soundBank["808_4"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
 	soundBank["shaker"], _ = io.NewSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
 
-	drumMachine := drums.NewDrums(soundBank, 20).Named("drums").Add(env)
+	drumMachine := drums.NewDrums(soundBank, 20).Named("drums").Add(root)
 
-	addDrumTrack(env, "drums", []string{"hihat"}, int(bpm), 8, 0.875, 1.125, 0.6, hihatRhythm())
-	addDrumTrack(env, "drums", []string{"kick"}, int(bpm), 8, 0.875, 1.125, 1.0, kickRhythm())
-	addDrumTrack(env, "drums", []string{"snare"}, int(bpm), 8, 1.0, 1.0, 0.7, snareRhythm())
-	addDrumTrack(env, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, int(bpm), 2, 1.0, 1.0, 0.7, bassRhythm())
-	addDrumTrack(env, "drums", []string{"shaker"}, int(bpm), 2, 1.0, 1.0, 1.0, kickRhythm())
+	addDrumTrack(root, "drums", []string{"hihat"}, int(bpm), 8, 0.875, 1.125, 0.6, hihatRhythm())
+	addDrumTrack(root, "drums", []string{"kick"}, int(bpm), 8, 0.875, 1.125, 1.0, kickRhythm())
+	addDrumTrack(root, "drums", []string{"snare"}, int(bpm), 8, 1.0, 1.0, 0.7, snareRhythm())
+	addDrumTrack(root, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, int(bpm), 2, 1.0, 1.0, 0.7, bassRhythm())
+	addDrumTrack(root, "drums", []string{"shaker"}, int(bpm), 2, 1.0, 1.0, 1.0, kickRhythm())
 
-	synth := NewClassicSynth(bpm, env.Config).Add(env).(*ClassicSynth)
+	synth := NewClassicSynth(bpm).Add(root).(*ClassicSynth)
 
-	env.In(
+	root.In(
 		drumMachine, 0, 0,
 		drumMachine, 1, 1,
-		modules.Amp(synth, 0, 0.7).Add(env), 0, 0,
-		modules.Amp(synth, 1, 0.7).Add(env), 0, 1,
+		modules.Amp(synth, 0, 0.7).Add(root), 0, 0,
+		modules.Amp(synth, 1, 0.7).Add(root), 0, 1,
 	)
 
 	synth.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
@@ -498,12 +498,12 @@ func main() {
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
-	stream, err := env.InitializeAudio()
+	err := root.InitializeAudio()
 	if err != nil {
 		log.Fatalf("error opening audio stream, %v", err)
 	}
 
-	defer env.TerminateAudio()
+	defer root.TerminateAudio()
 
 	a := app.New()
 
@@ -520,10 +520,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					stream.Start()
+					root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					stream.Stop()
+					root.StopAudio()
 				}),
 			),
 			container.NewHScroll(synth.controls.UI()),

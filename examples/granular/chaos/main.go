@@ -227,7 +227,7 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	env := muse.NewEnvironment(2)
+	root := muse.New(2)
 
 	paramGen := &SFParameterGenerator{}
 
@@ -244,12 +244,12 @@ func main() {
 	paramGen.attackClustering = museRand.NewClusterRand(0.04, 0.03, 0.9, 1.0, 1.0)
 	paramGen.releaseClustering = museRand.NewClusterRand(0.81, 0.12, 0.9, 1.0, 1.0)
 
-	gr := env.AddModule(granular.New(2, NewSourceFactory(env.Config.SampleRate), &trapezoidal.Factory{}, 40, paramGen))
+	gr := root.AddModule(granular.New(2, NewSourceFactory(root.Config.SampleRate), &trapezoidal.Factory{}, 40, paramGen))
 
-	chaosLfo := env.AddControl(lfo.NewBasicControlLFO(0.0721, 1.36, 1.767))
-	freqLowLfo := env.AddControl(lfo.NewBasicControlLFO(0.0821, 150.0, 300.0))
-	freqHighLfo := env.AddControl(lfo.NewBasicControlLFO(0.0621, 800, 2000))
-	deltaLfo := env.AddControl(lfo.NewBasicControlLFO(0.0521, 0.01, 0.0001))
+	chaosLfo := root.AddControl(lfo.NewBasicControlLFO(0.0721, 1.36, 1.767))
+	freqLowLfo := root.AddControl(lfo.NewBasicControlLFO(0.0821, 150.0, 300.0))
+	freqHighLfo := root.AddControl(lfo.NewBasicControlLFO(0.0621, 800, 2000))
+	deltaLfo := root.AddControl(lfo.NewBasicControlLFO(0.0521, 0.01, 0.0001))
 
 	gr.CtrlIn(chaosLfo, freqLowLfo, freqHighLfo, deltaLfo, 0, 7)
 
@@ -266,10 +266,10 @@ func main() {
 	// panLfo.CtrlConnect(0, gr, 4)
 
 	for i := 0; i < 2; i++ {
-		gr.Connect(i, env, i)
+		gr.Connect(i, root, i)
 	}
 
-	env.QuickPlayAudio()
+	root.RenderLive()
 
 	//env.SynthesizeToFile("/Users/almerlucke/Desktop/chaosGrains_wind.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }
