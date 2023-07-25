@@ -27,7 +27,7 @@ func main() {
 
 	root.In(osc, 3)
 
-	root.RenderLive()
+	root.RenderAudio()
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/test.aiff", 10.0, env.Config.SampleRate, false, sndfile.SF_FORMAT_AIFF)
 }

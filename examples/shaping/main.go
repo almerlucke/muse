@@ -89,7 +89,7 @@ func main() {
 	reverb.Connect(0, root, 0)
 	reverb.Connect(1, root, 1)
 
-	root.RenderLive()
+	root.RenderAudio()
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/shaper.aiff", 24.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

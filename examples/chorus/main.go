@@ -90,5 +90,5 @@ func main() {
 	ch.Connect(0, root, 0)
 	ch.Connect(0, root, 1)
 
-	root.RenderLive()
+	root.RenderAudio()
 }

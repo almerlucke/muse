@@ -14,7 +14,7 @@ type PlotModule struct {
 	index   int
 }
 
-func NewPlotModule(n int, config *Configuration) *PlotModule {
+func NewPlotModule(n int) *PlotModule {
 	pc := &PlotModule{
 		BaseModule: NewBaseModule(1, 0),
 		samples:    make([]float64, n),
@@ -26,8 +26,10 @@ func NewPlotModule(n int, config *Configuration) *PlotModule {
 }
 
 func (pm *PlotModule) ReceiveControlValue(value any, index int) {
-	pm.samples[pm.index] = value.(float64)
-	pm.index++
+	if pm.index < len(pm.samples) {
+		pm.samples[pm.index] = value.(float64)
+		pm.index++
+	}
 }
 
 func (pm *PlotModule) points(asControl bool) plotter.XYs {
@@ -57,8 +59,10 @@ func (pm *PlotModule) Synthesize() bool {
 
 	if pm.Inputs[0].IsConnected() {
 		for i := 0; i < pm.Config.BufferSize; i++ {
-			pm.samples[pm.index] = pm.Inputs[0].Buffer[i]
-			pm.index++
+			if pm.index < len(pm.samples) {
+				pm.samples[pm.index] = pm.Inputs[0].Buffer[i]
+				pm.index++
+			}
 		}
 	}
 

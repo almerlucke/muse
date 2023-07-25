@@ -57,7 +57,7 @@ func genSound() {
 	// sgen.Connect(1, env, 1)
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/aronson.aiff", 20.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
-	root.RenderLive()
+	root.RenderAudio()
 }
 
 func genFreq() {
@@ -97,7 +97,7 @@ func genFreq() {
 	osc1.Connect(2, root, 0)
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/lozi.aiff", 20.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
-	root.RenderLive()
+	root.RenderAudio()
 }
 
 func main() {

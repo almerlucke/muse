@@ -198,5 +198,5 @@ func main() {
 
 	m.In(drums, drums, 1)
 
-	m.RenderLive()
+	m.RenderAudio()
 }

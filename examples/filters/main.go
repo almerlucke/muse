@@ -20,5 +20,5 @@ func main() {
 	noise.CtrlConnect(0, filter, 0)
 	filter.CtrlConnect(0, root, 0)
 
-	root.RenderLive()
+	root.RenderAudio()
 }

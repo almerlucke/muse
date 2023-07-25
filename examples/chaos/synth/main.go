@@ -187,6 +187,6 @@ func main() {
 	// chorus2.Connect(0, env, 0)
 	// chorus2.Connect(1, env, 1)
 
-	root.RenderLive()
+	root.RenderAudio()
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/chaos2.aiff", 360.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

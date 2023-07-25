@@ -126,7 +126,7 @@ func (m *Muse) TerminateAudio() {
 	portaudio.Terminate()
 }
 
-func (m *Muse) RenderLive() error {
+func (m *Muse) RenderAudio() error {
 	err := m.InitializeAudio()
 	if err != nil {
 		return err
@@ -147,14 +147,13 @@ func (m *Muse) RenderLive() error {
 	return nil
 }
 
-/*
-func (e *Environment) PlotControl(ctrl Control, outIndex int, frames int, w float64, h float64, filePath string) error {
-	pm := NewPlotModule(frames, e.Config)
+func (m *Muse) PlotControl(ctrl Control, outIndex int, frames int, w float64, h float64, filePath string) error {
+	pm := NewPlotModule(frames)
 
 	ctrl.CtrlConnect(outIndex, pm, 0)
 
 	for i := 0; i < frames; i++ {
-		e.Synthesize()
+		m.Synthesize()
 	}
 
 	pm.CtrlDisconnect()
@@ -162,19 +161,18 @@ func (e *Environment) PlotControl(ctrl Control, outIndex int, frames int, w floa
 	return pm.Save(w, h, true, filePath)
 }
 
-func (e *Environment) PlotModule(module Module, outIndex int, frames int, w float64, h float64, filePath string) error {
-	pm := NewPlotModule(frames*e.Config.BufferSize, e.Config)
+func (m *Muse) PlotModule(module Module, outIndex int, frames int, w float64, h float64, filePath string) error {
+	pm := NewPlotModule(frames * m.Config.BufferSize)
 
-	e.AddModule(pm)
+	m.AddModule(pm)
 
 	module.Connect(outIndex, pm, 0)
 
 	for i := 0; i < frames; i++ {
-		e.Synthesize()
+		m.Synthesize()
 	}
 
-	e.RemoveModule(pm)
+	m.RemoveModule(pm)
 
 	return pm.Save(w, h, false, filePath)
 }
-*/

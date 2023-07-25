@@ -253,7 +253,7 @@ func main() {
 		gr.Connect(i, root, i)
 	}
 
-	root.RenderLive()
+	root.RenderAudio()
 
 	//env.SynthesizeToFile("/Users/almerlucke/Desktop/children.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

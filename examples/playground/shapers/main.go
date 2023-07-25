@@ -89,5 +89,5 @@ func main() {
 	root.In(shaper)
 
 	//env.SynthesizeToFile("/Users/almerlucke/Desktop/notaliased.aiff", 10.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
-	root.RenderLive()
+	root.RenderAudio()
 }

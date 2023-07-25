@@ -173,5 +173,5 @@ func main() {
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 240.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
-	root.RenderLive()
+	root.RenderAudio()
 }

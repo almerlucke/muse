@@ -145,7 +145,7 @@ func main() {
 
 	root.In(reverb, reverb, 1)
 
-	root.RenderLive()
+	root.RenderAudio()
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/voices.aiff", 24.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

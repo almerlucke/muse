@@ -3,7 +3,6 @@ package main
 import (
 	"math"
 	"math/rand"
-	"time"
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/generator"
@@ -225,8 +224,6 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	root := muse.New(2)
 
 	paramGen := &SFParameterGenerator{}
@@ -269,7 +266,6 @@ func main() {
 		gr.Connect(i, root, i)
 	}
 
-	root.RenderLive()
-
-	//env.SynthesizeToFile("/Users/almerlucke/Desktop/chaosGrains_wind.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	// root.RenderToSoundFile("/Users/almerlucke/Desktop/chaosping.aiff", 180.0, root.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	root.RenderAudio()
 }

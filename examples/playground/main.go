@@ -33,5 +33,5 @@ func main() {
 
 	root.In(fm)
 
-	root.RenderLive()
+	root.RenderAudio()
 }
