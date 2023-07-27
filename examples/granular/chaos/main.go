@@ -11,6 +11,7 @@ import (
 	"github.com/almerlucke/muse/components/iterator/chaos"
 	"github.com/almerlucke/muse/components/osc"
 	"github.com/almerlucke/muse/components/waveshaping"
+	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/granular"
 	"github.com/almerlucke/muse/modules/granular/envelopes/trapezoidal"
@@ -224,6 +225,11 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 }
 
 func main() {
+	muse.PushConfiguration(&muse.Configuration{
+		SampleRate: 44100.0 * 3,
+		BufferSize: 1024,
+	})
+
 	root := muse.New(2)
 
 	paramGen := &SFParameterGenerator{}
@@ -266,6 +272,8 @@ func main() {
 		gr.Connect(i, root, i)
 	}
 
+	root.RenderToSoundFile("/Users/almerlucke/Desktop/chaosping.aiff", 30.0, 44100.0, io.WAV)
+
 	// root.RenderToSoundFile("/Users/almerlucke/Desktop/chaosping.aiff", 180.0, root.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
-	root.RenderAudio()
+	// root.RenderAudio()
 }

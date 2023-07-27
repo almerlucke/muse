@@ -11,6 +11,63 @@ import (
 	"github.com/almerlucke/muse/value/template"
 )
 
+/*
+ @param  {AudioBuffer} bufferNewSamples Microphone/MediaElement audio chunk
+ * @return {Float32Array} 'audio/l16' chunk
+
+ WebAudioL16Stream.prototype.downsample = function downsample(bufferNewSamples) {
+  var buffer = null,
+    newSamples = bufferNewSamples.length,
+    unusedSamples = this.bufferUnusedSamples.length,
+    i,
+    offset;
+
+  if (unusedSamples > 0) {
+    buffer = new Float32Array(unusedSamples + newSamples);
+    for (i = 0; i < unusedSamples; ++i) {
+      buffer[i] = this.bufferUnusedSamples[i];
+    }
+    for (i = 0; i < newSamples; ++i) {
+      buffer[unusedSamples + i] = bufferNewSamples[i];
+    }
+  } else {
+    buffer = bufferNewSamples;
+  }
+
+  // downsampling variables
+  var filter = [
+      -0.037935, -0.00089024, 0.040173, 0.019989, 0.0047792, -0.058675, -0.056487,
+      -0.0040653, 0.14527, 0.26927, 0.33913, 0.26927, 0.14527, -0.0040653, -0.056487,
+      -0.058675, 0.0047792, 0.019989, 0.040173, -0.00089024, -0.037935
+    ],
+    samplingRateRatio = this.options.sourceSampleRate / TARGET_SAMPLE_RATE,
+    nOutputSamples = Math.floor((buffer.length - filter.length) / (samplingRateRatio)) + 1,
+    outputBuffer = new Float32Array(nOutputSamples);
+
+  for (i = 0; i + filter.length - 1 < buffer.length; i++) {
+    offset = Math.round(samplingRateRatio * i);
+    var sample = 0;
+    for (var j = 0; j < filter.length; ++j) {
+      sample += buffer[offset + j] * filter[j];
+    }
+    outputBuffer[i] = sample;
+  }
+
+  var indexSampleAfterLastUsed = Math.round(samplingRateRatio * i);
+  var remaining = buffer.length - indexSampleAfterLastUsed;
+  if (remaining > 0) {
+    this.bufferUnusedSamples = new Float32Array(remaining);
+    for (i = 0; i < remaining; ++i) {
+      this.bufferUnusedSamples[i] = buffer[indexSampleAfterLastUsed + i];
+    }
+  } else {
+    this.bufferUnusedSamples = new Float32Array(0);
+  }
+
+  return outputBuffer;
+};
+*/
+
 func main() {
 	root := muse.New(1)
 

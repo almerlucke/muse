@@ -3,13 +3,15 @@ package muse
 import (
 	"bufio"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"time"
 
+	"github.com/almerlucke/muse/buffer"
 	"github.com/almerlucke/muse/io"
+	"github.com/dh1tw/gosamplerate"
 	"github.com/gordonklaus/portaudio"
-	"github.com/mkb218/gosndfile/sndfile"
 )
 
 var DefaultSamplerate = 44100.0
@@ -41,40 +43,71 @@ func (m *Muse) Synthesize() bool {
 	return m.BasePatch.Synthesize()
 }
 
-func (m *Muse) RenderToSoundFile(filePath string, numSeconds float64, outputSampleRate float64, normalizeOutput bool, format sndfile.Format) error {
+func (m *Muse) RenderToSoundFile(filePath string, numSeconds float64, outputSampleRate float64, fileType io.FileType) error {
+	inputSampleRate := m.Config.SampleRate
 	numChannels := m.NumOutputs()
+	buffers := make([]buffer.Buffer, numChannels)
 
-	swr := io.NewSoundWriter(numChannels, int(m.Config.SampleRate), int(outputSampleRate), normalizeOutput)
-
-	interleaveBuffer := make([]float64, m.NumOutputs()*m.Config.BufferSize)
-
-	framesToProduce := int64(m.Config.SampleRate * numSeconds)
-
-	for framesToProduce > 0 {
-		m.Synthesize()
-
-		interleaveIndex := 0
-
-		numFrames := m.Config.BufferSize
-
-		if framesToProduce <= int64(m.Config.BufferSize) {
-			numFrames = int(framesToProduce)
-		}
-
-		for i := 0; i < numFrames; i++ {
-			for c := 0; c < numChannels; c++ {
-				interleaveBuffer[interleaveIndex] = m.OutputAtIndex(c).Buffer[i]
-				interleaveIndex++
-			}
-		}
-
-		swr.WriteFrames(interleaveBuffer[:numFrames*numChannels])
-
-		framesToProduce -= int64(numFrames)
+	for c := 0; c < numChannels; c++ {
+		buffers[c] = m.OutputAtIndex(c).Buffer
 	}
 
-	return swr.Finish(filePath, format)
+	wr, err := io.NewWriter(filePath, numChannels, m.Config.BufferSize, int(inputSampleRate), int(outputSampleRate), gosamplerate.SRC_SINC_BEST_QUALITY, fileType)
+	if err != nil {
+		return err
+	}
+
+	numCycles := int64(math.Ceil((m.Config.SampleRate * numSeconds) / float64(m.Config.BufferSize)))
+
+	if numCycles > 0 {
+		for numCycles > 1 {
+			m.Synthesize()
+			wr.WriteBuffers(buffers, false)
+			numCycles--
+		}
+		m.Synthesize()
+		wr.WriteBuffers(buffers, true)
+	}
+
+	wr.Close()
+
+	return nil
 }
+
+// func (m *Muse) RenderToSoundFile(filePath string, numSeconds float64, outputSampleRate float64, normalizeOutput bool, format sndfile.Format) error {
+// 	numChannels := m.NumOutputs()
+
+// 	swr := io.NewSoundWriter(numChannels, int(m.Config.SampleRate), int(outputSampleRate), normalizeOutput)
+
+// 	interleaveBuffer := make([]float64, m.NumOutputs()*m.Config.BufferSize)
+
+// 	framesToProduce := int64(m.Config.SampleRate * numSeconds)
+
+// 	for framesToProduce > 0 {
+// 		m.Synthesize()
+
+// 		interleaveIndex := 0
+
+// 		numFrames := m.Config.BufferSize
+
+// 		if framesToProduce <= int64(m.Config.BufferSize) {
+// 			numFrames = int(framesToProduce)
+// 		}
+
+// 		for i := 0; i < numFrames; i++ {
+// 			for c := 0; c < numChannels; c++ {
+// 				interleaveBuffer[interleaveIndex] = m.OutputAtIndex(c).Buffer[i]
+// 				interleaveIndex++
+// 			}
+// 		}
+
+// 		swr.WriteFrames(interleaveBuffer[:numFrames*numChannels])
+
+// 		framesToProduce -= int64(numFrames)
+// 	}
+
+// 	return swr.Finish(filePath, format)
+// }
 
 func (m *Muse) audioCallback(in, out [][]float32) {
 	m.Synthesize()

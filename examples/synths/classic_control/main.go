@@ -1,15 +1,8 @@
 package main
 
 import (
-	"log"
 	"math/rand"
 	"strings"
-	"time"
-
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/envelopes/adsr"
@@ -26,7 +19,6 @@ import (
 	"github.com/almerlucke/muse/synths/classic"
 	"github.com/almerlucke/muse/synths/drums"
 	"github.com/almerlucke/muse/ui/controls"
-	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/utils/notes"
 	"github.com/almerlucke/muse/value"
@@ -385,11 +377,9 @@ func hihatRhythm() value.Valuer[*swing.Step] {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	muse.PushConfiguration(&muse.Configuration{
-		SampleRate: 44100.0,
-		BufferSize: 512,
+		SampleRate: 44100.0 * 3,
+		BufferSize: 256,
 	})
 
 	root := muse.New(2)
@@ -418,8 +408,8 @@ func main() {
 	synth := NewClassicSynth(bpm).Add(root).(*ClassicSynth)
 
 	root.In(
-		drumMachine, 0, 0,
-		drumMachine, 1, 1,
+		drumMachine, 0,
+		drumMachine, 1,
 		modules.Amp(synth, 0, 0.7).Add(root), 0, 0,
 		modules.Amp(synth, 1, 0.7).Add(root), 0, 1,
 	)
@@ -492,43 +482,45 @@ func main() {
 		"adsr.filter.decayDuration": template.NewParameter("val", nil),
 	}))
 
+	root.RenderToSoundFile("/Users/almerlucke/Desktop/classic_control.aiff", 240.0, 44100.0, io.AIFF)
+
 	// synth.AddMessenger(lfo.NewBasicLFO(0.0569, 6800.0, 1200.0, []string{"synth"}, env.Config, "val", template.Template{
 	// 	"voice.filterFcMax": template.NewParameter("val", nil),
 	// }))
 
-	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
+	// root.RenderToSoundFile("/Users/almerlucke/Desktop/classic_synth.aiff", 240.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 
-	err := root.InitializeAudio()
-	if err != nil {
-		log.Fatalf("error opening audio stream, %v", err)
-	}
+	// err := root.InitializeAudio()
+	// if err != nil {
+	// 	log.Fatalf("error opening audio stream, %v", err)
+	// }
 
-	defer root.TerminateAudio()
+	// defer root.TerminateAudio()
 
-	a := app.New()
+	// a := app.New()
 
-	a.Settings().SetTheme(&theme.Theme{})
+	// a.Settings().SetTheme(&theme.Theme{})
 
-	w := a.NewWindow("Muse")
+	// w := a.NewWindow("Muse")
 
-	w.Resize(fyne.Size{
-		Width:  700,
-		Height: 400,
-	})
+	// w.Resize(fyne.Size{
+	// 	Width:  700,
+	// 	Height: 400,
+	// })
 
-	w.SetContent(
-		container.NewVBox(
-			container.NewHBox(
-				widget.NewButton("Start", func() {
-					root.StartAudio()
-				}),
-				widget.NewButton("Stop", func() {
-					root.StopAudio()
-				}),
-			),
-			container.NewHScroll(synth.controls.UI()),
-		),
-	)
+	// w.SetContent(
+	// 	container.NewVBox(
+	// 		container.NewHBox(
+	// 			widget.NewButton("Start", func() {
+	// 				root.StartAudio()
+	// 			}),
+	// 			widget.NewButton("Stop", func() {
+	// 				root.StopAudio()
+	// 			}),
+	// 		),
+	// 		container.NewHScroll(synth.controls.UI()),
+	// 	),
+	// )
 
-	w.ShowAndRun()
+	// w.ShowAndRun()
 }

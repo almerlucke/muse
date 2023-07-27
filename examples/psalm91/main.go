@@ -21,7 +21,6 @@ import (
 	"github.com/almerlucke/muse/value"
 	"github.com/almerlucke/muse/value/arpeggio"
 	"github.com/almerlucke/muse/value/template"
-	"github.com/mkb218/gosndfile/sndfile"
 )
 
 func noteSequence(octave notes.Note) value.Valuer[any] {
@@ -276,7 +275,7 @@ func main() {
 	leftMixer.Connect(0, root, 0)
 	rightMixer.Connect(0, root, 1)
 
-	root.RenderToSoundFile("/Users/almerlucke/Desktop/psalm91_rendered.aiff", 194.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
+	root.RenderToSoundFile("/Users/almerlucke/Desktop/psalm91_rendered.aiff", 194.0, 44100.0, io.AIFF)
 
 	// env.QuickPlayAudio()
 }
