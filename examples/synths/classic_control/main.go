@@ -378,7 +378,7 @@ func hihatRhythm() value.Valuer[*swing.Step] {
 
 func main() {
 	muse.PushConfiguration(&muse.Configuration{
-		SampleRate: 44100.0 * 3,
+		SampleRate: 44100.0 * 4,
 		BufferSize: 256,
 	})
 
