@@ -6,9 +6,9 @@ require github.com/mkb218/gosndfile v0.0.0-20171006180803-e0c9ef895ee2
 
 require (
 	fyne.io/fyne/v2 v2.2.3
+	github.com/dh1tw/gosamplerate v0.1.2
 	github.com/fogleman/gg v1.3.0
 	github.com/gordonklaus/portaudio v0.0.0-20220320131553-cc649ad523c1
-	github.com/zaf/resample v0.0.0-20220109201959-aca35f45e6fa
 	gitlab.com/gomidi/midi v1.23.7
 	gitlab.com/gomidi/rtmididrv v0.15.0
 	gonum.org/v1/plot v0.11.0
@@ -19,7 +19,6 @@ require (
 	git.sr.ht/~sbinet/gg v0.3.1 // indirect
 	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dh1tw/gosamplerate v0.1.2 // indirect
 	github.com/fredbi/uri v0.0.0-20181227131451-3dcfdacbaaf3 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
