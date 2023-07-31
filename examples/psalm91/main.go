@@ -275,7 +275,7 @@ func main() {
 	leftMixer.Connect(0, root, 0)
 	rightMixer.Connect(0, root, 1)
 
-	root.RenderToSoundFile("/Users/almerlucke/Desktop/psalm91_rendered.aiff", 194.0, 44100.0, io.AIFF)
+	root.RenderToSoundFile("/Users/almerlucke/Desktop/psalm91_rendered.aifc", 194.0, 44100.0, true)
 
 	// env.QuickPlayAudio()
 }

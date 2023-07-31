@@ -24,10 +24,12 @@ type Oversampler struct {
 func New(module muse.Module, oversamplingRate int, converterType int) (*Oversampler, error) {
 	numChannels := module.NumOutputs()
 	bufferSize := module.Configuration().BufferSize
+
 	src, err := gosamplerate.New(converterType, numChannels, bufferSize*numChannels)
 	if err != nil {
 		return nil, err
 	}
+
 	osa := &Oversampler{
 		BaseModule:       muse.NewBaseModule(0, numChannels),
 		module:           module,
@@ -66,22 +68,27 @@ func (osa *Oversampler) Synthesize() bool {
 	for i := 0; i < osa.oversamplingRate && bufIndex < osa.Config.BufferSize; i++ {
 		osa.module.PrepareSynthesis()
 		osa.module.Synthesize()
+
 		for j := 0; j < osa.Config.BufferSize; j++ {
 			for c := 0; c < osa.numChannels; c++ {
 				osa.interleaveBuffer[j*osa.numChannels+c] = float32(osa.outBuffers[c][j])
 			}
 		}
+
 		interleavedOut, _ := osa.src.Process(osa.interleaveBuffer, float64(osa.ratio), false)
+
 		numFrames := len(interleavedOut) / osa.numChannels
 		maxFrames := osa.Config.BufferSize - bufIndex
 		if numFrames > maxFrames {
 			numFrames = maxFrames
 		}
+
 		for j := 0; j < numFrames; j++ {
 			for c := 0; c < osa.numChannels; c++ {
 				osa.Outputs[c].Buffer[bufIndex+j] = float64(interleavedOut[j*osa.numChannels+c])
 			}
 		}
+
 		bufIndex += numFrames
 	}
 

@@ -482,7 +482,7 @@ func main() {
 		"adsr.filter.decayDuration": template.NewParameter("val", nil),
 	}))
 
-	root.RenderToSoundFile("/Users/almerlucke/Desktop/classic_control.aiff", 240.0, 44100.0, io.AIFF)
+	root.RenderToSoundFile("/Users/almerlucke/Desktop/classic_control.aifc", 240.0, 44100.0, true)
 
 	// synth.AddMessenger(lfo.NewBasicLFO(0.0569, 6800.0, 1200.0, []string{"synth"}, env.Config, "val", template.Template{
 	// 	"voice.filterFcMax": template.NewParameter("val", nil),

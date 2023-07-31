@@ -43,7 +43,7 @@ func (m *Muse) Synthesize() bool {
 	return m.BasePatch.Synthesize()
 }
 
-func (m *Muse) RenderToSoundFile(filePath string, numSeconds float64, outputSampleRate float64, fileType io.FileType) error {
+func (m *Muse) RenderToSoundFile(filePath string, numSeconds float64, outputSampleRate float64, normalize bool) error {
 	inputSampleRate := m.Config.SampleRate
 	numChannels := m.NumOutputs()
 	buffers := make([]buffer.Buffer, numChannels)
@@ -52,7 +52,7 @@ func (m *Muse) RenderToSoundFile(filePath string, numSeconds float64, outputSamp
 		buffers[c] = m.OutputAtIndex(c).Buffer
 	}
 
-	wr, err := io.NewWriter(filePath, numChannels, m.Config.BufferSize, int(inputSampleRate), int(outputSampleRate), gosamplerate.SRC_SINC_BEST_QUALITY, fileType)
+	wr, err := io.NewWriter(filePath, numChannels, m.Config.BufferSize, int(inputSampleRate), int(outputSampleRate), gosamplerate.SRC_SINC_BEST_QUALITY, normalize)
 	if err != nil {
 		return err
 	}
