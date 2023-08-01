@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/almerlucke/muse/components/generator"
-	"github.com/almerlucke/muse/utils/mmath"
 )
 
 type Shaper interface {
@@ -38,11 +37,11 @@ func (gw *GeneratorWrapper) Generate() []float64 {
 	return gw.outVector
 }
 
-type Serial struct {
+type Series struct {
 	Shapers []Shaper
 }
 
-func (s *Serial) Shape(x float64) float64 {
+func (s *Series) Shape(x float64) float64 {
 	for _, shaper := range s.Shapers {
 		x = shaper.Shape(x)
 	}
@@ -50,8 +49,8 @@ func (s *Serial) Shape(x float64) float64 {
 	return x
 }
 
-func NewSerial(shapers ...Shaper) *Serial {
-	return &Serial{
+func NewSeries(shapers ...Shaper) *Series {
+	return &Series{
 		Shapers: shapers,
 	}
 }
@@ -321,116 +320,129 @@ func (r *Ripple) Shape(signal float64) float64 {
 	return signal + math.Mod(signal, r.M)
 }
 
-func NewMinimoogVoyagerSawtooth() *Serial {
-	return NewSerial(
-		NewLinear(0.25, 0.0),
-		NewSin(),
-		NewBipolar(),
-	)
+type MinimoogVoyagerSawtooth struct {
+	*Series
 }
 
-func NewMinimoogVoyagerSawtoothAntialiased(inc float64) *Serial {
-	return NewSerial(
-		NewPolyBlep(-1.0, inc),
-		NewLinear(0.25, 0.0),
-		NewSin(),
-		NewBipolar(),
-	)
+func NewMinimoogVoyagerSawtooth() *MinimoogVoyagerSawtooth {
+	return &MinimoogVoyagerSawtooth{
+		Series: NewSeries(
+			NewLinear(0.25, 0.0),
+			NewSin(),
+			NewBipolar(),
+		),
+	}
 }
 
-func NewHardSync(a1 float64) *Serial {
-	return NewSerial(
-		NewLinear(a1, 0.0),
-		NewMod1(),
-		NewBipolar(),
-	)
+type HardSync struct {
+	*Series
 }
 
-func (s *Serial) SetHardSyncA1(a1 float64) {
-	s.Shapers[0].(*Linear).Scale = a1
+func NewHardSync(a1 float64) *HardSync {
+	return &HardSync{
+		Series: NewSeries(
+			NewLinear(a1, 0.0),
+			NewMod1(),
+			NewBipolar(),
+		),
+	}
 }
 
-func NewSoftSyncTriangle(a1 float64) *Serial {
-	return NewSerial(
-		NewBipolar(),
-		NewAbs(),
-		NewLinear(a1, 0.0), // a=1.25
-		NewMod1(),
-		NewTri(),
-		NewBipolar(),
-	)
+func (hs *HardSync) SetA1(a1 float64) {
+	hs.Shapers[0].(*Linear).Scale = a1
 }
 
-func (s *Serial) SetSoftSyncA1(a1 float64) {
-	s.Shapers[2].(*Linear).Scale = a1
+type SoftSyncTriangle struct {
+	*Series
 }
 
-func NewJP8000triMod(m float64) *Serial {
-	return NewSerial(
-		NewBipolar(),
-		NewAbs(),
-		NewLinear(2.0, -1.0),
-		NewMod1(),
-		NewMult(m), // m=0.3
-		NewFunction(func(x float64) float64 { return 2.0 * (x - math.Ceil(x-0.5)) }),
-	)
+func NewSoftSyncTriangle(a1 float64) *SoftSyncTriangle {
+	return &SoftSyncTriangle{
+		Series: NewSeries(
+			NewBipolar(),
+			NewAbs(),
+			NewLinear(a1, 0.0), // a=1.25
+			NewMod1(),
+			NewTri(),
+			NewBipolar(),
+		),
+	}
 }
 
-func (s *Serial) SetJP8000Mod(m float64) {
-	s.Shapers[4].(*Mult).M = m
+func (sst *SoftSyncTriangle) SetA1(a1 float64) {
+	sst.Shapers[2].(*Linear).Scale = a1
 }
 
-func NewPulseWidthMod() *Serial {
-	return NewSerial(
-		NewLinear(1.25, 0.0),
-		NewMod1(),
-		NewPulse(0.4),
-		NewBipolar(),
-	)
+type JP8000triMod struct {
+	*Series
 }
 
-func (s *Serial) SetPulseWidthA1(a1 float64) {
-	s.Shapers[0].(*Linear).Scale = a1
+func NewJP8000triMod(m float64) *JP8000triMod {
+	return &JP8000triMod{
+		Series: NewSeries(
+			NewBipolar(),
+			NewAbs(),
+			NewLinear(2.0, -1.0),
+			NewMod1(),
+			NewMult(m), // m=0.3
+			NewFunction(func(x float64) float64 { return 2.0 * (x - math.Ceil(x-0.5)) }),
+		),
+	}
 }
 
-func (s *Serial) SetPulseWidthW(w float64) {
-	s.Shapers[2].(*Pulse).W = w
+func (jp *JP8000triMod) SetMod(m float64) {
+	jp.Shapers[4].(*Mult).M = m
 }
 
-func NewSuperSaw(a1 float64, m1 float64, m2 float64) *Serial {
-	return NewSerial(
-		NewLinear(a1, 0.0),                  // a1=1.5
-		NewParallel(NewMod(m1), NewMod(m2)), // m1=025, m2=0.88
-		NewFunction(math.Sin),
-		NewBipolar(),
-	)
+type PulseWidthMod struct {
+	*Series
 }
 
-func (s *Serial) SetSuperSawA1(a1 float64) {
-	s.Shapers[0].(*Linear).Scale = a1
+func NewPulseWidthMod() *PulseWidthMod {
+	return &PulseWidthMod{
+		Series: NewSeries(
+			NewLinear(1.25, 0.0),
+			NewMod1(),
+			NewPulse(0.4),
+			NewBipolar(),
+		),
+	}
 }
 
-func (s *Serial) SetSuperSawM1(m1 float64) {
-	s.Shapers[1].(*Parallel).Shapers[0].(*Mod).M = m1
+func (pwm *PulseWidthMod) SetA1(a1 float64) {
+	pwm.Shapers[0].(*Linear).Scale = a1
 }
 
-func (s *Serial) SetSuperSawM2(m2 float64) {
-	s.Shapers[1].(*Parallel).Shapers[1].(*Mod).M = m2
+func (pwm *PulseWidthMod) SetWidth(w float64) {
+	pwm.Shapers[2].(*Pulse).W = w
 }
 
-// // sin(2.0 * PI * x(n){1 + g pulse [x(n) – 1, w]})
-// func NewVarSlopeSin() *Chain {
-// 	return NewChain(
-// 		NewAdd(-1.0),
-// 		NewPulse(0.5),
-// 		NewAdd(1.0),
-// 		NewSin(),
-// 	)
-// }
+type SuperSaw struct {
+	*Series
+}
 
-// func (c *Chain) SetVarSlopeSinW(w float64) {
-// 	c.Shapers[1].(*Pulse).W = w
-// }
+func NewSuperSaw(a1 float64, m1 float64, m2 float64) *SuperSaw {
+	return &SuperSaw{
+		Series: NewSeries(
+			NewLinear(a1, 0.0),                  // a1=1.5
+			NewParallel(NewMod(m1), NewMod(m2)), // m1=025, m2=0.88
+			NewFunction(math.Sin),
+			NewBipolar(),
+		),
+	}
+}
+
+func (ss *SuperSaw) SetA1(a1 float64) {
+	ss.Shapers[0].(*Linear).Scale = a1
+}
+
+func (ss *SuperSaw) SetM1(m1 float64) {
+	ss.Shapers[1].(*Parallel).Shapers[0].(*Mod).M = m1
+}
+
+func (ss *SuperSaw) SetM2(m2 float64) {
+	ss.Shapers[1].(*Parallel).Shapers[1].(*Mod).M = m2
+}
 
 type Chebyshev struct {
 	harmonics   map[int]float64
@@ -495,22 +507,4 @@ func (s *Switch) Shape(x float64) float64 {
 
 func (s *Switch) Selected() Shaper {
 	return s.Shapers[s.Index]
-}
-
-// y = x / (1 + |x|) soft clip
-
-type PolyBlep struct {
-	DiscontinuityHeight float64
-	PhaseInc            float64
-}
-
-func NewPolyBlep(h float64, inc float64) *PolyBlep {
-	return &PolyBlep{
-		DiscontinuityHeight: h,
-		PhaseInc:            inc,
-	}
-}
-
-func (p *PolyBlep) Shape(x float64) float64 {
-	return x + mmath.PolyBlep(x, p.PhaseInc)*p.DiscontinuityHeight
 }

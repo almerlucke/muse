@@ -21,7 +21,9 @@ type Oversampler struct {
 	outBuffers       []buffer.Buffer
 }
 
-func New(module muse.Module, oversamplingRate int, converterType int) (*Oversampler, error) {
+func New(module muse.Module, converterType int) (*Oversampler, error) {
+	ratio := muse.CurrentConfiguration().SampleRate / module.Configuration().SampleRate
+	oversamplingRate := int(1.0 / ratio)
 	numChannels := module.NumOutputs()
 	bufferSize := module.Configuration().BufferSize
 
@@ -34,8 +36,8 @@ func New(module muse.Module, oversamplingRate int, converterType int) (*Oversamp
 		BaseModule:       muse.NewBaseModule(0, numChannels),
 		module:           module,
 		numChannels:      numChannels,
+		ratio:            ratio,
 		oversamplingRate: oversamplingRate,
-		ratio:            1.0 / float64(oversamplingRate),
 		src:              src,
 		interleaveBuffer: make([]float32, bufferSize*numChannels),
 		outBuffers:       make([]buffer.Buffer, numChannels),

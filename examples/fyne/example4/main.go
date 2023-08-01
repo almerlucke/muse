@@ -44,7 +44,7 @@ type TestVoice struct {
 	filterEnv          *adsr.ADSR
 	phasor             *phasor.Phasor
 	filter             *moog.Moog
-	shaper             *shaping.Serial
+	shaper             *shaping.SoftSyncTriangle
 	ampStepProvider    adsrctrl.ADSRStepProvider
 	filterStepProvider adsrctrl.ADSRStepProvider
 }
@@ -112,7 +112,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
 	if shaper, ok := content["shaper"].(float64); ok {
-		tv.shaper.SetSoftSyncA1(shaper)
+		tv.shaper.SetA1(shaper)
 	}
 
 	if adsrAttackDuration, ok := content["adsrAttackDuration"].(float64); ok {
@@ -207,12 +207,12 @@ func main() {
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
-	targetShaper := lfo.NewTarget("polyphony", shaping.NewSerial(sineTable, shaping.NewLinear(0.7, 1.0)), "shaper", template.Template{
+	targetShaper := lfo.NewTarget("polyphony", shaping.NewSeries(sineTable, shaping.NewLinear(0.7, 1.0)), "shaper", template.Template{
 		"command": "voice",
 		"shaper":  template.NewParameter("shaper", nil),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewSerial(sineTable, shaping.NewLinear(0.1, 0.05)), "adsrDecayLevel", template.Template{
+	targetFilter := lfo.NewTarget("polyphony", shaping.NewSeries(sineTable, shaping.NewLinear(0.1, 0.05)), "adsrDecayLevel", template.Template{
 		"command":        "voice",
 		"adsrDecayLevel": template.NewParameter("adsrDecayLevel", nil),
 	})

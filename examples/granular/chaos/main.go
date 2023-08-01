@@ -88,9 +88,9 @@ func NewSource(sr float64) *SFSource {
 	mirror := waveshaping.NewMirror(-1.0, 1.0)
 	uni := waveshaping.NewUnipolar()
 	scale := waveshaping.NewLinear(1400.0, 50.0)
-	serial := waveshaping.NewSerial(mirror, uni, scale)
+	series := waveshaping.NewSeries(mirror, uni, scale)
 	wrapper := interpolator.New(
-		waveshaping.NewGeneratorWrapper(iter, []waveshaping.Shaper{serial, serial}),
+		waveshaping.NewGeneratorWrapper(iter, []waveshaping.Shaper{series, series}),
 		interpolator.Linear,
 		250,
 	)

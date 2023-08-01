@@ -40,7 +40,7 @@ type TestVoice struct {
 
 func paramMapper(param int, value any, shaper shaping.Shaper) {
 	if param == 0 {
-		shaper.(*shaping.Serial).SetSuperSawM1(value.(float64))
+		shaper.(*shaping.SuperSaw).SetM1(value.(float64))
 	}
 }
 

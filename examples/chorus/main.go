@@ -43,39 +43,39 @@ func main() {
 	oscScale := shaping.NewLinear(0.7, 0.1)
 	mixScale := shaping.NewLinear(1.0, 0.0)
 
-	root.AddMessenger(makeLFO(0.24, []string{"osc"}, shaping.NewSerial(sineTable, oscScale), "pw", template.Template{
+	root.AddMessenger(makeLFO(0.24, []string{"osc"}, shaping.NewSeries(sineTable, oscScale), "pw", template.Template{
 		"pulseWidth": template.NewParameter("pw", nil),
 	}))
-	root.AddMessenger(makeLFO(0.13, []string{"osc2"}, shaping.NewSerial(sineTable, oscScale), "pw", template.Template{
+	root.AddMessenger(makeLFO(0.13, []string{"osc2"}, shaping.NewSeries(sineTable, oscScale), "pw", template.Template{
 		"pulseWidth": template.NewParameter("pw", nil),
 	}))
-	root.AddMessenger(makeLFO(0.16, []string{"filter"}, shaping.NewSerial(sineTable, shaping.NewLinear(8500.0, 1300.0)), "freq", template.Template{
+	root.AddMessenger(makeLFO(0.16, []string{"filter"}, shaping.NewSeries(sineTable, shaping.NewLinear(8500.0, 1300.0)), "freq", template.Template{
 		"frequency": template.NewParameter("freq", nil),
 	}))
 
-	root.AddMessenger(makeLFO(0.15, []string{"osc"}, shaping.NewSerial(sineTable, mixScale), "mix", template.Template{
+	root.AddMessenger(makeLFO(0.15, []string{"osc"}, shaping.NewSeries(sineTable, mixScale), "mix", template.Template{
 		"mix1": template.NewParameter("mix", nil),
 	}))
-	root.AddMessenger(makeLFO(0.17, []string{"osc"}, shaping.NewSerial(sineTable, mixScale), "mix", template.Template{
+	root.AddMessenger(makeLFO(0.17, []string{"osc"}, shaping.NewSeries(sineTable, mixScale), "mix", template.Template{
 		"mix2": template.NewParameter("mix", nil),
 	}))
-	root.AddMessenger(makeLFO(0.19, []string{"osc"}, shaping.NewSerial(sineTable, mixScale), "mix", template.Template{
+	root.AddMessenger(makeLFO(0.19, []string{"osc"}, shaping.NewSeries(sineTable, mixScale), "mix", template.Template{
 		"mix3": template.NewParameter("mix", nil),
 	}))
-	root.AddMessenger(makeLFO(0.21, []string{"osc"}, shaping.NewSerial(sineTable, mixScale), "mix", template.Template{
+	root.AddMessenger(makeLFO(0.21, []string{"osc"}, shaping.NewSeries(sineTable, mixScale), "mix", template.Template{
 		"mix4": template.NewParameter("mix", nil),
 	}))
 
-	root.AddMessenger(makeLFO(0.25, []string{"osc2"}, shaping.NewSerial(sineTable, mixScale), "mix", template.Template{
+	root.AddMessenger(makeLFO(0.25, []string{"osc2"}, shaping.NewSeries(sineTable, mixScale), "mix", template.Template{
 		"mix1": template.NewParameter("mix", nil),
 	}))
-	root.AddMessenger(makeLFO(0.37, []string{"osc2"}, shaping.NewSerial(sineTable, mixScale), "mix", template.Template{
+	root.AddMessenger(makeLFO(0.37, []string{"osc2"}, shaping.NewSeries(sineTable, mixScale), "mix", template.Template{
 		"mix2": template.NewParameter("mix", nil),
 	}))
-	root.AddMessenger(makeLFO(0.09, []string{"osc2"}, shaping.NewSerial(sineTable, mixScale), "mix", template.Template{
+	root.AddMessenger(makeLFO(0.09, []string{"osc2"}, shaping.NewSeries(sineTable, mixScale), "mix", template.Template{
 		"mix3": template.NewParameter("mix", nil),
 	}))
-	root.AddMessenger(makeLFO(0.11, []string{"osc2"}, shaping.NewSerial(sineTable, mixScale), "mix", template.Template{
+	root.AddMessenger(makeLFO(0.11, []string{"osc2"}, shaping.NewSeries(sineTable, mixScale), "mix", template.Template{
 		"mix4": template.NewParameter("mix", nil),
 	}))
 

@@ -100,7 +100,7 @@ func NewLFO(speed float64, targets []*Target) *LFO {
 func NewBasicLFO(speed float64, scale float64, offset float64, addresses []string, param string, templ template.Template) *LFO {
 	ts := make([]*Target, len(addresses))
 	for i, address := range addresses {
-		ts[i] = NewTarget(address, shaping.NewSerial(lfoSineShaper, shaping.NewLinear(scale, offset)), param, templ)
+		ts[i] = NewTarget(address, shaping.NewSeries(lfoSineShaper, shaping.NewLinear(scale, offset)), param, templ)
 	}
 
 	return NewLFO(speed, ts)

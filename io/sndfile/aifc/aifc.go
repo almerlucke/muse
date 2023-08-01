@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
-	"log"
 	"os"
 	"reflect"
 	"unsafe"
@@ -171,7 +170,6 @@ func (aifc *AIFC) updateSizes() error {
 }
 
 func (aifc *AIFC) Normalize(max float32) error {
-	log.Printf("start normalize")
 	// Read and write buffers
 	readerBuffer := make([]byte, 8192)
 	writerBuffer := make([]byte, 0, 8192)
@@ -236,8 +234,6 @@ func (aifc *AIFC) Normalize(max float32) error {
 			return err
 		}
 	}
-
-	log.Printf("end normalize")
 
 	return nil
 }

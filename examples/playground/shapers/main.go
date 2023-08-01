@@ -17,7 +17,7 @@ import (
 
 func newShapeSwitcher() *waveshaping.Switch {
 	return waveshaping.NewSwitch(0,
-		waveshaping.NewSerial(
+		waveshaping.NewSeries(
 			waveshaping.NewSineTable(512),
 			waveshaping.NewChebyshev(map[int]float64{1: 1.0, 2: 0.8, 3: 0.7, 4: 0.6, 5: 0.5, 6: 0.4}),
 		),
@@ -32,18 +32,18 @@ func switchControlFunction(index int, value any, shaper waveshaping.Shaper) {
 
 	sw.Index = shapeCtrlMap["index"].(int)
 
-	serial := sw.Shapers[0].(*waveshaping.Serial)
+	serial := sw.Shapers[0].(*waveshaping.Series)
 	cheby := serial.Shapers[1].(*waveshaping.Chebyshev)
 	cheby.SetHarmonics(shapeCtrlMap["harmonics"].(map[int]float64))
 
-	tri := sw.Shapers[1].(*waveshaping.Serial)
-	tri.SetSoftSyncA1(shapeCtrlMap["tri"].(float64))
+	tri := sw.Shapers[1].(*waveshaping.SoftSyncTriangle)
+	tri.SetA1(shapeCtrlMap["tri"].(float64))
 
-	superSaw := sw.Shapers[2].(*waveshaping.Serial)
+	superSaw := sw.Shapers[2].(*waveshaping.SuperSaw)
 	superSawMap := shapeCtrlMap["superSaw"].(map[string]any)
-	superSaw.SetSuperSawA1(superSawMap["a1"].(float64))
-	superSaw.SetSuperSawM1(superSawMap["m1"].(float64))
-	superSaw.SetSuperSawM2(superSawMap["m2"].(float64))
+	superSaw.SetA1(superSawMap["a1"].(float64))
+	superSaw.SetM1(superSawMap["m1"].(float64))
+	superSaw.SetM2(superSawMap["m2"].(float64))
 }
 
 func switchControlTemplate() template.Template {

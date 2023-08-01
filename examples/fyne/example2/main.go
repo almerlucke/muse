@@ -35,7 +35,7 @@ type TestVoice struct {
 	filterEnv          *adsr.ADSR
 	phasor             *phasor.Phasor
 	filter             *moog.Moog
-	superSaw           *shaping.Serial
+	superSaw           *shaping.SuperSaw
 	ampStepProvider    adsrctrl.ADSRStepProvider
 	filterStepProvider adsrctrl.ADSRStepProvider
 }
@@ -99,7 +99,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
 	if superSawM1, ok := content["superSawM1"].(float64); ok {
-		tv.superSaw.SetSuperSawM1(superSawM1)
+		tv.superSaw.SetM1(superSawM1)
 	}
 
 	if filterFrequency, ok := content["filterFrequency"].(float64); ok {
@@ -134,12 +134,12 @@ func main() {
 
 	sineTable := shaping.NewNormalizedSineTable(512)
 
-	targetSuperSaw := lfo.NewTarget("polyphony", shaping.NewSerial(sineTable, shaping.NewLinear(0.15, 0.1)), "superSawM1", template.Template{
+	targetSuperSaw := lfo.NewTarget("polyphony", shaping.NewSeries(sineTable, shaping.NewLinear(0.15, 0.1)), "superSawM1", template.Template{
 		"command":    "voice",
 		"superSawM1": template.NewParameter("superSawM1", nil),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewSerial(sineTable, shaping.NewLinear(6000.0, 800.0)), "frequency", template.Template{
+	targetFilter := lfo.NewTarget("polyphony", shaping.NewSeries(sineTable, shaping.NewLinear(6000.0, 800.0)), "frequency", template.Template{
 		"command":         "voice",
 		"filterFrequency": template.NewParameter("frequency", nil),
 	})
