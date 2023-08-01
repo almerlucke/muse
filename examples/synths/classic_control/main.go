@@ -61,15 +61,15 @@ func NewClassicSynth(bpm float64) *ClassicSynth {
 
 	synth.ampEnv = ampEnv
 	synth.filterEnv = filterEnv
-	synth.poly = classic.New(20, ampEnv, filterEnv).Named("poly").Add(synth).(*polyphony.Polyphony)
-	synthAmp1 := functor.NewAmp(0.85).Add(synth).In(synth.poly)
-	synthAmp2 := functor.NewAmp(0.85).Add(synth).In(synth.poly, 1)
-	allpass1 := allpass.New(2500.0, 60000/bpm*1.666, 0.5).Add(synth).In(synthAmp1)
-	allpass2 := allpass.New(2500.0, 60000/bpm*1.75, 0.4).Add(synth).In(synthAmp2)
-	allpassAmp1 := functor.NewAmp(0.5).Add(synth).In(allpass1)
-	allpassAmp2 := functor.NewAmp(0.5).Add(synth).In(allpass2)
-	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil).Add(synth).In(synthAmp1, allpassAmp1, 0, 0).(*chorus.Chorus)
-	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil).Add(synth).In(synthAmp2, allpassAmp2, 0, 0).(*chorus.Chorus)
+	synth.poly = classic.New(20, ampEnv, filterEnv).Named("poly").AddTo(synth).(*polyphony.Polyphony)
+	synthAmp1 := functor.NewAmp(0.85).AddTo(synth).In(synth.poly)
+	synthAmp2 := functor.NewAmp(0.85).AddTo(synth).In(synth.poly, 1)
+	allpass1 := allpass.New(2500.0, 60000/bpm*1.666, 0.5).AddTo(synth).In(synthAmp1)
+	allpass2 := allpass.New(2500.0, 60000/bpm*1.75, 0.4).AddTo(synth).In(synthAmp2)
+	allpassAmp1 := functor.NewAmp(0.5).AddTo(synth).In(allpass1)
+	allpassAmp2 := functor.NewAmp(0.5).AddTo(synth).In(allpass2)
+	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil).AddTo(synth).In(synthAmp1, allpassAmp1, 0, 0).(*chorus.Chorus)
+	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil).AddTo(synth).In(synthAmp2, allpassAmp2, 0, 0).(*chorus.Chorus)
 
 	synth.In(synth.chorus1, synth.chorus2)
 	synth.SetupControls()
@@ -397,7 +397,7 @@ func main() {
 	soundBank["808_4"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
 	soundBank["shaker"], _ = io.NewSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
 
-	drumMachine := drums.NewDrums(soundBank, 20).Named("drums").Add(root)
+	drumMachine := drums.NewDrums(soundBank, 20).Named("drums").AddTo(root)
 
 	addDrumTrack(root, "drums", []string{"hihat"}, int(bpm), 8, 0.875, 1.125, 0.6, hihatRhythm())
 	addDrumTrack(root, "drums", []string{"kick"}, int(bpm), 8, 0.875, 1.125, 1.0, kickRhythm())
@@ -405,13 +405,13 @@ func main() {
 	addDrumTrack(root, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, int(bpm), 2, 1.0, 1.0, 0.7, bassRhythm())
 	addDrumTrack(root, "drums", []string{"shaker"}, int(bpm), 2, 1.0, 1.0, 1.0, kickRhythm())
 
-	synth := NewClassicSynth(bpm).Add(root).(*ClassicSynth)
+	synth := NewClassicSynth(bpm).AddTo(root).(*ClassicSynth)
 
 	root.In(
 		drumMachine, 0,
 		drumMachine, 1,
-		modules.Amp(synth, 0, 0.7).Add(root), 0, 0,
-		modules.Amp(synth, 1, 0.7).Add(root), 0, 1,
+		modules.Amp(synth, 0, 0.7).AddTo(root), 0, 0,
+		modules.Amp(synth, 1, 0.7).AddTo(root), 0, 1,
 	)
 
 	synth.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{

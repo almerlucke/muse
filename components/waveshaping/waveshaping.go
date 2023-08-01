@@ -241,7 +241,7 @@ func NewMirror(bottom float64, top float64) *Mirror {
 }
 
 func (mirror *Mirror) Shape(x float64) float64 {
-	for true {
+	for {
 		if x > mirror.Top {
 			x = mirror.Top*2 - x
 		} else if x < mirror.Bottom {

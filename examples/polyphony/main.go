@@ -56,12 +56,12 @@ func NewTestVoice() *TestVoice {
 		{Duration: 350, Shape: 0.1},
 	}
 
-	adsrEnv := adsr.New(steps, adsrc.Absolute, adsrc.Duration, 1.0).Add(testVoice)
-	osc := phasor.New(140.0, 0.0).Add(testVoice)
+	adsrEnv := adsr.New(steps, adsrc.Absolute, adsrc.Duration, 1.0).AddTo(testVoice)
+	osc := phasor.New(140.0, 0.0).AddTo(testVoice)
 	shape := waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil).
-		Add(testVoice).In(osc)
-	mult := modules.Mult(shape, adsrEnv).Add(testVoice)
-	filter := moog.New(1700.0, 0.48, 1.0).Add(testVoice).In(mult)
+		AddTo(testVoice).In(osc)
+	mult := modules.Mult(shape, adsrEnv).AddTo(testVoice)
+	filter := moog.New(1700.0, 0.48, 1.0).AddTo(testVoice).In(mult)
 
 	testVoice.In(filter)
 
@@ -118,8 +118,8 @@ func main() {
 
 	milliPerBeat := 60000.0 / float64(bpm) / 4.0
 
-	superSawDrive := modules.Scale(vartri.New(0.265, 0.0, 0.5).Add(root), 0, 0.84, 0.15).Add(root)
-	filterCutOff := modules.Scale(vartri.New(0.325, 0.0, 0.5).Add(root), 0, 3200.0, 40.0).Add(root)
+	superSawDrive := modules.Scale(vartri.New(0.265, 0.0, 0.5).AddTo(root), 0, 0.84, 0.15).AddTo(root)
+	filterCutOff := modules.Scale(vartri.New(0.325, 0.0, 0.5).AddTo(root), 0, 3200.0, 40.0).AddTo(root)
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
@@ -132,10 +132,10 @@ func main() {
 
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
-	poly := polyphony.New(1, voices).Named("polyphony").Add(root).In(superSawDrive, filterCutOff, 0, 0)
-	allpass := allpass.New(milliPerBeat*3, milliPerBeat*3, 0.4).Add(root).In(poly)
-	allpassAmp := modules.Scale(allpass, 0, 0.5, 0.0).Add(root)
-	reverb := freeverb.New().Add(root).In(poly, allpassAmp).(*freeverb.FreeVerb)
+	poly := polyphony.New(1, voices).Named("polyphony").AddTo(root).In(superSawDrive, filterCutOff, 0, 0)
+	allpass := allpass.New(milliPerBeat*3, milliPerBeat*3, 0.4).AddTo(root).In(poly)
+	allpassAmp := modules.Scale(allpass, 0, 0.5, 0.0).AddTo(root)
+	reverb := freeverb.New().AddTo(root).In(poly, allpassAmp).(*freeverb.FreeVerb)
 
 	reverb.SetDamp(0.1)
 	reverb.SetDry(0.7)

@@ -53,8 +53,8 @@ func main() {
 		{Duration: 100, Shape: 0.0},
 	}
 
-	paramVarTri1 := vartri.New(0.25, 0.0, 0.5).Add(root)
-	paramVarTri2 := vartri.New(0.325, 0.0, 0.5).Add(root)
+	paramVarTri1 := vartri.New(0.25, 0.0, 0.5).AddTo(root)
+	paramVarTri2 := vartri.New(0.325, 0.0, 0.5).AddTo(root)
 	superSawParam := root.AddModule(functor.NewScale(0.82, 0.15))
 	adsrEnv1 := root.AddModule(adsr.New(steps, adsrc.Absolute, adsrc.Automatic, 1.0).Named("adsr1"))
 	mult1 := root.AddModule(functor.NewMult(2))
@@ -66,7 +66,7 @@ func main() {
 	// filter := env.AddModule(butterworth.NewButterworth(300.0, 0.4, env.Config, "filter"))
 	// filter := env.AddModule(rbj.NewRBJFilter(rbjc.Lowpass, 300.0, 10.0, env.Config, "filter"))
 	filter := root.AddModule(moog.New(300.0, 0.45, 1.0))
-	reverb := freeverb.New().Add(root)
+	reverb := freeverb.New().AddTo(root)
 
 	reverb.(*freeverb.FreeVerb).SetDamp(0.1)
 	reverb.(*freeverb.FreeVerb).SetDry(0.7)

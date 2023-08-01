@@ -77,7 +77,7 @@ func main() {
 	fm.PitchEnvRates = [4]float64{0.95, 0.95, 0.95, 0.95}
 	fm.ReleaseMode = ops.EnvelopeDurationRelease
 	fm.ApplySettingsChange()
-	fm.Add(root)
+	fm.AddTo(root)
 	root.In(fm)
 
 	opsGroup := controls.NewGroup("ops.group", "FM Synth")

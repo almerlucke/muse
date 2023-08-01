@@ -129,7 +129,7 @@ func main() {
 		voices = append(voices, voice)
 	}
 
-	poly := polyphony.New(1, voices).Named("polyphony").Add(root)
+	poly := polyphony.New(1, voices).Named("polyphony").AddTo(root)
 	allpass := root.AddModule(allpass.New(50, 50, 0.3))
 
 	sineTable := shaping.NewNormalizedSineTable(512)

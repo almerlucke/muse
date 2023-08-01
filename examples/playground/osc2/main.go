@@ -9,8 +9,8 @@ import (
 func main() {
 	root := muse.New(1)
 
-	lfo := lfo.NewBasicControlLFO(0.2, 0.1, 0.9).CtrlAdd(root)
-	osc := osc.NewOsc2(100.0, 0, 0.2, 1.0, osc.MODIFIED_TRIANGLE).Add(root)
+	lfo := lfo.NewBasicControlLFO(0.2, 0.1, 0.9).CtrlAddTo(root)
+	osc := osc.NewOsc2(100.0, 0, 0.2, 1.0, osc.MODIFIED_TRIANGLE).AddTo(root)
 
 	osc.CtrlIn(lfo, 0, 1)
 	root.In(osc)

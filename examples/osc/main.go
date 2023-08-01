@@ -16,14 +16,14 @@ func main() {
 
 	sequence := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/osc/sequence1.json"))
 
-	banger.NewValueGenerator(sequence).MsgrNamed("sequencer").MsgrAdd(root)
+	banger.NewValueGenerator(sequence).MsgrNamed("sequencer").MsgrAddTo(root)
 
 	stepper.NewStepper(
 		stepper.NewValueStepProvider(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
 		[]string{"sequencer"},
-	).MsgrAdd(root)
+	).MsgrAddTo(root)
 
-	osc := osc.New(100.0, 0.0).Add(root)
+	osc := osc.New(100.0, 0.0).AddTo(root)
 
 	root.In(osc, 3)
 

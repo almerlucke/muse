@@ -71,8 +71,8 @@ func switchControlTemplate() template.Template {
 func main() {
 	root := muse.New(1)
 
-	timer1 := timer.NewControlTimer(250.0).CtrlAdd(root)
-	timer2 := timer.NewControlTimer(1500.0).CtrlAdd(root)
+	timer1 := timer.NewControlTimer(250.0).CtrlAddTo(root)
+	timer2 := timer.NewControlTimer(1500.0).CtrlAddTo(root)
 
 	freqGen := val.New[float64](value.NewSequence[float64]([]float64{40.0, 60.0, 80.0, 90.0, 95.0}))
 	shapersControlGen := banger.NewControlTemplateGenerator(switchControlTemplate())
@@ -80,8 +80,8 @@ func main() {
 	freqGen.CtrlIn(timer1)
 	shapersControlGen.CtrlIn(timer2)
 
-	phase := phasor.New(200.0, 0.0).Add(root)
-	shaper := waveshaper.New(newShapeSwitcher(), 1, switchControlFunction, nil).Add(root)
+	phase := phasor.New(200.0, 0.0).AddTo(root)
+	shaper := waveshaper.New(newShapeSwitcher(), 1, switchControlFunction, nil).AddTo(root)
 
 	phase.CtrlIn(freqGen)
 	shaper.In(phase)

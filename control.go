@@ -15,7 +15,7 @@ type Control interface {
 	ControlReceiver
 	ControlSender
 	CtrlNamed(string) Control
-	CtrlAdd(Patch) Control
+	CtrlAddTo(Patch) Control
 	AddControlInputConnection(int, Control, int)
 	AddControlOutputConnection(int, Control, int)
 	RemoveControlInputConnection(int, Control, int)
@@ -147,7 +147,7 @@ func (c *BaseControl) RemoveControlOutputConnection(outputIndex int, receiver Co
 	}
 }
 
-func (c *BaseControl) CtrlAdd(p Patch) Control {
+func (c *BaseControl) CtrlAddTo(p Patch) Control {
 	return p.AddControl(c.Self().(Control))
 }
 

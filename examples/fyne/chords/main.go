@@ -50,10 +50,10 @@ func NewTestVoice(ampStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
 
 	testVoice.SetSelf(testVoice)
 
-	ampEnv := adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0).Add(testVoice)
-	osc := phasor.New(140.0, 0.0).Add(testVoice)
-	shape := waveshaper.New(testVoice.shaper, 0, nil, nil).Add(testVoice).In(osc)
-	mult := modules.Mult(shape, ampEnv).Add(testVoice)
+	ampEnv := adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0).AddTo(testVoice)
+	osc := phasor.New(140.0, 0.0).AddTo(testVoice)
+	shape := waveshaper.New(testVoice.shaper, 0, nil, nil).AddTo(testVoice).In(osc)
+	mult := modules.Mult(shape, ampEnv).AddTo(testVoice)
 
 	testVoice.In(mult)
 
@@ -103,7 +103,7 @@ func main() {
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly := polyphony.New(1, voices).Named("polyphony").Add(root)
+	poly := polyphony.New(1, voices).Named("polyphony").AddTo(root)
 
 	octave := notes.O3
 

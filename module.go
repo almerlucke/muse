@@ -4,7 +4,7 @@ type Module interface {
 	Control
 	Stater
 	Named(string) Module
-	Add(Patch) Module
+	AddTo(Patch) Module
 	Configuration() *Configuration
 	NumInputs() int
 	NumOutputs() int
@@ -117,7 +117,7 @@ func (m *BaseModule) Named(name string) Module {
 	return self
 }
 
-func (m *BaseModule) Add(p Patch) Module {
+func (m *BaseModule) AddTo(p Patch) Module {
 	return p.AddModule(m.Self().(Module))
 }
 

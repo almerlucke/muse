@@ -113,8 +113,8 @@ func main() {
 
 	// milliPerBeat := 60000.0 / bpm
 
-	poly1 := polyphony.New(1, voices1).Named("polyphony1").Add(root)
-	chor := chorus.New(true, 15, 10, 0.2, 3.42, 0.5, nil).Add(root)
+	poly1 := polyphony.New(1, voices1).Named("polyphony1").AddTo(root)
+	chor := chorus.New(true, 15, 10, 0.2, 3.42, 0.5, nil).AddTo(root)
 
 	octave := notes.O4
 

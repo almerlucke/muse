@@ -3,10 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
-	"math/rand"
 	"strconv"
 	"strings"
-	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -201,14 +199,12 @@ func (cs *ClassicSynth) ReceiveMessage(msg any) []*muse.Message {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	root := muse.New(2)
 
 	bpm := 100.0
 	synth := NewClassicSynth(bpm)
 
-	synth.Add(root)
+	synth.AddTo(root)
 	root.In(synth, synth, 1)
 
 	// synth.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{

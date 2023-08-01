@@ -27,7 +27,7 @@ func main() {
 		log.Fatalf("failed to create oversampler: %v", err)
 	}
 
-	osa.Add(root)
+	osa.AddTo(root)
 	root.In(osa)
 
 	root.RenderToSoundFile("/Users/almerlucke/Desktop/testosa.aifc", 4.0, 44100.0, false)

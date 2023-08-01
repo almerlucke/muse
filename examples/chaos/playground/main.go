@@ -142,8 +142,8 @@ func main() {
 		voices[i] = NewChaosVoice(ampEnv, filterEnv)
 	}
 
-	poly := polyphony.New(2, voices).Named("chaosSynth").Add(root)
-	timer := timer.NewControlTimer(500.0).CtrlAdd(root)
+	poly := polyphony.New(2, voices).Named("chaosSynth").AddTo(root)
+	timer := timer.NewControlTimer(500.0).CtrlAddTo(root)
 	randomizeTimer := val.New[float64](value.NewFunction(func() float64 {
 		return randMinMax(100, 5500.0)
 	}))

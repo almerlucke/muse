@@ -210,7 +210,7 @@ func main() {
 
 	guitarPlayer := root.AddModule(player.New(guitarBuffer, 1.0, 1.0, true))
 	singPlayer := root.AddModule(player.New(singBuffer, 1.0, 1.0, true))
-	synth := classic.New(20, ampEnv, filterEnv).Named("poly").Add(root)
+	synth := classic.New(20, ampEnv, filterEnv).Named("poly").AddTo(root)
 
 	synthSettings(synth)
 

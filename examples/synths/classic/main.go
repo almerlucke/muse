@@ -84,7 +84,7 @@ func main() {
 
 	bpm := 100
 
-	synth := classic.New(20, ampEnv, filterEnv).Named("poly").Add(root)
+	synth := classic.New(20, ampEnv, filterEnv).Named("poly").AddTo(root)
 	synthAmp1 := root.AddModule(functor.NewAmp(0.85))
 	synthAmp2 := root.AddModule(functor.NewAmp(0.85))
 	allpass1 := root.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.666, 0.5))

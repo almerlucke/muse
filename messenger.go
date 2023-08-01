@@ -20,7 +20,7 @@ type Messenger interface {
 	Control
 	Stater
 	MsgrNamed(string) Messenger
-	MsgrAdd(Patch) Messenger
+	MsgrAddTo(Patch) Messenger
 	Messages(timestamp int64, config *Configuration) []*Message
 }
 
@@ -59,6 +59,6 @@ func (m *BaseMessenger) MsgrNamed(name string) Messenger {
 	return self
 }
 
-func (m *BaseMessenger) MsgrAdd(p Patch) Messenger {
+func (m *BaseMessenger) MsgrAddTo(p Patch) Messenger {
 	return p.AddMessenger(m.Self().(Messenger))
 }
