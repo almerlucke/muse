@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"log"
 	"os"
 	"reflect"
 	"unsafe"
@@ -57,6 +58,26 @@ func toPascalBytes(str string) []byte {
 		ps[i+1] = byte(c)
 	}
 	return ps
+}
+
+type float interface {
+	float32 | float64
+}
+
+func writeFloat[T float](aifc *AIFC, items []T) error {
+	var buf bytes.Buffer
+
+	numFrames := len(items) / int(aifc.numChannels)
+
+	for _, item := range items {
+		_ = binary.Write(&buf, binary.BigEndian, float32(item))
+	}
+
+	aifc.numSampleFrames += uint32(numFrames)
+
+	_, err := aifc.file.Write(buf.Bytes())
+
+	return err
 }
 
 type AIFC struct {
@@ -150,6 +171,7 @@ func (aifc *AIFC) updateSizes() error {
 }
 
 func (aifc *AIFC) Normalize(max float32) error {
+	log.Printf("start normalize")
 	// Read and write buffers
 	readerBuffer := make([]byte, 8192)
 	writerBuffer := make([]byte, 0, 8192)
@@ -173,7 +195,7 @@ func (aifc *AIFC) Normalize(max float32) error {
 			return err
 		}
 
-		// Read 8192 samples if possible
+		// Read 8192 bytes if possible
 		n, err := aifc.file.Read(readerBuffer)
 		if err != nil {
 			if err != io.EOF {
@@ -214,6 +236,8 @@ func (aifc *AIFC) Normalize(max float32) error {
 			return err
 		}
 	}
+
+	log.Printf("end normalize")
 
 	return nil
 }
@@ -363,38 +387,6 @@ func (aifc *AIFC) writeHeader() error {
 	return nil
 }
 
-func (aifc *AIFC) writeFloat32(items []float32) error {
-	var buf bytes.Buffer
-
-	numFrames := len(items) / int(aifc.numChannels)
-
-	for _, item := range items {
-		_ = binary.Write(&buf, binary.BigEndian, item)
-	}
-
-	aifc.numSampleFrames += uint32(numFrames)
-
-	_, err := aifc.file.Write(buf.Bytes())
-
-	return err
-}
-
-func (aifc *AIFC) writeFloat64(items []float64) error {
-	var buf bytes.Buffer
-
-	numFrames := len(items) / int(aifc.numChannels)
-
-	for _, item := range items {
-		_ = binary.Write(&buf, binary.BigEndian, float32(item))
-	}
-
-	aifc.numSampleFrames += uint32(numFrames)
-
-	_, err := aifc.file.Write(buf.Bytes())
-
-	return err
-}
-
 func (aifc *AIFC) WriteItems(items any) error {
 	t := reflect.TypeOf(items)
 	if t.Kind() != reflect.Array && t.Kind() != reflect.Slice {
@@ -403,9 +395,9 @@ func (aifc *AIFC) WriteItems(items any) error {
 
 	switch t.Elem().Kind() {
 	case reflect.Float32:
-		return aifc.writeFloat32(items.([]float32))
+		return writeFloat(aifc, items.([]float32))
 	case reflect.Float64:
-		return aifc.writeFloat64(items.([]float64))
+		return writeFloat(aifc, items.([]float64))
 	}
 
 	return nil
