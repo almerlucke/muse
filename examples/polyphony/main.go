@@ -49,14 +49,9 @@ func NewTestVoice() *TestVoice {
 		BasePatch: muse.NewPatch(0, 1),
 	}
 
-	steps := []adsrc.Step{
-		{Level: 1.0, Duration: 20, Shape: 0.0},
-		{Level: 0.3, Duration: 20, Shape: 0.0},
-		{Duration: 20},
-		{Duration: 350, Shape: 0.1},
-	}
+	setting := adsrc.NewSetting(1.0, 20.0, 0.3, 20.0, 20.0, 350.0)
 
-	adsrEnv := adsr.New(steps, adsrc.Absolute, adsrc.Duration, 1.0).AddTo(testVoice)
+	adsrEnv := adsr.New(setting, adsrc.Duration, 1.0).AddTo(testVoice)
 	osc := phasor.New(140.0, 0.0).AddTo(testVoice)
 	shape := waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil).
 		AddTo(testVoice).In(osc)

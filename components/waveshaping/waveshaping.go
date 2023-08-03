@@ -107,36 +107,6 @@ func NewNormalizedSineTable(n int) LookupTable {
 	return table
 }
 
-func NewHanningWindow(n int) LookupTable {
-	table := make(LookupTable, n+1)
-	phase := 0.0
-	inc := 2.0 * math.Pi / float64(n)
-
-	for i := 0; i < n; i++ {
-		table[i] = 0.5 - 0.5*math.Cos(phase)
-		phase += inc
-	}
-
-	table[n] = table[0]
-
-	return table
-}
-
-// func NewHarmonicsTable(n int, harmonics int) LookupTable {
-// 	table := make(LookupTable, n)
-
-// 	for i := 0; i < n; i++ {
-// 		inc := float64(i) / float64(n-1)
-// 		acc := 0.0
-// 		for j := 1; j <= harmonics; j++ {
-// 			acc += math.Sin(2.0 * math.Pi * inc * float64(j) * 2.0)
-// 		}
-// 		table[i] = acc
-// 	}
-
-// 	return table
-// }
-
 type ParallelFunction func(float64, float64) float64
 
 type Parallel struct {
@@ -168,6 +138,67 @@ func NewParallelF(start float64, function ParallelFunction, shapers ...Shaper) *
 		Shapers:  shapers,
 		Function: function,
 	}
+}
+
+type Mixer struct {
+	Shapers []Shaper
+	Levels  []float64
+}
+
+func NewMixer(shapers ...Shaper) *Mixer {
+	mix := &Mixer{
+		Shapers: shapers,
+		Levels:  make([]float64, len(shapers)),
+	}
+
+	for i := 0; i < len(shapers); i++ {
+		mix.Levels[i] = 1.0
+	}
+
+	return mix
+}
+
+func NewMixerWithLevels(shapers []Shaper, levels []float64) *Mixer {
+	return &Mixer{
+		Shapers: shapers,
+		Levels:  levels,
+	}
+}
+
+func (mix *Mixer) Shape(x float64) float64 {
+	accum := 0.0
+
+	for index, shaper := range mix.Shapers {
+		accum += shaper.Shape(x) * mix.Levels[index]
+	}
+
+	return accum
+}
+
+type Interpolator struct {
+	Shapers []Shaper
+	Index   float64
+}
+
+func NewInterpolator(shapers ...Shaper) *Interpolator {
+	return &Interpolator{
+		Shapers: shapers,
+	}
+}
+
+func (interpol *Interpolator) Shape(x float64) float64 {
+	fx := interpol.Index * float64(len(interpol.Shapers)-1)
+	ix1 := int(fx)
+	ix2 := ix1 + 1
+
+	if ix2 >= len(interpol.Shapers) {
+		ix2 = ix1
+	}
+
+	sx1 := interpol.Shapers[ix1].Shape(x)
+	sx2 := interpol.Shapers[ix2].Shape(x)
+
+	return (sx2-sx1)*(fx-float64(ix1)) + sx1
 }
 
 type Linear struct {

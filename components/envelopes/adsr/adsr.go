@@ -4,21 +4,14 @@ import (
 	"math"
 )
 
-type Stage int
+type stage int
 
 const (
-	Attack Stage = iota
-	Decay
-	Sustain
-	Release
-	Idle
-)
-
-type DurationMode int
-
-const (
-	Ratio    DurationMode = iota // use ratio for durations
-	Absolute                     // use absolute ms for durations
+	attack stage = iota
+	decay
+	sustain
+	release
+	idle
 )
 
 type ReleaseMode int
@@ -30,127 +23,88 @@ const (
 )
 
 const (
-	ShapeMult        = 2.0
-	MinDuration      = 0.01
-	MaxDuration      = 19.99
-	DurationRatioExp = 6.0
+	shapeMult = 2.0
 )
 
-type Step struct {
-	Level         float64 // level of the stage, is relative to max level
-	DurationRatio float64
-	Duration      float64 // duration in milliseconds
-	Shape         float64
+type step struct {
+	level    float64
+	duration float64 // duration in milliseconds
+	shape    float64
 }
 
-func QuickSteps() []Step {
-	return []Step{
-		{
-			Level:         1.0,
-			DurationRatio: 0.1,
-			Duration:      100.0,
-			Shape:         1.0,
-		},
-		{
-			Level:         0.3,
-			DurationRatio: 0.1,
-			Duration:      100.0,
-			Shape:         1.0,
-		},
-		{
-			Level:         0.3,
-			DurationRatio: 0.4,
-			Duration:      100.0,
-			Shape:         1.0,
-		},
-		{
-			Level:         0.0,
-			DurationRatio: 0.4,
-			Duration:      100.0,
-			Shape:         1.0,
-		},
+type Setting struct {
+	AttackLevel     float64
+	AttackDuration  float64
+	AttackShape     float64
+	DecayLevel      float64
+	DecayDuration   float64
+	DecayShape      float64
+	SustainDuration float64
+	ReleaseDuration float64
+	ReleaseShape    float64
+}
+
+func NewSetting(attackLevel float64, attackDuration float64, decayLevel float64, decayDuration float64, sustainDuration float64, releaseDuration float64) *Setting {
+	return &Setting{
+		AttackLevel:     attackLevel,
+		AttackDuration:  attackDuration,
+		AttackShape:     0.0,
+		DecayLevel:      decayLevel,
+		DecayDuration:   decayDuration,
+		DecayShape:      0.0,
+		SustainDuration: sustainDuration,
+		ReleaseDuration: releaseDuration,
+		ReleaseShape:    0.0,
 	}
 }
 
-func StepsRatio(level1 float64, ratio1 float64, level2 float64, ratio2 float64, ratio3 float64, ratio4 float64) []Step {
-	return []Step{
-		{
-			Level:         level1,
-			DurationRatio: ratio1,
-			Shape:         1.0,
-		},
-		{
-			Level:         level2,
-			DurationRatio: ratio2,
-			Shape:         1.0,
-		},
-		{
-			Level:         level2,
-			DurationRatio: ratio3,
-			Shape:         1.0,
-		},
-		{
-			Level:         0.0,
-			DurationRatio: ratio4,
-			Shape:         1.0,
-		},
+func (setting *Setting) stepForStage(stage stage) step {
+	switch stage {
+	case attack:
+		return step{
+			level: setting.AttackLevel, duration: setting.AttackDuration, shape: setting.AttackShape,
+		}
+	case decay:
+		return step{
+			level: setting.DecayLevel, duration: setting.DecayDuration, shape: setting.DecayShape,
+		}
+	case sustain:
+		return step{
+			level: setting.DecayLevel, duration: setting.SustainDuration, shape: 0.0,
+		}
+	case release:
+		return step{
+			level: 0.0, duration: setting.ReleaseDuration, shape: setting.ReleaseShape,
+		}
 	}
-}
 
-type StepProvider interface {
-	GetSteps() []Step
-}
-
-type BasicStepProvider struct {
-	Steps []Step
-}
-
-func NewBasicStepProvider() *BasicStepProvider {
-	return &BasicStepProvider{
-		Steps: make([]Step, 4),
-	}
-}
-
-func (bsp *BasicStepProvider) GetSteps() []Step {
-	return bsp.Steps
-}
-
-func (s *Step) GetState() map[string]any {
-	return map[string]any{
-		"level":         s.Level,
-		"durationRatio": s.DurationRatio,
-		"duration":      s.Duration,
-		"shape":         s.Shape,
-	}
-}
-
-func (s *Step) SetState(state map[string]any) {
-	s.Level = state["level"].(float64)
-	s.DurationRatio = state["durationRatio"].(float64)
-	s.Duration = state["duration"].(float64)
-	s.Shape = state["shape"].(float64)
+	return step{}
 }
 
 type ADSR struct {
-	releaseMode  ReleaseMode
-	durationMode DurationMode
-	stage        Stage
-	steps        []Step
-	releaseCnt   int64
-	sampleRate   float64
-	maxLevel     float64
-	stepCnt      int64
-	exponent     float64
-	from         float64
-	to           float64
-	ramp         float64
-	increment    float64
-	lastOut      float64
-	outVector    [1]float64
+	setting     *Setting
+	releaseMode ReleaseMode
+	stage       stage
+	releaseCnt  int64
+	sr          float64
+	level       float64
+	stepCnt     int64
+	exponent    float64
+	from        float64
+	to          float64
+	ramp        float64
+	increment   float64
+	lastOut     float64
+	outVector   [1]float64
 }
 
-func (adsr *ADSR) durationRatioToSamps(ratio float64) int64 {
-	return int64((MinDuration + math.Pow(ratio, DurationRatioExp)*MaxDuration) * adsr.sampleRate)
+func New(setting *Setting, releaseMode ReleaseMode, sr float64) *ADSR {
+	return &ADSR{
+		setting:     setting,
+		releaseMode: releaseMode,
+		stage:       idle,
+		sr:          sr,
+	}
 }
 
 func (adsr *ADSR) exponentFromShape(shape float64, direction float64) float64 {
@@ -159,69 +113,59 @@ func (adsr *ADSR) exponentFromShape(shape float64, direction float64) float64 {
 	}
 
 	if (shape > 0.0 && direction > 0) || (shape < 0.0 && direction < 0) {
-		return 1.0 / (1.0 + math.Abs(shape)*ShapeMult)
+		return 1.0 / (1.0 + math.Abs(shape)*shapeMult)
 	}
 
-	return 1.0 + math.Abs(shape)*ShapeMult
+	return 1.0 + math.Abs(shape)*shapeMult
 }
 
-func (adsr *ADSR) Initialize(steps []Step, durationMode DurationMode, releaseMode ReleaseMode, sampleRate float64) {
-	adsr.sampleRate = sampleRate
-	adsr.steps = steps
-	adsr.durationMode = durationMode
-	adsr.releaseMode = releaseMode
-	adsr.stage = Idle
-}
-
-func (adsr *ADSR) TriggerFull(duration float64, maxLevel float64, steps []Step, durationMode DurationMode, releaseMode ReleaseMode) {
-	adsr.releaseCnt = int64(duration * adsr.sampleRate * 0.001)
-	adsr.steps = steps
-	adsr.durationMode = durationMode
-	adsr.releaseMode = releaseMode
-	adsr.Trigger(maxLevel)
-}
-
-func (adsr *ADSR) TriggerWithDuration(duration float64, maxLevel float64) {
-	adsr.releaseCnt = int64(duration * adsr.sampleRate * 0.001)
-	adsr.Trigger(maxLevel)
-}
-
-func (adsr *ADSR) Trigger(maxLevel float64) {
-	adsr.stage = Attack
-	adsr.maxLevel = maxLevel
-	adsr.ramp = 0.0
-	adsr.from = adsr.lastOut
-	adsr.to = adsr.steps[Attack].Level * adsr.maxLevel
-	if adsr.durationMode == Ratio {
-		adsr.stepCnt = adsr.durationRatioToSamps(adsr.steps[Attack].DurationRatio)
+func (adsr *ADSR) nextStep(step step, useLastOut bool) {
+	adsr.ramp = 0
+	if useLastOut {
+		adsr.from = adsr.lastOut
 	} else {
-		adsr.stepCnt = int64(adsr.steps[Attack].Duration * adsr.sampleRate * 0.001)
+		adsr.from = adsr.to
 	}
+	adsr.to = step.level
+	adsr.stepCnt = int64(step.duration * adsr.sr * 0.001)
 	adsr.increment = 1.0 / float64(adsr.stepCnt)
-	adsr.exponent = adsr.exponentFromShape(adsr.steps[Attack].Shape, adsr.to-adsr.from)
+	adsr.exponent = adsr.exponentFromShape(step.shape, adsr.to-adsr.from)
+}
+
+func (adsr *ADSR) Initialize(setting *Setting, releaseMode ReleaseMode, sr float64) {
+	adsr.sr = sr
+	adsr.setting = setting
+	adsr.releaseMode = releaseMode
+	adsr.stage = idle
+}
+
+func (adsr *ADSR) TriggerFull(duration float64, level float64, setting *Setting, releaseMode ReleaseMode) {
+	adsr.releaseCnt = int64(duration * adsr.sr * 0.001)
+	adsr.setting = setting
+	adsr.releaseMode = releaseMode
+	adsr.Trigger(level)
+}
+
+func (adsr *ADSR) TriggerWithDuration(duration float64, level float64) {
+	adsr.releaseCnt = int64(duration * adsr.sr * 0.001)
+	adsr.Trigger(level)
+}
+
+func (adsr *ADSR) Trigger(level float64) {
+	step := adsr.setting.stepForStage(attack)
+	adsr.stage = attack
+	adsr.level = level
+	adsr.nextStep(step, true)
 }
 
 func (adsr *ADSR) Release() {
-	adsr.from = adsr.lastOut
-	adsr.stage = Release
-	adsr.to = 0.0
-	adsr.ramp = 0
-	step := adsr.steps[Release]
-	adsr.exponent = adsr.exponentFromShape(step.Shape, adsr.to-adsr.from)
-	if adsr.durationMode == Ratio {
-		adsr.stepCnt = adsr.durationRatioToSamps(step.DurationRatio)
-	} else {
-		adsr.stepCnt = int64(step.Duration * adsr.sampleRate * 0.001)
-	}
-	adsr.increment = 1.0 / float64(adsr.stepCnt)
+	step := adsr.setting.stepForStage(release)
+	adsr.stage = release
+	adsr.nextStep(step, true)
 }
 
 func (adsr *ADSR) IsFinished() bool {
-	return adsr.stage == Idle
-}
-
-func (adsr *ADSR) DurationMode() DurationMode {
-	return adsr.durationMode
+	return adsr.stage == idle
 }
 
 func (adsr *ADSR) ReleaseMode() ReleaseMode {
@@ -233,7 +177,7 @@ func (adsr *ADSR) NumDimensions() int {
 }
 
 func (adsr *ADSR) Tick() []float64 {
-	if adsr.stage == Idle {
+	if adsr.stage == idle {
 		adsr.lastOut = 0.0
 		adsr.outVector[0] = 0.0
 		return adsr.outVector[:]
@@ -242,45 +186,29 @@ func (adsr *ADSR) Tick() []float64 {
 	if adsr.releaseMode == Duration && adsr.releaseCnt > 0 {
 		adsr.releaseCnt--
 		if adsr.releaseCnt == 0 {
-			adsr.Release()
+			defer adsr.Release()
 		}
 	}
 
-	if (adsr.releaseMode == NoteOff || adsr.releaseMode == Duration) && adsr.stage == Sustain {
+	if (adsr.releaseMode == NoteOff || adsr.releaseMode == Duration) && adsr.stage == sustain {
 		adsr.lastOut = adsr.from
-		adsr.outVector[0] = adsr.from
+		adsr.outVector[0] = adsr.from * adsr.level
 		return adsr.outVector[:]
 	}
 
-	out := adsr.from + math.Pow(adsr.ramp, adsr.exponent)*(adsr.to-adsr.from)
-	adsr.lastOut = out
+	adsr.lastOut = adsr.from + math.Pow(adsr.ramp, adsr.exponent)*(adsr.to-adsr.from)
 	adsr.ramp += adsr.increment
 	adsr.stepCnt--
+
 	if adsr.stepCnt <= 0 {
 		adsr.stage++
-		if adsr.stage < Idle {
-			step := adsr.steps[adsr.stage]
-			adsr.ramp = 0
-			adsr.from = adsr.to
-			if adsr.durationMode == Ratio {
-				adsr.stepCnt = adsr.durationRatioToSamps(step.DurationRatio)
-			} else {
-				adsr.stepCnt = int64(step.Duration * adsr.sampleRate * 0.001)
-			}
-			adsr.increment = 1.0 / float64(adsr.stepCnt)
-			switch adsr.stage {
-			case Decay:
-				adsr.to = step.Level * adsr.maxLevel
-				adsr.exponent = adsr.exponentFromShape(step.Shape, adsr.to-adsr.from)
-			case Sustain:
-				adsr.exponent = 1.0
-			case Release:
-				adsr.to = 0.0
-				adsr.exponent = adsr.exponentFromShape(step.Shape, adsr.to-adsr.from)
-			}
+		if adsr.stage < idle {
+			step := adsr.setting.stepForStage(adsr.stage)
+			adsr.nextStep(step, false)
 		}
 	}
 
-	adsr.outVector[0] = out
+	adsr.outVector[0] = adsr.lastOut * adsr.level
+
 	return adsr.outVector[:]
 }

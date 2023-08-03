@@ -182,15 +182,8 @@ func main() {
 	kickSound, _ := io.NewSoundFile("resources/drums/kick/Cymatics - Humble Sit Down Kick - D.wav")
 	snareSound, _ := io.NewSoundFile("resources/drums/snare/Cymatics - Humble Institution Snare - C#.wav")
 
-	ampEnv := adsr.NewBasicStepProvider()
-	ampEnv.Steps[0] = adsr.Step{Level: 1.0, Duration: 25.0}
-	ampEnv.Steps[1] = adsr.Step{Level: 0.3, Duration: 80.0}
-	ampEnv.Steps[3] = adsr.Step{Duration: 300.0}
-
-	filterEnv := adsr.NewBasicStepProvider()
-	filterEnv.Steps[0] = adsr.Step{Level: 0.9, Duration: 25.0}
-	filterEnv.Steps[1] = adsr.Step{Level: 0.3, Duration: 80.0}
-	filterEnv.Steps[3] = adsr.Step{Duration: 300.0}
+	ampEnvSetting := adsr.NewSetting(1.0, 25.0, 0.3, 80.0, 0.0, 300.0)
+	filterEnvSetting := adsr.NewSetting(0.9, 25.0, 0.3, 80.0, 0.0, 300.0)
 
 	root.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
 		"command":   "trigger",
@@ -210,7 +203,7 @@ func main() {
 
 	guitarPlayer := root.AddModule(player.New(guitarBuffer, 1.0, 1.0, true))
 	singPlayer := root.AddModule(player.New(singBuffer, 1.0, 1.0, true))
-	synth := classic.New(20, ampEnv, filterEnv).Named("poly").AddTo(root)
+	synth := classic.New(20, ampEnvSetting, filterEnvSetting).Named("poly").AddTo(root)
 
 	synthSettings(synth)
 

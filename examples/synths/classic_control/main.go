@@ -29,12 +29,12 @@ import (
 
 type ClassicSynth struct {
 	*muse.BasePatch
-	controls  *controls.Group
-	ampEnv    *adsr.BasicStepProvider
-	filterEnv *adsr.BasicStepProvider
-	poly      *polyphony.Polyphony
-	chorus1   *chorus.Chorus
-	chorus2   *chorus.Chorus
+	controls         *controls.Group
+	ampEnvSetting    *adsr.Setting
+	filterEnvSetting *adsr.Setting
+	poly             *polyphony.Polyphony
+	chorus1          *chorus.Chorus
+	chorus2          *chorus.Chorus
 }
 
 func NewClassicSynth(bpm float64) *ClassicSynth {
@@ -49,19 +49,12 @@ func NewClassicSynth(bpm float64) *ClassicSynth {
 	// Add self as receiver
 	synth.AddMessageReceiver(synth, "synth")
 
-	ampEnv := adsr.NewBasicStepProvider()
-	ampEnv.Steps[0] = adsr.Step{Level: 1.0, Duration: 25.0}
-	ampEnv.Steps[1] = adsr.Step{Level: 0.3, Duration: 80.0}
-	ampEnv.Steps[3] = adsr.Step{Duration: 2000.0}
+	ampEnvSetting := adsr.NewSetting(1.0, 25.0, 0.3, 80.0, 0.0, 2000.0)
+	filterEnvSetting := adsr.NewSetting(0.9, 25.0, 0.5, 80.0, 0.0, 2000.0)
 
-	filterEnv := adsr.NewBasicStepProvider()
-	filterEnv.Steps[0] = adsr.Step{Level: 0.9, Duration: 25.0}
-	filterEnv.Steps[1] = adsr.Step{Level: 0.5, Duration: 80.0}
-	filterEnv.Steps[3] = adsr.Step{Duration: 2000.0}
-
-	synth.ampEnv = ampEnv
-	synth.filterEnv = filterEnv
-	synth.poly = classic.New(20, ampEnv, filterEnv).Named("poly").AddTo(synth).(*polyphony.Polyphony)
+	synth.ampEnvSetting = ampEnvSetting
+	synth.filterEnvSetting = filterEnvSetting
+	synth.poly = classic.New(20, ampEnvSetting, filterEnvSetting).Named("poly").AddTo(synth).(*polyphony.Polyphony)
 	synthAmp1 := functor.NewAmp(0.85).AddTo(synth).In(synth.poly)
 	synthAmp2 := functor.NewAmp(0.85).AddTo(synth).In(synth.poly, 1)
 	allpass1 := allpass.New(2500.0, 60000/bpm*1.666, 0.5).AddTo(synth).In(synthAmp1)
@@ -135,25 +128,25 @@ func (cs *ClassicSynth) ControlChanged(ctrl controls.Control, oldValue any, newV
 		})
 	} else if components[0] == "adsr" {
 		// If adsr set steps
-		var stepProvider *adsr.BasicStepProvider
+		var setting *adsr.Setting
 		if components[1] == "filter" {
-			stepProvider = cs.filterEnv
+			setting = cs.filterEnvSetting
 		} else if components[1] == "amplitude" {
-			stepProvider = cs.ampEnv
+			setting = cs.ampEnvSetting
 		}
 
-		if stepProvider != nil {
+		if setting != nil {
 			switch components[2] {
 			case "attackLevel":
-				stepProvider.Steps[0].Level = newValue.(float64)
+				setting.AttackLevel = newValue.(float64)
 			case "attackDuration":
-				stepProvider.Steps[0].Duration = newValue.(float64)
+				setting.AttackDuration = newValue.(float64)
 			case "decayLevel":
-				stepProvider.Steps[1].Level = newValue.(float64)
+				setting.DecayLevel = newValue.(float64)
 			case "decayDuration":
-				stepProvider.Steps[1].Duration = newValue.(float64)
+				setting.DecayDuration = newValue.(float64)
 			case "releaseDuration":
-				stepProvider.Steps[3].Duration = newValue.(float64)
+				setting.ReleaseDuration = newValue.(float64)
 			}
 		}
 	}
@@ -377,10 +370,10 @@ func hihatRhythm() value.Valuer[*swing.Step] {
 }
 
 func main() {
-	muse.PushConfiguration(&muse.Configuration{
-		SampleRate: 44100.0 * 4,
-		BufferSize: 256,
-	})
+	// muse.PushConfiguration(&muse.Configuration{
+	// 	SampleRate: 44100.0 * 4,
+	// 	BufferSize: 256,
+	// })
 
 	root := muse.New(2)
 
@@ -482,7 +475,9 @@ func main() {
 		"adsr.filter.decayDuration": template.NewParameter("val", nil),
 	}))
 
-	root.RenderToSoundFile("/Users/almerlucke/Desktop/classic_control.aifc", 240.0, 44100.0, true)
+	root.RenderAudio()
+
+	// root.RenderToSoundFile("/Users/almerlucke/Desktop/classic_control.aifc", 240.0, 44100.0, true)
 
 	// synth.AddMessenger(lfo.NewBasicLFO(0.0569, 6800.0, 1200.0, []string{"synth"}, env.Config, "val", template.Template{
 	// 	"voice.filterFcMax": template.NewParameter("val", nil),

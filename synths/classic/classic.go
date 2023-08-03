@@ -16,41 +16,41 @@ import (
 
 type Voice struct {
 	*muse.BasePatch
-	ampEnv         *adsr.ADSR
-	filterEnv      *adsr.ADSR
-	Osc1           *osc.Osc
-	Osc2           *osc.Osc
-	noiseGen       *noise.Noise
-	SourceMixer    *mixer.Mixer
-	filter         *korg35.Korg35LPF
-	panner         *pan.Pan
-	ampEnvSteps    adsrc.StepProvider
-	filterEnvSteps adsrc.StepProvider
-	osc2Tuning     float64
-	filterFcMin    float64
-	filterFcMax    float64
+	ampEnv           *adsr.ADSR
+	filterEnv        *adsr.ADSR
+	Osc1             *osc.Osc
+	Osc2             *osc.Osc
+	noiseGen         *noise.Noise
+	SourceMixer      *mixer.Mixer
+	filter           *korg35.Korg35LPF
+	panner           *pan.Pan
+	ampEnvSetting    *adsrc.Setting
+	filterEnvSetting *adsrc.Setting
+	osc2Tuning       float64
+	filterFcMin      float64
+	filterFcMax      float64
 }
 
-func NewVoice(ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider) *Voice {
+func NewVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *Voice {
 	osc1Mix := 0.6
 	osc2Mix := 0.35
 	noiseMix := 0.05
 
 	voice := &Voice{
-		BasePatch:      muse.NewPatch(0, 2),
-		ampEnv:         adsr.New(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0),
-		filterEnv:      adsr.New(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0),
-		Osc1:           osc.New(100.0, 0.0),
-		Osc2:           osc.New(100.0, 0.5),
-		noiseGen:       noise.New(1),
-		SourceMixer:    mixer.New(3),
-		filter:         korg35.New(1500.0, 0.7, 2.0),
-		panner:         pan.New(0.5),
-		ampEnvSteps:    ampEnvSteps,
-		filterEnvSteps: filterEnvSteps,
-		osc2Tuning:     2.03,
-		filterFcMin:    50.0,
-		filterFcMax:    8000,
+		BasePatch:        muse.NewPatch(0, 2),
+		ampEnv:           adsr.New(ampEnvSetting, adsrc.Duration, 1.0),
+		filterEnv:        adsr.New(filterEnvSetting, adsrc.Duration, 1.0),
+		Osc1:             osc.New(100.0, 0.0),
+		Osc2:             osc.New(100.0, 0.5),
+		noiseGen:         noise.New(1),
+		SourceMixer:      mixer.New(3),
+		filter:           korg35.New(1500.0, 0.7, 2.0),
+		panner:           pan.New(0.5),
+		ampEnvSetting:    ampEnvSetting,
+		filterEnvSetting: filterEnvSetting,
+		osc2Tuning:       2.03,
+		filterFcMin:      50.0,
+		filterFcMax:      8000,
 	}
 
 	voice.SetSelf(voice)
@@ -94,11 +94,11 @@ func NewVoice(ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider)
 	return voice
 }
 
-func New(numVoices int, ampEnv adsrc.StepProvider, filterEnv adsrc.StepProvider) *polyphony.Polyphony {
+func New(numVoices int, ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *polyphony.Polyphony {
 	voices := make([]polyphony.Voice, numVoices)
 
 	for i := 0; i < numVoices; i++ {
-		voices[i] = NewVoice(ampEnv, filterEnv)
+		voices[i] = NewVoice(ampEnvSetting, filterEnvSetting)
 	}
 
 	return polyphony.New(2, voices)
@@ -119,8 +119,8 @@ func (v *Voice) Note(duration float64, amplitude float64, msg any, config *muse.
 		v.Osc2.SetFrequency(fc * v.osc2Tuning)
 	}
 
-	v.ampEnv.TriggerFull(duration, amplitude, v.ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration)
-	v.filterEnv.TriggerFull(duration, 1.0, v.filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration)
+	v.ampEnv.TriggerFull(duration, amplitude, v.ampEnvSetting, adsrc.Duration)
+	v.filterEnv.TriggerFull(duration, 1.0, v.filterEnvSetting, adsrc.Duration)
 }
 
 func (v *Voice) NoteOn(amplitude float64, msg any, config *muse.Configuration) {
@@ -132,8 +132,8 @@ func (v *Voice) NoteOn(amplitude float64, msg any, config *muse.Configuration) {
 		fc := fcRaw.(float64)
 		v.Osc1.SetFrequency(fc)
 		v.Osc2.SetFrequency(fc * v.osc2Tuning)
-		v.ampEnv.TriggerFull(0, amplitude, v.ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.NoteOff)
-		v.filterEnv.TriggerFull(0, 1.0, v.filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.NoteOff)
+		v.ampEnv.TriggerFull(0, amplitude, v.ampEnvSetting, adsrc.NoteOff)
+		v.filterEnv.TriggerFull(0, 1.0, v.filterEnvSetting, adsrc.NoteOff)
 	}
 }
 

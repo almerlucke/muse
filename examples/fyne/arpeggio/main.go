@@ -37,22 +37,22 @@ import (
 
 type TestVoice struct {
 	*muse.BasePatch
-	ampEnv          *adsr.ADSR
-	filterEnv       *adsr.ADSR
-	phasor          *phasor.Phasor
-	filter          *moog.Moog
-	shaper          shaping.Shaper
-	ampStepProvider adsrctrl.ADSRStepProvider
+	ampEnv        *adsr.ADSR
+	filterEnv     *adsr.ADSR
+	phasor        *phasor.Phasor
+	filter        *moog.Moog
+	shaper        shaping.Shaper
+	ampEnvSetting *adsrc.Setting
 }
 
-func NewTestVoice(ampStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
+func NewTestVoice(ampEnvSetting *adsrc.Setting) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch:       muse.NewPatch(0, 1),
-		ampStepProvider: ampStepProvider,
-		shaper:          shaping.NewJP8000triMod(0.3),
+		BasePatch:     muse.NewPatch(0, 1),
+		ampEnvSetting: ampEnvSetting,
+		shaper:        shaping.NewJP8000triMod(0.3),
 	}
 
-	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0))
+	ampEnv := testVoice.AddModule(adsr.New(ampEnvSetting, adsrc.Duration, 1.0))
 	multiplier := testVoice.AddModule(functor.NewMult(2))
 	osc := testVoice.AddModule(phasor.New(140.0, 0.0))
 	shape := testVoice.AddModule(waveshaper.New(testVoice.shaper, 0, nil, nil))
@@ -75,7 +75,7 @@ func (tv *TestVoice) IsActive() bool {
 func (tv *TestVoice) Note(duration float64, amplitude float64, message any, config *muse.Configuration) {
 	msg := message.(map[string]any)
 
-	tv.ampEnv.TriggerFull(duration, amplitude, tv.ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration)
+	tv.ampEnv.TriggerFull(duration, amplitude, tv.ampEnvSetting, adsrc.Duration)
 	tv.phasor.ReceiveMessage(msg["osc"])
 }
 
@@ -98,13 +98,14 @@ func main() {
 
 	root := muse.New(2)
 
-	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
+	ampEnvSetting := adsrc.NewSetting(1.0, 5.0, 0.2, 5.0, 0.0, 1300.0)
+	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR", ampEnvSetting)
 
 	voices1 := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
 		var voice polyphony.Voice
 
-		voice = NewTestVoice(ampEnvControl)
+		voice = NewTestVoice(ampEnvSetting)
 
 		voices1 = append(voices1, voice)
 	}

@@ -31,27 +31,27 @@ import (
 
 type TestVoice struct {
 	*muse.BasePatch
-	ampEnv             *adsr.ADSR
-	filterEnv          *adsr.ADSR
-	phasor             *phasor.Phasor
-	filter             *moog.Moog
-	superSaw           *shaping.SuperSaw
-	ampStepProvider    adsrctrl.ADSRStepProvider
-	filterStepProvider adsrctrl.ADSRStepProvider
+	ampEnv           *adsr.ADSR
+	filterEnv        *adsr.ADSR
+	phasor           *phasor.Phasor
+	filter           *moog.Moog
+	superSaw         *shaping.SuperSaw
+	ampEnvSetting    *adsrc.Setting
+	filterEnvSetting *adsrc.Setting
 }
 
-func NewTestVoice(ampStepProvider adsrctrl.ADSRStepProvider, filterStepProvider adsrctrl.ADSRStepProvider) *TestVoice {
+func NewTestVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *TestVoice {
 	testVoice := &TestVoice{
-		BasePatch:          muse.NewPatch(0, 1),
-		ampStepProvider:    ampStepProvider,
-		filterStepProvider: filterStepProvider,
-		superSaw:           shaping.NewSuperSaw(1.5, 0.25, 0.88),
+		BasePatch:        muse.NewPatch(0, 1),
+		ampEnvSetting:    ampEnvSetting,
+		filterEnvSetting: filterEnvSetting,
+		superSaw:         shaping.NewSuperSaw(1.5, 0.25, 0.88),
 	}
 
 	testVoice.SetSelf(testVoice)
 
-	ampEnv := testVoice.AddModule(adsr.New(ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0))
-	filterEnv := testVoice.AddModule(adsr.New(filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.Duration, 1.0))
+	ampEnv := testVoice.AddModule(adsr.New(ampEnvSetting, adsrc.Duration, 1.0))
+	filterEnv := testVoice.AddModule(adsr.New(filterEnvSetting, adsrc.Duration, 1.0))
 	multiplier := testVoice.AddModule(functor.NewMult(2))
 	filterEnvScaler := testVoice.AddModule(functor.NewScale(5000.0, 100.0))
 	osc := testVoice.AddModule(phasor.New(140.0, 0.0))
@@ -85,8 +85,8 @@ func (tv *TestVoice) Note(duration float64, amplitude float64, message any, conf
 func (tv *TestVoice) NoteOn(amplitude float64, message any, config *muse.Configuration) {
 	msg := message.(map[string]any)
 
-	tv.ampEnv.TriggerFull(0, amplitude, tv.ampStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.NoteOff)
-	tv.filterEnv.TriggerFull(0, 1.0, tv.filterStepProvider.ADSRSteps(), adsrc.Absolute, adsrc.NoteOff)
+	tv.ampEnv.TriggerFull(0, amplitude, tv.ampEnvSetting, adsrc.NoteOff)
+	tv.filterEnv.TriggerFull(0, 1.0, tv.filterEnvSetting, adsrc.NoteOff)
 	tv.phasor.ReceiveMessage(msg["osc"])
 }
 
@@ -120,12 +120,14 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 func main() {
 	root := muse.New(2)
 
-	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR")
-	filterEnvControl := adsrctrl.NewADSRControl("Filter ADSR")
+	ampEnvSetting := adsrc.NewSetting(1.0, 5.0, 0.2, 5.0, 0.0, 1500.0)
+	filterEnvSetting := adsrc.NewSetting(1.0, 5.0, 0.2, 5.0, 0.0, 1500.0)
+	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR", ampEnvSetting)
+	filterEnvControl := adsrctrl.NewADSRControl("Filter ADSR", filterEnvSetting)
 
 	voices := []polyphony.Voice{}
 	for i := 0; i < 20; i++ {
-		voice := NewTestVoice(ampEnvControl, filterEnvControl)
+		voice := NewTestVoice(ampEnvSetting, filterEnvSetting)
 		voices = append(voices, voice)
 	}
 

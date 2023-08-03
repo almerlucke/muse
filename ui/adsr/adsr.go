@@ -12,13 +12,9 @@ import (
 	"github.com/almerlucke/muse/ui"
 )
 
-type ADSRStepProvider interface {
-	ADSRSteps() []adsrc.Step
-}
-
 type ADSRControl struct {
 	title                        string
-	steps                        []adsrc.Step
+	setting                      *adsrc.Setting
 	attackDurationLabelBinding   binding.String
 	attackDurationSliderBinding  binding.Float
 	attackLevelLabelBinding      binding.String
@@ -40,145 +36,146 @@ type ADSRControl struct {
 func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	// Attack Duration
 	ctrl.attackDurationLabelBinding = binding.NewString()
-	ctrl.attackDurationLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[0].Duration))
 	attackDurationLabel := widget.NewLabelWithData(ctrl.attackDurationLabelBinding)
 	attackDurationLabel.Alignment = fyne.TextAlignTrailing
+	ctrl.attackDurationLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.setting.AttackDuration))
 
 	ctrl.attackDurationSliderBinding = binding.NewFloat()
-	ctrl.attackDurationSliderBinding.Set(ctrl.steps[0].Duration)
 	ctrl.attackDurationSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.attackDurationSliderBinding.Get()
 		if err == nil {
 			ctrl.attackDurationLabelBinding.Set(fmt.Sprintf("%.2f", v))
-			ctrl.steps[0].Duration = v
+			ctrl.setting.AttackDuration = v
 		}
 	}))
 	attackDurationSlider := widget.NewSliderWithData(1.0, 500.0, ctrl.attackDurationSliderBinding)
+	ctrl.attackDurationSliderBinding.Set(ctrl.setting.AttackDuration)
 
 	// Attack Level
 	ctrl.attackLevelLabelBinding = binding.NewString()
-	ctrl.attackLevelLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[0].Level))
 	attackLevelLabel := widget.NewLabelWithData(ctrl.attackLevelLabelBinding)
 	attackLevelLabel.Alignment = fyne.TextAlignTrailing
+	ctrl.attackLevelLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.setting.AttackLevel))
 
 	ctrl.attackLevelSliderBinding = binding.NewFloat()
-	ctrl.attackLevelSliderBinding.Set(ctrl.steps[0].Level)
 	ctrl.attackLevelSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.attackLevelSliderBinding.Get()
 		if err == nil {
 			ctrl.attackLevelLabelBinding.Set(fmt.Sprintf("%.2f", v))
-			ctrl.steps[0].Level = v
+			ctrl.setting.AttackLevel = v
 		}
 	}))
 	attackLevelSlider := widget.NewSliderWithData(0.0, 1.0, ctrl.attackLevelSliderBinding)
 	attackLevelSlider.Step = 0.01
+	ctrl.attackLevelSliderBinding.Set(ctrl.setting.AttackLevel)
 
 	// Attack Shape
 	ctrl.attackShapeLabelBinding = binding.NewString()
-	ctrl.attackShapeLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[0].Shape))
 	attackShapeLabel := widget.NewLabelWithData(ctrl.attackShapeLabelBinding)
 	attackShapeLabel.Alignment = fyne.TextAlignTrailing
+	ctrl.attackShapeLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.setting.AttackShape))
 
 	ctrl.attackShapeSliderBinding = binding.NewFloat()
-	ctrl.attackShapeSliderBinding.Set(ctrl.steps[0].Shape)
 	ctrl.attackShapeSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.attackShapeSliderBinding.Get()
 		if err == nil {
 			ctrl.attackShapeLabelBinding.Set(fmt.Sprintf("%.2f", v))
-			ctrl.steps[0].Shape = v
+			ctrl.setting.AttackShape = v
 		}
 	}))
 	attackShapeSlider := widget.NewSliderWithData(-1.0, 1.0, ctrl.attackShapeSliderBinding)
 	attackShapeSlider.Step = 0.01
+	attackShapeSlider.Value = ctrl.setting.AttackShape
+	ctrl.attackShapeSliderBinding.Set(ctrl.setting.AttackShape)
 
 	// Decay Duration
 	ctrl.decayDurationLabelBinding = binding.NewString()
-	ctrl.decayDurationLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[1].Duration))
 	decayDurationLabel := widget.NewLabelWithData(ctrl.decayDurationLabelBinding)
 	decayDurationLabel.Alignment = fyne.TextAlignTrailing
+	ctrl.decayDurationLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.setting.DecayDuration))
 
 	ctrl.decayDurationSliderBinding = binding.NewFloat()
-	ctrl.decayDurationSliderBinding.Set(ctrl.steps[1].Duration)
 	ctrl.decayDurationSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.decayDurationSliderBinding.Get()
 		if err == nil {
 			ctrl.decayDurationLabelBinding.Set(fmt.Sprintf("%.2f", v))
-			ctrl.steps[1].Duration = v
+			ctrl.setting.DecayDuration = v
 		}
 	}))
 	decayDurationSlider := widget.NewSliderWithData(1.0, 500.0, ctrl.decayDurationSliderBinding)
+	ctrl.decayDurationSliderBinding.Set(ctrl.setting.DecayDuration)
 
 	// Decay Level
 	ctrl.decayLevelLabelBinding = binding.NewString()
-	ctrl.decayLevelLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[1].Level))
 	decayLevelLabel := widget.NewLabelWithData(ctrl.decayLevelLabelBinding)
 	decayLevelLabel.Alignment = fyne.TextAlignTrailing
+	ctrl.decayLevelLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.setting.DecayLevel))
 
 	ctrl.decayLevelSliderBinding = binding.NewFloat()
-	ctrl.decayLevelSliderBinding.Set(ctrl.steps[1].Level)
 	ctrl.decayLevelSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.decayLevelSliderBinding.Get()
 		if err == nil {
 			ctrl.decayLevelLabelBinding.Set(fmt.Sprintf("%.2f", v))
-			ctrl.steps[1].Level = v
+			ctrl.setting.DecayLevel = v
 		}
 	}))
 	decayLevelSlider := widget.NewSliderWithData(0.0, 1.0, ctrl.decayLevelSliderBinding)
 	decayLevelSlider.Step = 0.01
+	ctrl.decayLevelSliderBinding.Set(ctrl.setting.DecayLevel)
 
 	// Decay Shape
 	ctrl.decayShapeLabelBinding = binding.NewString()
-	ctrl.decayShapeLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[1].Shape))
 	decayShapeLabel := widget.NewLabelWithData(ctrl.decayShapeLabelBinding)
 	decayShapeLabel.Alignment = fyne.TextAlignTrailing
+	ctrl.decayShapeLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.setting.DecayShape))
 
 	ctrl.decayShapeSliderBinding = binding.NewFloat()
-	ctrl.decayShapeSliderBinding.Set(ctrl.steps[1].Shape)
 	ctrl.decayShapeSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.decayShapeSliderBinding.Get()
 		if err == nil {
 			ctrl.decayShapeLabelBinding.Set(fmt.Sprintf("%.2f", v))
-			ctrl.steps[1].Shape = v
+			ctrl.setting.DecayShape = v
 		}
 	}))
 	decayShapeSlider := widget.NewSliderWithData(-1.0, 1.0, ctrl.decayShapeSliderBinding)
 	decayShapeSlider.Step = 0.01
+	ctrl.decayShapeSliderBinding.Set(ctrl.setting.DecayShape)
 
 	// Release Duration
 	ctrl.releaseDurationLabelBinding = binding.NewString()
-	ctrl.releaseDurationLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[3].Duration))
 	releaseDurationLabel := widget.NewLabelWithData(ctrl.releaseDurationLabelBinding)
 	releaseDurationLabel.Alignment = fyne.TextAlignTrailing
+	ctrl.releaseDurationLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.setting.ReleaseDuration))
 
 	ctrl.releaseDurationSliderBinding = binding.NewFloat()
-	ctrl.releaseDurationSliderBinding.Set(ctrl.steps[3].Duration)
 	ctrl.releaseDurationSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.releaseDurationSliderBinding.Get()
 		if err == nil {
 			ctrl.releaseDurationLabelBinding.Set(fmt.Sprintf("%.2f", v))
-			ctrl.steps[3].Duration = v
+			ctrl.setting.ReleaseDuration = v
 		}
 	}))
 	releaseDurationSlider := widget.NewSliderWithData(50.0, 2500.0, ctrl.releaseDurationSliderBinding)
 	releaseDurationSlider.Step = 10.0
+	ctrl.releaseDurationSliderBinding.Set(ctrl.setting.ReleaseDuration)
 
 	// Release Shape
 	ctrl.releaseShapeLabelBinding = binding.NewString()
-	ctrl.releaseShapeLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.steps[3].Shape))
 	releaseShapeLabel := widget.NewLabelWithData(ctrl.releaseShapeLabelBinding)
 	releaseShapeLabel.Alignment = fyne.TextAlignTrailing
+	ctrl.releaseShapeLabelBinding.Set(fmt.Sprintf("%.2f", ctrl.setting.ReleaseShape))
 
 	ctrl.releaseShapeSliderBinding = binding.NewFloat()
-	ctrl.releaseShapeSliderBinding.Set(ctrl.steps[3].Shape)
 	ctrl.releaseShapeSliderBinding.AddListener(binding.NewDataListener(func() {
 		v, err := ctrl.releaseShapeSliderBinding.Get()
 		if err == nil {
 			ctrl.releaseShapeLabelBinding.Set(fmt.Sprintf("%.2f", v))
-			ctrl.steps[3].Shape = v
+			ctrl.setting.ReleaseShape = v
 		}
 	}))
 	releaseShapeSlider := widget.NewSliderWithData(-1.0, 1.0, ctrl.releaseShapeSliderBinding)
 	releaseShapeSlider.Step = 0.01
+	ctrl.releaseShapeSliderBinding.Set(ctrl.setting.ReleaseShape)
 
 	return widget.NewCard(ctrl.title, "",
 		container.NewHBox(
@@ -214,102 +211,70 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	)
 }
 
-func (ctrl *ADSRControl) ADSRSteps() []adsrc.Step {
-	return ctrl.steps
-}
-
-func (ctrl *ADSRControl) GetState() map[string]any {
-	stepStates := make([]map[string]any, len(ctrl.steps))
-
-	for index, step := range ctrl.steps {
-		stepStates[index] = step.GetState()
-	}
-
-	return map[string]any{"steps": stepStates}
-}
-
-func (ctrl *ADSRControl) SetState(state map[string]any) {
-	stepStates := state["steps"].([]any)
-
-	for index, stepState := range stepStates {
-		ctrl.steps[index].SetState(stepState.(map[string]any))
-	}
-
-	ctrl.attackDurationSliderBinding.Set(ctrl.steps[0].Duration)
-	ctrl.attackLevelSliderBinding.Set(ctrl.steps[0].Level)
-	ctrl.attackShapeSliderBinding.Set(ctrl.steps[0].Shape)
-	ctrl.decayDurationSliderBinding.Set(ctrl.steps[1].Duration)
-	ctrl.decayLevelSliderBinding.Set(ctrl.steps[1].Level)
-	ctrl.decayShapeSliderBinding.Set(ctrl.steps[1].Shape)
-	ctrl.releaseDurationSliderBinding.Set(ctrl.steps[3].Duration)
-	ctrl.releaseShapeSliderBinding.Set(ctrl.steps[3].Shape)
+func (ctrl *ADSRControl) Setting() *adsrc.Setting {
+	return ctrl.setting
 }
 
 func (ctrl *ADSRControl) SetAttackDuration(ms float64) {
-	ctrl.steps[0].Duration = ms
+	ctrl.setting.AttackDuration = ms
 	if ctrl.attackDurationSliderBinding != nil {
-		ctrl.attackDurationSliderBinding.Set(ctrl.steps[0].Duration)
+		ctrl.attackDurationSliderBinding.Set(ms)
 	}
 }
 
 func (ctrl *ADSRControl) SetAttackLevel(level float64) {
-	ctrl.steps[0].Level = level
+	ctrl.setting.AttackLevel = level
 	if ctrl.attackLevelSliderBinding != nil {
-		ctrl.attackLevelSliderBinding.Set(ctrl.steps[0].Level)
+		ctrl.attackLevelSliderBinding.Set(level)
 	}
 }
 
 func (ctrl *ADSRControl) SetAttackShape(shape float64) {
-	ctrl.steps[0].Shape = shape
+	ctrl.setting.AttackShape = shape
 	if ctrl.attackShapeSliderBinding != nil {
-		ctrl.attackShapeSliderBinding.Set(ctrl.steps[0].Shape)
+		ctrl.attackShapeSliderBinding.Set(shape)
 	}
 }
 
 func (ctrl *ADSRControl) SetDecayDuration(ms float64) {
-	ctrl.steps[1].Duration = ms
+	ctrl.setting.DecayDuration = ms
 	if ctrl.decayDurationSliderBinding != nil {
-		ctrl.decayDurationSliderBinding.Set(ctrl.steps[1].Duration)
+		ctrl.decayDurationSliderBinding.Set(ms)
 	}
 }
 
 func (ctrl *ADSRControl) SetDecayLevel(level float64) {
-	ctrl.steps[1].Level = level
+	ctrl.setting.DecayLevel = level
 	if ctrl.decayLevelSliderBinding != nil {
-		ctrl.decayLevelSliderBinding.Set(ctrl.steps[1].Level)
+		ctrl.decayLevelSliderBinding.Set(level)
 	}
 }
 
 func (ctrl *ADSRControl) SetDecayShape(shape float64) {
-	ctrl.steps[1].Shape = shape
+	ctrl.setting.DecayShape = shape
 	if ctrl.decayShapeSliderBinding != nil {
-		ctrl.decayShapeSliderBinding.Set(ctrl.steps[1].Shape)
+		ctrl.decayShapeSliderBinding.Set(shape)
 	}
 }
 
 func (ctrl *ADSRControl) SetReleaseDuration(ms float64) {
-	ctrl.steps[3].Duration = ms
+	ctrl.setting.ReleaseDuration = ms
 	if ctrl.releaseDurationSliderBinding != nil {
-		ctrl.releaseDurationSliderBinding.Set(ctrl.steps[3].Duration)
+		ctrl.releaseDurationSliderBinding.Set(ms)
 	}
 }
 
 func (ctrl *ADSRControl) SetReleaseShape(shape float64) {
-	ctrl.steps[3].Shape = shape
+	ctrl.setting.ReleaseShape = shape
 	if ctrl.releaseShapeSliderBinding != nil {
-		ctrl.releaseShapeSliderBinding.Set(ctrl.steps[3].Shape)
+		ctrl.releaseShapeSliderBinding.Set(shape)
 	}
 }
 
-func NewADSRControl(title string) *ADSRControl {
+func NewADSRControl(title string, setting *adsrc.Setting) *ADSRControl {
 	control := &ADSRControl{
-		title: title,
-		steps: []adsrc.Step{
-			{Level: 1.0, Duration: 5, Shape: 0.0},
-			{Level: 0.3, Duration: 5, Shape: 0.0},
-			{Duration: 20},
-			{Duration: 5, Shape: 0.0},
-		},
+		title:   title,
+		setting: setting,
 	}
 
 	return control

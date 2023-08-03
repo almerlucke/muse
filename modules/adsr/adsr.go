@@ -9,19 +9,18 @@ import (
 type ADSR struct {
 	*muse.BaseModule
 	adsr     *adsrc.ADSR
-	maxLevel float64
+	level    float64
 	duration float64
 }
 
-func New(steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode adsrc.ReleaseMode, maxLevel float64) *ADSR {
+func New(setting *adsrc.Setting, releaseMode adsrc.ReleaseMode, level float64) *ADSR {
 	a := &ADSR{
 		BaseModule: muse.NewBaseModule(0, 1),
 	}
 
-	a.maxLevel = maxLevel
+	a.level = level
 	a.duration = 250.0
-	a.adsr = &adsrc.ADSR{}
-	a.adsr.Initialize(steps, durationMode, releaseMode, muse.SampleRate())
+	a.adsr = adsrc.New(setting, releaseMode, muse.SampleRate())
 
 	a.SetSelf(a)
 
@@ -35,9 +34,9 @@ func (a *ADSR) SetDuration(duration float64) {
 func (a *ADSR) Bang() {
 	switch a.adsr.ReleaseMode() {
 	case adsrc.Duration:
-		a.adsr.TriggerWithDuration(a.duration, a.maxLevel)
+		a.adsr.TriggerWithDuration(a.duration, a.level)
 	case adsrc.Automatic:
-		a.adsr.Trigger(a.maxLevel)
+		a.adsr.Trigger(a.level)
 	}
 }
 
@@ -48,7 +47,7 @@ func (a *ADSR) ReceiveControlValue(value any, index int) {
 			a.Bang()
 		}
 	case 1: // MaxLevel
-		a.maxLevel = value.(float64)
+		a.level = value.(float64)
 	case 2: // Duration
 		a.duration = value.(float64)
 	}
@@ -60,8 +59,8 @@ func (a *ADSR) ReceiveMessage(msg any) []*muse.Message {
 			a.duration = duration.(float64)
 		}
 
-		if maxLevel, ok := content["maxLevel"]; ok {
-			a.maxLevel = maxLevel.(float64)
+		if level, ok := content["level"]; ok {
+			a.level = level.(float64)
 		}
 	}
 
@@ -72,8 +71,12 @@ func (a *ADSR) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (a *ADSR) TriggerFull(duration float64, maxLevel float64, steps []adsrc.Step, durationMode adsrc.DurationMode, releaseMode adsrc.ReleaseMode) {
-	a.adsr.TriggerFull(duration, maxLevel, steps, durationMode, releaseMode)
+func (a *ADSR) Trigger(level float64) {
+	a.adsr.Trigger(level)
+}
+
+func (a *ADSR) TriggerFull(duration float64, level float64, setting *adsrc.Setting, releaseMode adsrc.ReleaseMode) {
+	a.adsr.TriggerFull(duration, level, setting, releaseMode)
 }
 
 func (a *ADSR) TriggerWithDuration(duration float64, maxLevel float64) {

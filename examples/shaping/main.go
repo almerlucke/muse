@@ -46,17 +46,12 @@ func main() {
 		[]string{"sequencer1", "adsr1"},
 	))
 
-	steps := []adsrc.Step{
-		{Level: 1.0, Duration: 20, Shape: 0.0},
-		{Level: 0.4, Duration: 20, Shape: 0.0},
-		{Duration: 20},
-		{Duration: 100, Shape: 0.0},
-	}
+	setting := adsrc.NewSetting(1.0, 20.0, 0.4, 20.0, 20.0, 100.0)
 
 	paramVarTri1 := vartri.New(0.25, 0.0, 0.5).AddTo(root)
 	paramVarTri2 := vartri.New(0.325, 0.0, 0.5).AddTo(root)
 	superSawParam := root.AddModule(functor.NewScale(0.82, 0.15))
-	adsrEnv1 := root.AddModule(adsr.New(steps, adsrc.Absolute, adsrc.Automatic, 1.0).Named("adsr1"))
+	adsrEnv1 := root.AddModule(adsr.New(setting, adsrc.Automatic, 1.0).Named("adsr1"))
 	mult1 := root.AddModule(functor.NewMult(2))
 	filterParam := root.AddModule(functor.NewScale(2200.0, 40.0))
 	osc1 := root.AddModule(phasor.New(140.0, 0.0).Named("osc1"))

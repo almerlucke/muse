@@ -72,19 +72,12 @@ func main() {
 
 	root := muse.New(2)
 
-	ampEnv := adsr.NewBasicStepProvider()
-	ampEnv.Steps[0] = adsr.Step{Level: 1.0, Duration: 25.0}
-	ampEnv.Steps[1] = adsr.Step{Level: 0.3, Duration: 80.0}
-	ampEnv.Steps[3] = adsr.Step{Duration: 2000.0}
-
-	filterEnv := adsr.NewBasicStepProvider()
-	filterEnv.Steps[0] = adsr.Step{Level: 0.9, Duration: 25.0}
-	filterEnv.Steps[1] = adsr.Step{Level: 0.5, Duration: 80.0}
-	filterEnv.Steps[3] = adsr.Step{Duration: 2000.0}
+	ampEnvSetting := adsr.NewSetting(1.0, 25.0, 0.3, 80.0, 0.0, 2000.0)
+	filterEnvSetting := adsr.NewSetting(0.9, 25.0, 0.5, 80.0, 0.0, 2000.0)
 
 	bpm := 100
 
-	synth := classic.New(20, ampEnv, filterEnv).Named("poly").AddTo(root)
+	synth := classic.New(20, ampEnvSetting, filterEnvSetting).Named("poly").AddTo(root)
 	synthAmp1 := root.AddModule(functor.NewAmp(0.85))
 	synthAmp2 := root.AddModule(functor.NewAmp(0.85))
 	allpass1 := root.AddModule(allpass.New(2500.0, 60000.0/float64(bpm)*1.666, 0.5))

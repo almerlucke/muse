@@ -6,25 +6,8 @@ import (
 	"github.com/almerlucke/muse/components/envelopes/adsr"
 )
 
-func testRatioAuto() {
-	steps := []adsr.Step{{
-		Level:         1.0,
-		DurationRatio: 0.7,
-		Shape:         -0.5,
-	}, {
-		Level:         0.4,
-		DurationRatio: 0.7,
-		Shape:         -0.5,
-	}, {
-		DurationRatio: 0.7,
-	}, {
-		DurationRatio: 0.7,
-		Shape:         -0.5,
-	}}
-
-	adsrEnv := &adsr.ADSR{}
-
-	adsrEnv.Initialize(steps, adsr.Ratio, adsr.Automatic, 44100.0)
+func testAuto() {
+	adsrEnv := adsr.New(adsr.NewSetting(1.0, 1.0, 0.2, 1.0, 1.0, 1.0), adsr.Automatic, 44100.0)
 	adsrEnv.Trigger(1.0)
 
 	index := 0
@@ -34,57 +17,25 @@ func testRatioAuto() {
 	}
 }
 
-func testAbsoluteAuto() {
-	steps := []adsr.Step{{
-		Level:    1.0,
-		Duration: 1,
-		Shape:    -0.5,
-	}, {
-		Level:    0.4,
-		Duration: 1,
-		Shape:    -0.5,
-	}, {
-		Duration: 1,
-	}, {
-		Duration: 1,
-		Shape:    -0.5,
-	}}
-
-	adsrEnv := &adsr.ADSR{}
-
-	adsrEnv.Initialize(steps, adsr.Absolute, adsr.Automatic, 44100.0)
-	adsrEnv.Trigger(1.0)
-
-	index := 0
-	for !adsrEnv.IsFinished() {
-		index++
-		log.Printf("out %v: %v", index, adsrEnv.Tick())
-	}
-}
-
-func testAbsoluteDuration() {
-	steps := []adsr.Step{{
-		Level:    1.0,
-		Duration: 1,
-		Shape:    -0.5,
-	}, {
-		Level:    0.4,
-		Duration: 1,
-		Shape:    -0.5,
-	}, {
-		Duration: 0.2,
-	}, {
-		Duration: 1,
-		Shape:    -0.5,
-	}}
-
-	adsrEnv := &adsr.ADSR{}
-
-	adsrEnv.Initialize(steps, adsr.Absolute, adsr.Automatic, 44100.0)
+func testDuration() {
+	adsrEnv := adsr.New(adsr.NewSetting(1.0, 1.0, 0.2, 1.0, 1.0, 1.0), adsr.Duration, 44100.0)
 	adsrEnv.TriggerWithDuration(2.4, 1.0)
-	adsrEnv.Trigger(1.0)
 
 	index := 0
+	for index < 40 {
+		index++
+		log.Printf("out %v: %v", index, adsrEnv.Tick())
+	}
+
+	adsrEnv.Release()
+
+	for !adsrEnv.IsFinished() {
+		index++
+		log.Printf("out %v: %v", index, adsrEnv.Tick())
+	}
+
+	index = 0
+	adsrEnv.TriggerWithDuration(2.4, 1.0)
 	for !adsrEnv.IsFinished() {
 		index++
 		log.Printf("out %v: %v", index, adsrEnv.Tick())
@@ -92,5 +43,5 @@ func testAbsoluteDuration() {
 }
 
 func main() {
-	testAbsoluteDuration()
+	testDuration()
 }

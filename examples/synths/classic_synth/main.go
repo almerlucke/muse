@@ -30,12 +30,12 @@ import (
 
 type ClassicSynth struct {
 	*muse.BasePatch
-	controls  *controls.Group
-	ampEnv    *adsr.BasicStepProvider
-	filterEnv *adsr.BasicStepProvider
-	Poly      *polyphony.Polyphony
-	chorus1   *chorus.Chorus
-	chorus2   *chorus.Chorus
+	controls         *controls.Group
+	ampEnvSetting    *adsr.Setting
+	filterEnvSetting *adsr.Setting
+	Poly             *polyphony.Polyphony
+	chorus1          *chorus.Chorus
+	chorus2          *chorus.Chorus
 }
 
 func NewClassicSynth(bpm float64) *ClassicSynth {
@@ -50,19 +50,12 @@ func NewClassicSynth(bpm float64) *ClassicSynth {
 	// Add self as receiver
 	synth.AddMessageReceiver(synth, "synth")
 
-	ampEnv := adsr.NewBasicStepProvider()
-	ampEnv.Steps[0] = adsr.Step{Level: 1.0, Duration: 25.0}
-	ampEnv.Steps[1] = adsr.Step{Level: 0.3, Duration: 80.0}
-	ampEnv.Steps[3] = adsr.Step{Duration: 2000.0}
+	ampEnvSetting := adsr.NewSetting(1.0, 25.0, 0.3, 80.0, 0.0, 2000.0)
+	filterEnvSetting := adsr.NewSetting(0.9, 25.0, 0.5, 80.0, 0.0, 2000.0)
 
-	filterEnv := adsr.NewBasicStepProvider()
-	filterEnv.Steps[0] = adsr.Step{Level: 0.9, Duration: 25.0}
-	filterEnv.Steps[1] = adsr.Step{Level: 0.5, Duration: 80.0}
-	filterEnv.Steps[3] = adsr.Step{Duration: 2000.0}
-
-	synth.ampEnv = ampEnv
-	synth.filterEnv = filterEnv
-	synth.Poly = classic.New(20, ampEnv, filterEnv).Named("poly").(*polyphony.Polyphony)
+	synth.ampEnvSetting = ampEnvSetting
+	synth.filterEnvSetting = filterEnvSetting
+	synth.Poly = classic.New(20, ampEnvSetting, ampEnvSetting).Named("poly").(*polyphony.Polyphony)
 	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil)
 	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil)
 
@@ -155,25 +148,25 @@ func (cs *ClassicSynth) ControlChanged(ctrl controls.Control, oldValue any, newV
 		})
 	} else if route == "adsr" {
 		// If adsr set steps
-		var stepProvider *adsr.BasicStepProvider
+		var setting *adsr.Setting
 		if components[1] == "filter" {
-			stepProvider = cs.filterEnv
+			setting = cs.filterEnvSetting
 		} else if components[1] == "amplitude" {
-			stepProvider = cs.ampEnv
+			setting = cs.ampEnvSetting
 		}
 
-		if stepProvider != nil {
+		if setting != nil {
 			switch components[2] {
 			case "attackLevel":
-				stepProvider.Steps[0].Level = newValue.(float64)
+				setting.AttackLevel = newValue.(float64)
 			case "attackDuration":
-				stepProvider.Steps[0].Duration = newValue.(float64)
+				setting.AttackDuration = newValue.(float64)
 			case "decayLevel":
-				stepProvider.Steps[1].Level = newValue.(float64)
+				setting.DecayLevel = newValue.(float64)
 			case "decayDuration":
-				stepProvider.Steps[1].Duration = newValue.(float64)
+				setting.DecayDuration = newValue.(float64)
 			case "releaseDuration":
-				stepProvider.Steps[3].Duration = newValue.(float64)
+				setting.ReleaseDuration = newValue.(float64)
 			}
 		}
 	} else {

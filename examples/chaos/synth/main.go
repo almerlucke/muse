@@ -26,37 +26,37 @@ import (
 
 type ChaosVoice struct {
 	*muse.BasePatch
-	verhulst       *chaos.Verhulst
-	iter           *iterator.Iterator
-	interpol       *interpolator.Interpolator
-	ampEnvSteps    adsrc.StepProvider
-	filterEnvSteps adsrc.StepProvider
-	filter         *korg35.Korg35LPF
-	ampEnv         *adsr.ADSR
-	filterEnv      *adsr.ADSR
-	genMod         *generator.Generator
-	waveShape      *waveshaper.WaveShaper
-	panner         *pan.Pan
+	verhulst         *chaos.Verhulst
+	iter             *iterator.Iterator
+	interpol         *interpolator.Interpolator
+	ampEnvSetting    *adsrc.Setting
+	filterEnvSetting *adsrc.Setting
+	filter           *korg35.Korg35LPF
+	ampEnv           *adsr.ADSR
+	filterEnv        *adsr.ADSR
+	genMod           *generator.Generator
+	waveShape        *waveshaper.WaveShaper
+	panner           *pan.Pan
 }
 
-func NewChaosVoice(ampEnvSteps adsrc.StepProvider, filterEnvSteps adsrc.StepProvider) *ChaosVoice {
+func NewChaosVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *ChaosVoice {
 	verhulst := chaos.NewVerhulstWithFunc(3.6951, chaos.Iter1a)
 	iter := iterator.New([]float64{0.1231}, verhulst)
 	interpol := interpolator.New(iter, interpolator.Cubic, 1.0/120.0)
 
 	voice := &ChaosVoice{
-		BasePatch:      muse.NewPatch(0, 2),
-		verhulst:       verhulst,
-		iter:           iter,
-		interpol:       interpol,
-		ampEnvSteps:    ampEnvSteps,
-		filterEnvSteps: filterEnvSteps,
-		panner:         pan.New(0.5),
-		filter:         korg35.New(1500.0, 1.2, 1.0),
-		genMod:         generator.New(interpol, nil, nil),
-		waveShape:      waveshaper.New(waveshaping.NewSeries(waveshaping.NewMirror(0.0, 1.0), waveshaping.NewBipolar()), 0, nil, nil),
-		ampEnv:         adsr.New(ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0),
-		filterEnv:      adsr.New(filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration, 1.0),
+		BasePatch:        muse.NewPatch(0, 2),
+		verhulst:         verhulst,
+		iter:             iter,
+		interpol:         interpol,
+		ampEnvSetting:    ampEnvSetting,
+		filterEnvSetting: filterEnvSetting,
+		panner:           pan.New(0.5),
+		filter:           korg35.New(1500.0, 1.2, 1.0),
+		genMod:           generator.New(interpol, nil, nil),
+		waveShape:        waveshaper.New(waveshaping.NewSeries(waveshaping.NewMirror(0.0, 1.0), waveshaping.NewBipolar()), 0, nil, nil),
+		ampEnv:           adsr.New(ampEnvSetting, adsrc.Duration, 1.0),
+		filterEnv:        adsr.New(filterEnvSetting, adsrc.Duration, 1.0),
 	}
 
 	voice.SetSelf(voice)
@@ -108,8 +108,8 @@ func (v *ChaosVoice) Note(duration float64, amplitude float64, msg any, config *
 
 	v.iter.SetValues([]float64{rand.Float64()})
 
-	v.ampEnv.TriggerFull(duration, amplitude, v.ampEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration)
-	v.filterEnv.TriggerFull(duration, 1.0, v.filterEnvSteps.GetSteps(), adsrc.Absolute, adsrc.Duration)
+	v.ampEnv.TriggerWithDuration(duration, amplitude)
+	v.filterEnv.TriggerWithDuration(duration, 1.0)
 }
 
 func (v *ChaosVoice) NoteOn(amplitude float64, msg any, config *muse.Configuration) {
@@ -125,21 +125,14 @@ func randMinMax(min float64, max float64) float64 {
 func main() {
 	root := muse.New(2)
 
-	ampEnv := adsrc.NewBasicStepProvider()
-	ampEnv.Steps[0] = adsrc.Step{Level: 1.0, Duration: 450.0}
-	ampEnv.Steps[1] = adsrc.Step{Level: 1.0, Duration: 0.0}
-	ampEnv.Steps[3] = adsrc.Step{Duration: 3000.0}
-
-	filterEnv := adsrc.NewBasicStepProvider()
-	filterEnv.Steps[0] = adsrc.Step{Level: 1.0, Duration: 435.0}
-	filterEnv.Steps[1] = adsrc.Step{Level: 1.0, Duration: 430.0}
-	filterEnv.Steps[3] = adsrc.Step{Duration: 3000.0}
+	ampEnvSetting := adsrc.NewSetting(1.0, 450.0, 1.0, 0.0, 0.0, 3000.0)
+	filterEnvSetting := adsrc.NewSetting(1.0, 435.0, 1.0, 430.0, 0.0, 3000.0)
 
 	numVoices := 20
 	voices := make([]polyphony.Voice, numVoices)
 
 	for i := 0; i < numVoices; i++ {
-		voices[i] = NewChaosVoice(ampEnv, filterEnv)
+		voices[i] = NewChaosVoice(ampEnvSetting, filterEnvSetting)
 	}
 
 	poly := polyphony.New(2, voices).Named("chaosSynth").AddTo(root)
@@ -157,7 +150,7 @@ func main() {
 			return randMinMax(1600, 5000.0)
 		}),
 		"amplitude": value.NewFunction(func() any {
-			return randMinMax(0.2, 0.6)
+			return randMinMax(0.1, 0.3)
 		}),
 		"message": template.Template{
 			"numCycles": value.NewFunction(func() any {
