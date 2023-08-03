@@ -209,6 +209,7 @@ func (klpf *Korg35LPF) Synthesize() bool {
 		}
 
 		y1 := klpf.lpf1.lpTick(in[i])
+
 		s35 := klpf.hpf1.getFeedbackOutput() + klpf.lpf2.getFeedbackOutput()
 		u := klpf.a * (y1 + s35)
 

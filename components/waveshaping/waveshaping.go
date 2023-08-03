@@ -415,7 +415,7 @@ func NewJP8000triMod(m float64) *JP8000triMod {
 			NewAbs(),
 			NewLinear(2.0, -1.0),
 			NewMod1(),
-			NewMult(m), // m=0.3
+			NewMult(m), // m=0.3 [0.7 - 1.0]
 			NewFunction(func(x float64) float64 { return 2.0 * (x - math.Ceil(x-0.5)) }),
 		),
 	}
@@ -493,7 +493,7 @@ func (cheby *Chebyshev) SetHarmonics(harmonics map[int]float64) {
 
 	maxHarmonic := 0
 
-	for k, _ := range cheby.harmonics {
+	for k := range cheby.harmonics {
 		if k > maxHarmonic {
 			maxHarmonic = k
 		}
