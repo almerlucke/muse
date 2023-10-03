@@ -55,25 +55,3 @@ func IConns(args ...any) []*IConn {
 
 	return iConns
 }
-
-// IConn parse input and output to []*ICon
-// func IConns(rawIconns ...any) []*IConn {
-// 	index := 0
-// 	icons := make([]*IConn, len(rawIconns)/3)
-
-// 	for index < len(rawIconns) {
-// 		module := rawIconns[index].(Module)
-// 		outIndex := rawIconns[index+1].(int)
-// 		inIndex := rawIconns[index+2].(int)
-
-// 		icons[index/3] = &IConn{
-// 			Module:   module,
-// 			OutIndex: outIndex,
-// 			InIndex:  inIndex,
-// 		}
-
-// 		index += 3
-// 	}
-
-// 	return icons
-// }

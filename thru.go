@@ -5,9 +5,12 @@ type ThruModule struct {
 }
 
 func NewThruModule() *ThruModule {
-	return &ThruModule{
+	thru := &ThruModule{
 		BaseModule: NewBaseModule(1, 1),
 	}
+
+	thru.SetSelf(thru)
+	return thru
 }
 
 func (t *ThruModule) Synthesize() bool {

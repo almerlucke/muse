@@ -38,6 +38,16 @@ func New(numOutputs int) *Muse {
 	return e
 }
 
+func NewWithInputs(numInputs, numOutputs int) *Muse {
+	e := &Muse{
+		BasePatch: NewPatch(numInputs, numOutputs),
+	}
+
+	e.SetSelf(e)
+
+	return e
+}
+
 func (m *Muse) Synthesize() bool {
 	m.PrepareSynthesis()
 	return m.BasePatch.Synthesize()
@@ -74,49 +84,35 @@ func (m *Muse) RenderToSoundFile(filePath string, numSeconds float64, outputSamp
 	return nil
 }
 
-// func (m *Muse) RenderToSoundFile(filePath string, numSeconds float64, outputSampleRate float64, normalizeOutput bool, format sndfile.Format) error {
-// 	numChannels := m.NumOutputs()
-
-// 	swr := io.NewSoundWriter(numChannels, int(m.Config.SampleRate), int(outputSampleRate), normalizeOutput)
-
-// 	interleaveBuffer := make([]float64, m.NumOutputs()*m.Config.BufferSize)
-
-// 	framesToProduce := int64(m.Config.SampleRate * numSeconds)
-
-// 	for framesToProduce > 0 {
-// 		m.Synthesize()
-
-// 		interleaveIndex := 0
-
-// 		numFrames := m.Config.BufferSize
-
-// 		if framesToProduce <= int64(m.Config.BufferSize) {
-// 			numFrames = int(framesToProduce)
-// 		}
-
-// 		for i := 0; i < numFrames; i++ {
-// 			for c := 0; c < numChannels; c++ {
-// 				interleaveBuffer[interleaveIndex] = m.OutputAtIndex(c).Buffer[i]
-// 				interleaveIndex++
-// 			}
-// 		}
-
-// 		swr.WriteFrames(interleaveBuffer[:numFrames*numChannels])
-
-// 		framesToProduce -= int64(numFrames)
-// 	}
-
-// 	return swr.Finish(filePath, format)
-// }
-
 func (m *Muse) audioCallback(in, out [][]float32) {
-	m.Synthesize()
+	// Prepare synthesis
+	m.PrepareSynthesis()
 
+	// Force did synthesize on input thru modules for muse patch,
+	// in this way we skip the normal synthesize call
+	numInputs := m.NumInputs()
+
+	for i := 0; i < numInputs; i++ {
+		m.InputModuleAtIndex(i).SetDidSynthesize(true)
+	}
+
+	// Copy system audio input to thru modules output
+	for i := 0; i < m.Config.BufferSize; i++ {
+		for j := 0; j < numInputs; j++ {
+			m.InputModuleAtIndex(j).OutputAtIndex(0).Buffer[i] = float64(in[j][i])
+		}
+	}
+
+	// Synthesize rest of the patch like normal
+	m.BasePatch.Synthesize()
+
+	// Copy outputs to system audio output
 	numOutputs := m.NumOutputs()
 
 	for i := 0; i < m.Config.BufferSize; i++ {
 		for j := 0; j < numOutputs; j++ {
 			out[j][i] = float32(m.OutputAtIndex(j).Buffer[i])
+			log.Printf("out[j][i] = %v", out[j][i])
 		}
 	}
 }
@@ -125,7 +121,7 @@ func (m *Muse) InitializeAudio() error {
 	portaudio.Initialize()
 
 	stream, err := portaudio.OpenDefaultStream(
-		2,
+		1,
 		m.NumOutputs(),
 		m.Config.SampleRate,
 		m.Config.BufferSize,

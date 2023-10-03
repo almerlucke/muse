@@ -14,6 +14,7 @@ type Module interface {
 	AddOutputConnection(int, *Connection)
 	RemoveInputConnection(int, Module, int)
 	RemoveOutputConnection(int, Module, int)
+	SetDidSynthesize(bool)
 	DidSynthesize() bool
 	MustSynthesize() bool
 	PrepareSynthesis()
@@ -138,7 +139,7 @@ func (m *BaseModule) Connect(outIndex int, to Module, inIndex int) {
 
 	p, ok := from.(Patch)
 	if ok {
-		if p.Contains(to) {
+		if p.Contains(to) || p == to {
 			from = p.InputModuleAtIndex(outIndex)
 			outIndex = 0
 		}
@@ -146,7 +147,7 @@ func (m *BaseModule) Connect(outIndex int, to Module, inIndex int) {
 
 	p, ok = to.(Patch)
 	if ok {
-		if p.Contains(from) {
+		if p.Contains(from) || p == from {
 			to = p.OutputModuleAtIndex(inIndex)
 			inIndex = 0
 		} else {
@@ -177,6 +178,10 @@ func (m *BaseModule) Disconnect() {
 
 func (m *BaseModule) DidSynthesize() bool {
 	return m.didSynthesize
+}
+
+func (m *BaseModule) SetDidSynthesize(didSynthesize bool) {
+	m.didSynthesize = didSynthesize
 }
 
 func (m *BaseModule) PrepareSynthesis() {
