@@ -112,7 +112,6 @@ func (m *Muse) audioCallback(in, out [][]float32) {
 	for i := 0; i < m.Config.BufferSize; i++ {
 		for j := 0; j < numOutputs; j++ {
 			out[j][i] = float32(m.OutputAtIndex(j).Buffer[i])
-			log.Printf("out[j][i] = %v", out[j][i])
 		}
 	}
 }
