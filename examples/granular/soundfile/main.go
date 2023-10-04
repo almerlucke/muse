@@ -4,7 +4,6 @@ import (
 	"log"
 	"math"
 	"math/rand"
-	"time"
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/io"
@@ -226,8 +225,6 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	sfb, err := io.NewMipMapSoundFile("resources/sounds/elisa.wav", 5)
 	if err != nil {
 		log.Fatalf("fatal err: %v", err)

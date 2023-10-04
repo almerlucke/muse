@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"log"
 	"math"
-	"math/rand"
 	"os"
-	"time"
 
 	"github.com/almerlucke/muse/buffer"
 	"github.com/almerlucke/muse/io"
@@ -18,8 +16,6 @@ var DefaultSamplerate = 44100.0
 var DefaultBufferSize = 1024
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
-
 	configurationInit()
 }
 

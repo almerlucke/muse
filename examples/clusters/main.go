@@ -4,7 +4,6 @@ import (
 	"math"
 	"math/rand"
 	"sort"
-	"time"
 
 	"github.com/almerlucke/muse/plot"
 	"gonum.org/v1/plot/plotter"
@@ -152,8 +151,6 @@ func (c *ClusterRand) Rand() float64 {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	cl := NewClusterRand(3.0, 2.0, 0.4, 0.3, 0.8)
 
 	accuracy := 10000.0

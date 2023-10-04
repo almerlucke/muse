@@ -2,7 +2,6 @@ package main
 
 import (
 	"math/rand"
-	"time"
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/io"
@@ -171,8 +170,6 @@ func hihatRhythm() value.Valuer[*swing.Step] {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	m := muse.New(2)
 
 	bpm := 80
