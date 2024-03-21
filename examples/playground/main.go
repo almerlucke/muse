@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float/shape"
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/lfo"
@@ -12,7 +13,7 @@ import (
 	"github.com/dh1tw/gosamplerate"
 )
 
-func oscSyncHandler(index int, val any, shaper waveshaping.Shaper) {
+func oscSyncHandler(index int, val any, shaper shape.Shaper) {
 	interpol := shaper.(*waveshaping.Interpolator)
 	superSaw := interpol.Shapers[0].(*waveshaping.SuperSaw)
 	hardSync := interpol.Shapers[1].(*waveshaping.HardSync)

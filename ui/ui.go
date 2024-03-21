@@ -17,7 +17,7 @@ type Controller interface {
 	UI() fyne.CanvasObject
 }
 
-// DelayedExecution, hold execution of callback until cnt reaches zero
+// DelayedExecution hold execution of callback until cnt reaches zero
 type DelayedExecution struct {
 	mu   sync.Mutex
 	cnt  int
@@ -47,7 +47,7 @@ func (d *DelayedExecution) Dec() {
 	}
 }
 
-// NewDelayedListener, only call listener when there hasn't been a change in given duration
+// NewDelayedListener only call listener when there hasn't been a change in given duration
 func NewDelayedListener(duration time.Duration, listener func()) binding.DataListener {
 	delayer := NewDelayedExecution(listener)
 	return binding.NewDataListener(func() {

@@ -6,7 +6,7 @@ import (
 	"github.com/almerlucke/muse/io"
 )
 
-// Wavetable osc
+// Osc wavetable osc
 type Osc struct {
 	*muse.BaseModule
 	component *wtoscc.Osc

@@ -1,22 +1,22 @@
 package waveshaper
 
 import (
+	"github.com/almerlucke/genny/float/shape"
 	"github.com/almerlucke/muse"
-	shaping "github.com/almerlucke/muse/components/waveshaping"
 )
 
-type ParamMapFunction func(int, any, shaping.Shaper)
+type ParamMapFunction func(int, any, shape.Shaper)
 
-type MessageMapFunction func(any, shaping.Shaper)
+type MessageMapFunction func(any, shape.Shaper)
 
 type WaveShaper struct {
 	*muse.BaseModule
-	shaper      shaping.Shaper
+	shaper      shape.Shaper
 	paramMapper ParamMapFunction
 	msgMapper   MessageMapFunction
 }
 
-func New(shaper shaping.Shaper, numParams int, paramMapper ParamMapFunction, msgMapper MessageMapFunction) *WaveShaper {
+func New(shaper shape.Shaper, numParams int, paramMapper ParamMapFunction, msgMapper MessageMapFunction) *WaveShaper {
 	w := &WaveShaper{
 		BaseModule:  muse.NewBaseModule(numParams+1, 1),
 		shaper:      shaper,

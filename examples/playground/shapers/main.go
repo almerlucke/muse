@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float/shape"
 	"math/rand"
 
 	"github.com/almerlucke/muse"
@@ -26,7 +27,7 @@ func newShapeSwitcher() *waveshaping.Switch {
 	)
 }
 
-func switchControlFunction(index int, value any, shaper waveshaping.Shaper) {
+func switchControlFunction(index int, value any, shaper shape.Shaper) {
 	sw := shaper.(*waveshaping.Switch)
 	shapeCtrlMap := value.(map[string]any)
 

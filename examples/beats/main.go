@@ -1,10 +1,12 @@
 package main
 
 import (
+	"github.com/almerlucke/sndfile"
+	"github.com/almerlucke/sndfile/writer"
+	"log"
 	"math/rand"
 
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
@@ -170,22 +172,27 @@ func hihatRhythm() value.Valuer[*swing.Step] {
 }
 
 func main() {
+	muse.PushConfiguration(&muse.Configuration{
+		SampleRate: 44100.0,
+		BufferSize: 256,
+	})
+
 	m := muse.New(2)
 
 	bpm := 80
 
-	soundBank := io.SoundBank{}
+	soundBank := sndfile.SoundBank{}
 
-	soundBank["hihat"], _ = io.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav", 4)
-	soundBank["kick"], _ = io.NewMipMapSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav", 4)
-	soundBank["snare"], _ = io.NewMipMapSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav", 4)
-	soundBank["808_1"], _ = io.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav", 4)
-	soundBank["808_2"], _ = io.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav", 4)
-	soundBank["808_3"], _ = io.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav", 4)
-	soundBank["808_4"], _ = io.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav", 4)
-	soundBank["shaker"], _ = io.NewMipMapSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav", 4)
+	soundBank["hihat"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav", 4)
+	soundBank["kick"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav", 4)
+	soundBank["snare"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav", 4)
+	soundBank["808_1"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav", 4)
+	soundBank["808_2"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav", 4)
+	soundBank["808_3"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav", 4)
+	soundBank["808_4"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav", 4)
+	soundBank["shaker"], _ = sndfile.NewMipMapSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav", 4)
 
-	drums := drums.NewDrums(soundBank, 20).Named("drums").AddTo(m)
+	dr := drums.NewDrums(soundBank, 20).Named("drums").AddTo(m)
 
 	addDrumTrack(m, "drums", []string{"hihat"}, bpm, 8, 0.575, 3.525, 0.6, hihatRhythm())
 	addDrumTrack(m, "drums", []string{"kick"}, bpm, 8, 0.575, 3.525, 1.0, kickRhythm())
@@ -193,7 +200,12 @@ func main() {
 	addDrumTrack(m, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, bpm, 2, 0.6, 4.0, 0.3, bassRhythm())
 	addDrumTrack(m, "drums", []string{"shaker"}, bpm, 2, 0.6, 4.0, 1.0, kickRhythm())
 
-	m.In(drums, drums, 1)
+	m.In(dr, dr, 1)
 
-	m.RenderAudio()
+	err := m.RenderToSoundFile("/home/almer/Documents/drums", writer.AIFC, 240, 44100.0, true)
+	if err != nil {
+		log.Printf("error rendering drums! %v", err)
+	}
+
+	// _ = m.RenderAudio()
 }

@@ -32,7 +32,7 @@ type ControlConnection struct {
 	Index   int
 }
 
-// Control acts at control rate (once every audio frame) instead of audio rate
+// BaseControl acts at control rate (once every audio frame) instead of audio rate
 type BaseControl struct {
 	identifier     string
 	self           any

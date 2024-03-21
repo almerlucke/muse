@@ -37,7 +37,7 @@ func (s *Stepper) tick(timestamp int64, config *muse.Configuration) (bool, float
 	bang := false
 	durationMs := 0.0
 
-	for true {
+	for {
 		if float64(timestamp) < s.accum {
 			break
 		}

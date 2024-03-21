@@ -5,17 +5,17 @@ import (
 	rbjc "github.com/almerlucke/muse/components/filters/rbj"
 )
 
-type RBJFilter struct {
+type Filter struct {
 	*muse.BaseModule
-	filter *rbjc.RBJFilter
+	filter *rbjc.Filter
 	fc     float64
 	q      float64
 }
 
-func New(filterType rbjc.RBJFilterType, fc float64, q float64) *RBJFilter {
-	rbj := &RBJFilter{
+func New(filterType rbjc.FilterType, fc float64, q float64) *Filter {
+	rbj := &Filter{
 		BaseModule: muse.NewBaseModule(3, 1),
-		filter:     rbjc.NewRBJFilter(filterType, fc, q, 0, false, muse.SampleRate()),
+		filter:     rbjc.NewFilter(filterType, fc, q, 0, false, muse.SampleRate()),
 		fc:         fc,
 		q:          q,
 	}
@@ -25,34 +25,34 @@ func New(filterType rbjc.RBJFilterType, fc float64, q float64) *RBJFilter {
 	return rbj
 }
 
-func (r *RBJFilter) Resonance() float64 {
+func (r *Filter) Resonance() float64 {
 	return r.q
 }
 
-func (r *RBJFilter) SetResonance(q float64) {
+func (r *Filter) SetResonance(q float64) {
 	r.filter.Q = q
 	r.filter.Update(r.Config.SampleRate)
 }
 
-func (r *RBJFilter) Frequency() float64 {
+func (r *Filter) Frequency() float64 {
 	return r.fc
 }
 
-func (r *RBJFilter) SetFrequency(fc float64) {
+func (r *Filter) SetFrequency(fc float64) {
 	r.filter.Frequency = fc
 	r.filter.Update(r.Config.SampleRate)
 }
 
-func (r *RBJFilter) FilterType() rbjc.RBJFilterType {
+func (r *Filter) FilterType() rbjc.FilterType {
 	return r.filter.FilterType
 }
 
-func (r *RBJFilter) SetFilterType(t rbjc.RBJFilterType) {
+func (r *Filter) SetFilterType(t rbjc.FilterType) {
 	r.filter.FilterType = t
 	r.filter.Update(r.Config.SampleRate)
 }
 
-func (r *RBJFilter) ReceiveControlValue(value any, index int) {
+func (r *Filter) ReceiveControlValue(value any, index int) {
 	switch index {
 	case 0: // Cutoff Frequency
 		r.SetFrequency(value.(float64))
@@ -60,14 +60,14 @@ func (r *RBJFilter) ReceiveControlValue(value any, index int) {
 		r.SetResonance(value.(float64))
 	case 2: // Filter Mode
 		if fltVal, ok := value.(float64); ok {
-			r.SetFilterType(rbjc.RBJFilterType(fltVal))
+			r.SetFilterType(rbjc.FilterType(fltVal))
 		} else if intVal, ok := value.(int); ok {
-			r.SetFilterType(rbjc.RBJFilterType(intVal))
+			r.SetFilterType(rbjc.FilterType(intVal))
 		}
 	}
 }
 
-func (r *RBJFilter) ReceiveMessage(msg any) []*muse.Message {
+func (r *Filter) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
 	if fc, ok := content["frequency"]; ok {
@@ -80,16 +80,16 @@ func (r *RBJFilter) ReceiveMessage(msg any) []*muse.Message {
 
 	if t, ok := content["filterType"]; ok {
 		if fltVal, ok := t.(float64); ok {
-			r.SetFilterType(rbjc.RBJFilterType(fltVal))
+			r.SetFilterType(rbjc.FilterType(fltVal))
 		} else if intVal, ok := t.(int); ok {
-			r.SetFilterType(rbjc.RBJFilterType(intVal))
+			r.SetFilterType(rbjc.FilterType(intVal))
 		}
 	}
 
 	return nil
 }
 
-func (r *RBJFilter) Synthesize() bool {
+func (r *Filter) Synthesize() bool {
 	if !r.BaseModule.Synthesize() {
 		return false
 	}

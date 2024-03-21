@@ -2,12 +2,12 @@ package player
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/io"
+	"github.com/almerlucke/sndfile"
 )
 
 type Player struct {
 	*muse.BaseModule
-	sf          io.SoundFiler
+	sf          sndfile.SoundFiler
 	startOffset float64
 	endOffset   float64
 	phase       float64
@@ -17,17 +17,17 @@ type Player struct {
 	depth       int
 	oneShot     bool
 	done        bool
-	soundBank   io.SoundBank
+	soundBank   sndfile.SoundBank
 }
 
-func New(sf io.SoundFiler, speed float64, amp float64, oneShot bool) *Player {
+func New(sf sndfile.SoundFiler, speed float64, amp float64, oneShot bool) *Player {
 	return NewX(sf, speed, amp, 0.0, sf.Duration(), oneShot)
 }
 
-func NewX(sf io.SoundFiler, speed float64, amp float64, startOffset float64, endOffset float64, oneShot bool) *Player {
+func NewX(sf sndfile.SoundFiler, speed float64, amp float64, startOffset float64, endOffset float64, oneShot bool) *Player {
 	inc := (speed * sf.SampleRate() / muse.SampleRate()) / float64(sf.NumFrames())
 
-	depth := io.SpeedToMipMapDepth(speed)
+	depth := sndfile.SpeedToMipMapDepth(speed)
 	if depth >= sf.Depth() {
 		depth = sf.Depth() - 1
 	}
@@ -40,6 +40,7 @@ func NewX(sf io.SoundFiler, speed float64, amp float64, startOffset float64, end
 		done:       oneShot,
 		sf:         sf,
 		amp:        amp,
+		depth:      depth,
 	}
 
 	p.startOffset = p.normalizeDurationOffset(startOffset)
@@ -66,7 +67,7 @@ func (p *Player) normalizeDurationOffset(offset float64) float64 {
 	return frameOffset / numFrames
 }
 
-func (p *Player) SetSoundBank(soundBank io.SoundBank) {
+func (p *Player) SetSoundBank(soundBank sndfile.SoundBank) {
 	p.soundBank = soundBank
 }
 
@@ -78,13 +79,14 @@ func (p *Player) SetSound(sound string) {
 	}
 }
 
-func (p *Player) SetSoundFile(sf io.SoundFiler) {
+func (p *Player) SetSoundFile(sf sndfile.SoundFiler) {
 	p.sf = sf
 	p.inc = (p.speed * p.sf.SampleRate() / p.Config.SampleRate) / float64(p.sf.NumFrames())
-	depth := io.SpeedToMipMapDepth(p.speed)
-	if depth >= sf.Depth() {
-		depth = sf.Depth() - 1
+	p.depth = sndfile.SpeedToMipMapDepth(p.speed)
+	if p.depth >= sf.Depth() {
+		p.depth = sf.Depth() - 1
 	}
+
 }
 
 func (p *Player) Speed() float64 {
@@ -94,9 +96,9 @@ func (p *Player) Speed() float64 {
 func (p *Player) SetSpeed(speed float64) {
 	p.inc = (speed * p.sf.SampleRate() / p.Config.SampleRate) / float64(p.sf.NumFrames())
 	p.speed = speed
-	depth := io.SpeedToMipMapDepth(speed)
-	if depth >= p.sf.Depth() {
-		depth = p.sf.Depth() - 1
+	p.depth = sndfile.SpeedToMipMapDepth(speed)
+	if p.depth >= p.sf.Depth() {
+		p.depth = p.sf.Depth() - 1
 	}
 }
 
@@ -217,7 +219,7 @@ func (p *Player) Synthesize() bool {
 			continue
 		}
 
-		samps := p.sf.LookupAll(p.phase*float64(p.sf.NumFrames()), 0, !p.oneShot)
+		samps := p.sf.LookupAll(p.phase*float64(p.sf.NumFrames()), p.depth, !p.oneShot)
 		for outIndex, out := range p.Outputs {
 			out.Buffer[i] = samps[outIndex]
 		}

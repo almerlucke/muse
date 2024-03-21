@@ -1,4 +1,4 @@
-// ops fm ops
+// Package ops fm ops
 package ops
 
 type FrequencyMode int
@@ -212,22 +212,22 @@ func (mix *Mixer) PrepareRun() {
 	}
 }
 
-func (m *Mixer) Run() float64 {
-	if m.run {
-		return m.output
+func (mix *Mixer) Run() float64 {
+	if mix.run {
+		return mix.output
 	}
 
-	m.run = true
+	mix.run = true
 
-	mix := 0.0
+	m := 0.0
 
-	for _, input := range m.inputs {
-		mix += input.Run()
+	for _, input := range mix.inputs {
+		m += input.Run()
 	}
 
-	m.output = mix
+	mix.output = m
 
-	return m.output
+	return mix.output
 }
 
 type Ops struct {

@@ -1,12 +1,12 @@
 package main
 
 import (
+	"github.com/almerlucke/sndfile"
 	"math/rand"
 	"strings"
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -379,16 +379,16 @@ func main() {
 
 	bpm := 80.0
 
-	soundBank := io.SoundBank{}
+	soundBank := sndfile.SoundBank{}
 
-	soundBank["hihat"], _ = io.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	soundBank["kick"], _ = io.NewSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
-	soundBank["snare"], _ = io.NewSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
-	soundBank["808_1"], _ = io.NewSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav")
-	soundBank["808_2"], _ = io.NewSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav")
-	soundBank["808_3"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav")
-	soundBank["808_4"], _ = io.NewSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
-	soundBank["shaker"], _ = io.NewSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
+	soundBank["hihat"], _ = sndfile.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
+	soundBank["kick"], _ = sndfile.NewSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
+	soundBank["snare"], _ = sndfile.NewSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
+	soundBank["808_1"], _ = sndfile.NewSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav")
+	soundBank["808_2"], _ = sndfile.NewSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav")
+	soundBank["808_3"], _ = sndfile.NewSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav")
+	soundBank["808_4"], _ = sndfile.NewSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
+	soundBank["shaker"], _ = sndfile.NewSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
 
 	drumMachine := drums.NewDrums(soundBank, 20).Named("drums").AddTo(root)
 

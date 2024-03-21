@@ -77,7 +77,7 @@ func (osa *Oversampler) Synthesize() bool {
 			}
 		}
 
-		interleavedOut, _ := osa.src.Process(osa.interleaveBuffer, float64(osa.ratio), false)
+		interleavedOut, _ := osa.src.Process(osa.interleaveBuffer, osa.ratio, false)
 
 		numFrames := len(interleavedOut) / osa.numChannels
 		maxFrames := osa.Config.BufferSize - bufIndex

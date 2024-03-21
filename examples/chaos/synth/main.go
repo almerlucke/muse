@@ -31,7 +31,7 @@ type ChaosVoice struct {
 	interpol         *interpolator.Interpolator
 	ampEnvSetting    *adsrc.Setting
 	filterEnvSetting *adsrc.Setting
-	filter           *korg35.Korg35LPF
+	filter           *korg35.LPF
 	ampEnv           *adsr.ADSR
 	filterEnv        *adsr.ADSR
 	genMod           *generator.Generator

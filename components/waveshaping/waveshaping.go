@@ -66,7 +66,7 @@ func NewThru() *Thru {
 	return &Thru{}
 }
 
-// Make sure lookup table always contains one more sample so we do not need to wrap
+// LookupTable make sure lookup table always contains one more sample so we do not need to wrap
 type LookupTable []float64
 
 func (lt LookupTable) Shape(x float64) float64 {

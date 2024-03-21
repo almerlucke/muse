@@ -6,7 +6,7 @@ import (
 	"github.com/almerlucke/muse"
 )
 
-// Band limited oscillator
+// Osc Band limited oscillator
 type Osc struct {
 	*muse.BaseModule
 	lastOutput float64
@@ -176,13 +176,13 @@ func (o *Osc) Synthesize() bool {
 		var sinSamp, sawSamp, pwSamp, sqrSamp, triSamp float64
 
 		if freqInput.IsConnected() {
-			frequency = float64(freqInput.Buffer[i])
+			frequency = freqInput.Buffer[i]
 		}
 		if phaseOffsetInput.IsConnected() {
-			phaseOffset = float64(phaseOffsetInput.Buffer[i])
+			phaseOffset = phaseOffsetInput.Buffer[i]
 		}
 		if pwInput.IsConnected() {
-			pw = float64(pwInput.Buffer[i])
+			pw = pwInput.Buffer[i]
 		}
 
 		dt := frequency / o.Config.SampleRate

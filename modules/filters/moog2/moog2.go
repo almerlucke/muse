@@ -30,7 +30,7 @@ import (
 // 	}
 // }
 
-func tan_2(x float64) float64 {
+func tan2(x float64) float64 {
 	//Pade approximation tan(x) hand tuned to map fCutoff
 	x2 := x * x
 	//~ return ((9.54f*x*((11.08f - x2)))/(105.0f - x2*(45.0f + x2))); // more accurate but instable at high frequencies
@@ -98,7 +98,7 @@ func (m *Moog2) setFreq(fc float64) {
 
 	ff := fc / m.Config.SampleRate
 	// pre warp cutoff to map to reality
-	m.c = tan_2(math.Pi * ff)
+	m.c = tan2(math.Pi * ff)
 	// limit cutoff to prevent overflow
 	m.c = mmath.Limit(m.c, 0.0006, 1.5)
 	// pre calculate some stuff outside the hot zone

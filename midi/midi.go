@@ -9,13 +9,13 @@ import (
 	"gitlab.com/gomidi/rtmididrv"
 )
 
-type MidiListener struct {
+type Listener struct {
 	driver *rtmididrv.Driver
 	in     midi.In
 	rd     *reader.Reader
 }
 
-func NewMidiListener(port int, callbacks ...func(*reader.Reader)) (*MidiListener, error) {
+func NewListener(port int, callbacks ...func(*reader.Reader)) (*Listener, error) {
 	drv, err := rtmididrv.New(rtmididrv.IgnoreActiveSense(), rtmididrv.IgnoreSysex(), rtmididrv.IgnoreTimeCode())
 	if err != nil {
 		return nil, err
@@ -23,7 +23,7 @@ func NewMidiListener(port int, callbacks ...func(*reader.Reader)) (*MidiListener
 
 	ins, err := drv.Ins()
 	if err != nil {
-		drv.Close()
+		_ = drv.Close()
 		return nil, err
 	}
 
@@ -33,7 +33,7 @@ func NewMidiListener(port int, callbacks ...func(*reader.Reader)) (*MidiListener
 
 	err = in.Open()
 	if err != nil {
-		drv.Close()
+		_ = drv.Close()
 		return nil, err
 	}
 
@@ -43,20 +43,20 @@ func NewMidiListener(port int, callbacks ...func(*reader.Reader)) (*MidiListener
 
 	err = rd.ListenTo(in)
 	if err != nil {
-		in.Close()
-		drv.Close()
+		_ = in.Close()
+		_ = drv.Close()
 		return nil, err
 	}
 
-	return &MidiListener{
+	return &Listener{
 		driver: drv,
 		in:     in,
 		rd:     rd,
 	}, nil
 }
 
-func (ml *MidiListener) Close() {
-	ml.in.StopListening()
-	ml.in.Close()
-	ml.driver.Close()
+func (ml *Listener) Close() {
+	_ = ml.in.StopListening()
+	_ = ml.in.Close()
+	_ = ml.driver.Close()
 }

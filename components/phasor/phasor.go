@@ -29,6 +29,10 @@ func (p *Phasor) NumDimensions() int {
 	return 1
 }
 
+func (p *Phasor) Generate() []float64 {
+	return p.Tick()
+}
+
 func (p *Phasor) Tick() []float64 {
 	out := p.phase
 

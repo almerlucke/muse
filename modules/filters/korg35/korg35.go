@@ -81,7 +81,7 @@ func (op *onePole) apTick(xn float64) float64 {
 	return apOut
 }
 
-type Korg35LPF struct {
+type LPF struct {
 	*muse.BaseModule
 	lpf1 *onePole
 	lpf2 *onePole
@@ -93,9 +93,9 @@ type Korg35LPF struct {
 	nlp  bool
 }
 
-func New(fc float64, res float64, sat float64) *Korg35LPF {
+func New(fc float64, res float64, sat float64) *LPF {
 	sr := muse.SampleRate()
-	korg := &Korg35LPF{
+	korg := &LPF{
 		BaseModule: muse.NewBaseModule(4, 1),
 		lpf1:       newOnePole(fc, sr),
 		lpf2:       newOnePole(fc, sr),
@@ -111,13 +111,13 @@ func New(fc float64, res float64, sat float64) *Korg35LPF {
 	return korg
 }
 
-func (klpf *Korg35LPF) reset() {
+func (klpf *LPF) reset() {
 	klpf.lpf1.reset()
 	klpf.lpf2.reset()
 	klpf.hpf1.reset()
 }
 
-func (klpf *Korg35LPF) update() {
+func (klpf *LPF) update() {
 	g := prewarp(klpf.fc, klpf.Config.SampleRate)
 	G := g / (1 + g)
 	k := klpf.k
@@ -132,33 +132,33 @@ func (klpf *Korg35LPF) update() {
 	klpf.a = 1 / (1 - k*G + k*G*G)
 }
 
-func (klpf *Korg35LPF) Frequency() float64 {
+func (klpf *LPF) Frequency() float64 {
 	return klpf.fc
 }
 
-func (klpf *Korg35LPF) SetFrequency(fc float64) {
+func (klpf *LPF) SetFrequency(fc float64) {
 	klpf.fc = fc
 	klpf.update()
 }
 
-func (klpf *Korg35LPF) Resonance() float64 {
+func (klpf *LPF) Resonance() float64 {
 	return klpf.k
 }
 
-func (klpf *Korg35LPF) SetResonance(res float64) {
+func (klpf *LPF) SetResonance(res float64) {
 	klpf.k = res
 	klpf.update()
 }
 
-func (klpf *Korg35LPF) Saturation() float64 {
+func (klpf *LPF) Saturation() float64 {
 	return klpf.sat
 }
 
-func (klpf *Korg35LPF) SetSaturation(sat float64) {
+func (klpf *LPF) SetSaturation(sat float64) {
 	klpf.sat = sat
 }
 
-func (klpf *Korg35LPF) ReceiveControlValue(value any, index int) {
+func (klpf *LPF) ReceiveControlValue(value any, index int) {
 	switch index {
 	case 0: // Cutoff Frequency
 		klpf.SetFrequency(value.(float64))
@@ -169,7 +169,7 @@ func (klpf *Korg35LPF) ReceiveControlValue(value any, index int) {
 	}
 }
 
-func (klpf *Korg35LPF) ReceiveMessage(msg any) []*muse.Message {
+func (klpf *LPF) ReceiveMessage(msg any) []*muse.Message {
 	content := msg.(map[string]any)
 
 	if fc, ok := content["frequency"]; ok {
@@ -187,7 +187,7 @@ func (klpf *Korg35LPF) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (klpf *Korg35LPF) Synthesize() bool {
+func (klpf *LPF) Synthesize() bool {
 	if !klpf.BaseModule.Synthesize() {
 		return false
 	}

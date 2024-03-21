@@ -34,9 +34,9 @@ func genPlot() {
 		log.Printf("y: %f", v[1])
 	}
 
-	plot.PlotVector(vecX[:1600], 1600, 400, "/Users/almerlucke/Desktop/aronX.png")
-	plot.PlotVector(vecY[:1600], 1600, 400, "/Users/almerlucke/Desktop/aronY.png")
-	plot.PlotPoints(pts, 400, 400, "/Users/almerlucke/Desktop/aron.png")
+	_ = plot.Vector(vecX[:1600], 1600, 400, "/Users/almerlucke/Desktop/aronX.png")
+	_ = plot.Vector(vecY[:1600], 1600, 400, "/Users/almerlucke/Desktop/aronY.png")
+	_ = plot.Points(pts, 400, 400, "/Users/almerlucke/Desktop/aron.png")
 }
 
 func genSound() {
@@ -56,7 +56,6 @@ func genSound() {
 	sgen.Connect(0, root, 0)
 	// sgen.Connect(1, env, 1)
 
-	// env.SynthesizeToFile("/Users/almerlucke/Desktop/aronson.aiff", 20.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
 	root.RenderAudio()
 }
 

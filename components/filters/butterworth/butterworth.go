@@ -25,42 +25,42 @@ func (bwc *Butterworth) Set(fc float64, q float64, fs float64) {
 
 	b1 := (0.765367 / q) / wp
 	b2 := 1.0 / (wp * wp)
-	bd_tmp := t0*b2 + 1.0
-	bd := 1.0 / (bd_tmp + t2*b1)
+	bdTmp := t0*b2 + 1.0
+	bd := 1.0 / (bdTmp + t2*b1)
 
 	bwc.gain = bd
-	bwc.coef2 = (2.0 - t1*b2)
+	bwc.coef2 = 2.0 - t1*b2
 	bwc.coef0 = bwc.coef2 * bd
-	bwc.coef1 = (bd_tmp - t2*b1) * bd
+	bwc.coef1 = (bdTmp - t2*b1) * bd
 
 	b1 = (1.847759 / q) / wp
-	bd = 1.0 / (bd_tmp + t2*b1)
+	bd = 1.0 / (bdTmp + t2*b1)
 
 	bwc.gain *= bd
 	bwc.coef2 *= bd
-	bwc.coef3 = (bd_tmp - t2*b1) * bd
+	bwc.coef3 = (bdTmp - t2*b1) * bd
 }
 
 func (bwc *Butterworth) Process(input float64) float64 {
 	output := input * bwc.gain
 
 	output -= bwc.history1 * bwc.coef0
-	new_hist := output - bwc.history2*bwc.coef1
+	newHist := output - bwc.history2*bwc.coef1
 
-	output = new_hist + bwc.history1*2.0
+	output = newHist + bwc.history1*2.0
 	output += bwc.history2
 
 	bwc.history2 = bwc.history1
-	bwc.history1 = new_hist
+	bwc.history1 = newHist
 
 	output -= bwc.history3 * bwc.coef2
-	new_hist = output - bwc.history4*bwc.coef3
+	newHist = output - bwc.history4*bwc.coef3
 
-	output = new_hist + bwc.history3*2.0
+	output = newHist + bwc.history3*2.0
 	output += bwc.history4
 
 	bwc.history4 = bwc.history3
-	bwc.history3 = new_hist
+	bwc.history3 = newHist
 
 	return output
 }

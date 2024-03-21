@@ -2,12 +2,13 @@ package muse
 
 import (
 	"bufio"
+	"github.com/almerlucke/muse/io"
+	"github.com/almerlucke/sndfile/writer"
 	"log"
 	"math"
 	"os"
 
 	"github.com/almerlucke/muse/buffer"
-	"github.com/almerlucke/muse/io"
 	"github.com/dh1tw/gosamplerate"
 	"github.com/gordonklaus/portaudio"
 )
@@ -49,7 +50,7 @@ func (m *Muse) Synthesize() bool {
 	return m.BasePatch.Synthesize()
 }
 
-func (m *Muse) RenderToSoundFile(filePath string, numSeconds float64, outputSampleRate float64, normalize bool) error {
+func (m *Muse) RenderToSoundFile(filePath string, fileFormat writer.FileFormat, numSeconds float64, sampleRate float64, normalize bool) error {
 	inputSampleRate := m.Config.SampleRate
 	numChannels := m.NumOutputs()
 	buffers := make([]buffer.Buffer, numChannels)
@@ -58,24 +59,40 @@ func (m *Muse) RenderToSoundFile(filePath string, numSeconds float64, outputSamp
 		buffers[c] = m.OutputAtIndex(c).Buffer
 	}
 
-	wr, err := io.NewWriter(filePath, numChannels, m.Config.BufferSize, int(inputSampleRate), int(outputSampleRate), gosamplerate.SRC_SINC_BEST_QUALITY, normalize)
+	conv := io.NewInputBuffer(m.Config.BufferSize, numChannels)
+
+	wr, err := writer.NewWithOptions(filePath, fileFormat, numChannels, sampleRate, writer.Options{
+		InputConverter:    conv,
+		Normalize:         normalize,
+		ConvertSampleRate: inputSampleRate != sampleRate,
+		InputSampleRate:   inputSampleRate,
+		SrConvQuality:     gosamplerate.SRC_SINC_BEST_QUALITY,
+	})
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		_ = wr.Close()
+	}()
 
 	numCycles := int64(math.Ceil((m.Config.SampleRate * numSeconds) / float64(m.Config.BufferSize)))
 
 	if numCycles > 0 {
 		for numCycles > 1 {
 			m.Synthesize()
-			wr.WriteBuffers(buffers, false)
+			err = wr.Write(buffers, false)
+			if err != nil {
+				return err
+			}
 			numCycles--
 		}
 		m.Synthesize()
-		wr.WriteBuffers(buffers, true)
+		err = wr.Write(buffers, true)
+		if err != nil {
+			return err
+		}
 	}
-
-	wr.Close()
 
 	return nil
 }
@@ -113,7 +130,10 @@ func (m *Muse) audioCallback(in, out [][]float32) {
 }
 
 func (m *Muse) InitializeAudio() error {
-	portaudio.Initialize()
+	err := portaudio.Initialize()
+	if err != nil {
+		return err
+	}
 
 	stream, err := portaudio.OpenDefaultStream(
 		1,
@@ -124,7 +144,7 @@ func (m *Muse) InitializeAudio() error {
 	)
 
 	if err != nil {
-		portaudio.Terminate()
+		_ = portaudio.Terminate()
 		return err
 	}
 
@@ -143,11 +163,11 @@ func (m *Muse) StopAudio() error {
 
 func (m *Muse) TerminateAudio() {
 	if m.stream != nil {
-		m.stream.Close()
+		_ = m.stream.Close()
 		m.stream = nil
 	}
 
-	portaudio.Terminate()
+	_ = portaudio.Terminate()
 }
 
 func (m *Muse) RenderAudio() error {
@@ -158,17 +178,18 @@ func (m *Muse) RenderAudio() error {
 
 	defer m.TerminateAudio()
 
-	m.StartAudio()
+	err = m.StartAudio()
+	if err != nil {
+		return err
+	}
 
 	log.Printf("Press enter to quit...")
 
 	reader := bufio.NewReader(os.Stdin)
 
-	reader.ReadString('\n')
+	_, _ = reader.ReadString('\n')
 
-	m.StopAudio()
-
-	return nil
+	return m.StopAudio()
 }
 
 func (m *Muse) PlotControl(ctrl Control, outIndex int, frames int, w float64, h float64, filePath string) error {

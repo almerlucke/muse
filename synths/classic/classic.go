@@ -22,7 +22,7 @@ type Voice struct {
 	Osc2             *osc.Osc
 	noiseGen         *noise.Noise
 	SourceMixer      *mixer.Mixer
-	filter           *korg35.Korg35LPF
+	filter           *korg35.LPF
 	panner           *pan.Pan
 	ampEnvSetting    *adsrc.Setting
 	filterEnvSetting *adsrc.Setting
@@ -283,8 +283,8 @@ func (v *Voice) handleMessage(content map[string]any) {
 		v.SetOsc2Tuning(osc2Tuning.(float64))
 	}
 
-	if pan, ok := content["pan"]; ok {
-		v.SetPan(pan.(float64))
+	if p, ok := content["pan"]; ok {
+		v.SetPan(p.(float64))
 	}
 
 	if filterFcMin, ok := content["filterFcMin"]; ok {

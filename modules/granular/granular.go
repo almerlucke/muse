@@ -9,7 +9,6 @@ import (
 type Parameter interface {
 	// Duration in milliseconds
 	Duration() float64
-	// Amplitude
 	Amplitude() float64
 }
 
@@ -162,7 +161,7 @@ func (gl *Granulator) Synthesize() bool {
 	sampsLeft := int64(gl.Config.BufferSize)
 
 	// Step through inter onsets in current cycle
-	for true {
+	for {
 		// If interonset is greater then samps left, decrement interonset and break
 		if gl.interOnset > sampsLeft {
 			gl.interOnset -= sampsLeft

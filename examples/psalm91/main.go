@@ -1,11 +1,12 @@
 package main
 
 import (
+	"github.com/almerlucke/sndfile"
+	"github.com/almerlucke/sndfile/writer"
 	"math/rand"
 
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/scheduler"
 	"github.com/almerlucke/muse/messengers/triggers/once"
@@ -49,7 +50,7 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 		}, true)
 }
 
-func addDrumTrack(p muse.Patch, moduleName string, soundBuffer *io.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) (muse.Messenger, muse.Module) {
+func addDrumTrack(p muse.Patch, moduleName string, soundBuffer *sndfile.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) (muse.Messenger, muse.Module) {
 	identifier := moduleName + "Speed"
 
 	msgr := stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}).MsgrNamed(moduleName + "Stepper")
@@ -175,12 +176,12 @@ func main() {
 
 	root.AddMessageReceiver(root, "env")
 
-	guitarBuffer, _ := io.NewSoundFile("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_guitar.aiff")
-	singBuffer, _ := io.NewSoundFile("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_voice.aiff")
+	guitarBuffer, _ := sndfile.NewSoundFile("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_guitar.aiff")
+	singBuffer, _ := sndfile.NewSoundFile("/Users/almerlucke/Desktop/Psalm91_export/Psalm91_voice.aiff")
 
-	hihatSound, _ := io.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	kickSound, _ := io.NewSoundFile("resources/drums/kick/Cymatics - Humble Sit Down Kick - D.wav")
-	snareSound, _ := io.NewSoundFile("resources/drums/snare/Cymatics - Humble Institution Snare - C#.wav")
+	hihatSound, _ := sndfile.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
+	kickSound, _ := sndfile.NewSoundFile("resources/drums/kick/Cymatics - Humble Sit Down Kick - D.wav")
+	snareSound, _ := sndfile.NewSoundFile("resources/drums/snare/Cymatics - Humble Institution Snare - C#.wav")
 
 	ampEnvSetting := adsr.NewSetting(1.0, 25.0, 0.3, 80.0, 0.0, 300.0)
 	filterEnvSetting := adsr.NewSetting(0.9, 25.0, 0.3, 80.0, 0.0, 300.0)
@@ -268,7 +269,7 @@ func main() {
 	leftMixer.Connect(0, root, 0)
 	rightMixer.Connect(0, root, 1)
 
-	root.RenderToSoundFile("/Users/almerlucke/Desktop/psalm91_rendered.aifc", 194.0, 44100.0, true)
+	_ = root.RenderToSoundFile("/Users/almerlucke/Desktop/psalm91_rendered", writer.AIFC, 194.0, 44100.0, true)
 
 	// env.QuickPlayAudio()
 }

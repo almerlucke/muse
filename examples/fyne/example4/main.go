@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/almerlucke/sndfile"
 	"log"
 	"math/rand"
 
@@ -14,7 +15,6 @@ import (
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	"github.com/almerlucke/muse/components/waveshaping"
 	shaping "github.com/almerlucke/muse/components/waveshaping"
-	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -130,7 +130,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func addDrumTrack(p muse.Patch, moduleName string, soundBuffer *io.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) muse.Module {
+func addDrumTrack(p muse.Patch, moduleName string, soundBuffer *sndfile.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) muse.Module {
 	identifier := moduleName + "Speed"
 
 	p.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
@@ -226,14 +226,14 @@ func main() {
 		[]string{"template2"},
 	))
 
-	hihatSound, _ := io.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	kickSound, _ := io.NewSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
-	snareSound, _ := io.NewSoundFile("resources/drums/clap/Cymatics - Humble Stars Clap.wav")
-	bassSound, _ := io.NewSoundFile("resources/drums/808/Cymatics - Humble 808 5 - G.wav")
-	rideSound, _ := io.NewSoundFile("resources/drums/hihat/Cymatics - Humble Open Hihat 2.wav")
-	waterSound, _ := io.NewSoundFile("resources/sounds/Cymatics - Orchid Live Recording - Waves.wav")
-	swirlSound, _ := io.NewSoundFile("resources/sounds/Cymatics - Orchid KEYS Swirl (C).wav")
-	vocalSound, _ := io.NewSoundFile("resources/sounds/Cymatics - Blurry Vocal - 80 BPM F Min.wav")
+	hihatSound, _ := sndfile.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
+	kickSound, _ := sndfile.NewSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
+	snareSound, _ := sndfile.NewSoundFile("resources/drums/clap/Cymatics - Humble Stars Clap.wav")
+	bassSound, _ := sndfile.NewSoundFile("resources/drums/808/Cymatics - Humble 808 5 - G.wav")
+	rideSound, _ := sndfile.NewSoundFile("resources/drums/hihat/Cymatics - Humble Open Hihat 2.wav")
+	waterSound, _ := sndfile.NewSoundFile("resources/sounds/Cymatics - Orchid Live Recording - Waves.wav")
+	swirlSound, _ := sndfile.NewSoundFile("resources/sounds/Cymatics - Orchid KEYS Swirl (C).wav")
+	vocalSound, _ := sndfile.NewSoundFile("resources/sounds/Cymatics - Blurry Vocal - 80 BPM F Min.wav")
 
 	hihatPlayer := addDrumTrack(root, "hihat", hihatSound, bpm, 8, 1.875, 2.125, 0.75, value.NewSequence([]*swing.Step{
 		{}, {Shuffle: 0.1}, {SkipChance: 0.3, BurstChance: 1.0, NumBurst: 3}, {}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipChance: 0.4}, {Skip: true}, {Skip: true},

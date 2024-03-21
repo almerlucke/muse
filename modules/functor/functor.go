@@ -2,15 +2,15 @@ package functor
 
 import "github.com/almerlucke/muse"
 
-type FunctorFunction func([]float64) float64
+type Function func([]float64) float64
 
 type Functor struct {
 	*muse.BaseModule
-	f     FunctorFunction
+	f     Function
 	inVec []float64
 }
 
-func New(numInputs int, f FunctorFunction) *Functor {
+func New(numInputs int, f Function) *Functor {
 	fctr := &Functor{
 		BaseModule: muse.NewBaseModule(numInputs, 1),
 		f:          f,
@@ -52,13 +52,13 @@ func Mult(vec []float64) float64 {
 	return mult
 }
 
-func Scale(scale float64, offset float64) FunctorFunction {
+func Scale(scale float64, offset float64) Function {
 	return func(v []float64) float64 {
 		return v[0]*scale + offset
 	}
 }
 
-func Between(min float64, max float64) FunctorFunction {
+func Between(min float64, max float64) Function {
 	if min > max {
 		tmp := max
 		max = min

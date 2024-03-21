@@ -1,9 +1,6 @@
 package main
 
 import (
-	"math/rand"
-	"time"
-
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/envelopes/adsr"
 	"github.com/almerlucke/muse/messengers/banger"
@@ -68,8 +65,6 @@ func noteSequence(octave notes.Note) value.Valuer[any] {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	root := muse.New(2)
 
 	ampEnvSetting := adsr.NewSetting(1.0, 25.0, 0.3, 80.0, 0.0, 2000.0)

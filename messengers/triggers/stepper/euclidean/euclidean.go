@@ -32,33 +32,33 @@ func (euclid *Euclidean) recalculate() {
 	//Each iteration is a process of pairing strings X and Y and the remainder from the pairings
 	//X will hold the "dominant" pair (the pair that there are more of)
 	x := "1"
-	x_amount := euclid.numEvents
+	xAmount := euclid.numEvents
 
 	y := "0"
-	y_amount := euclid.numSteps - euclid.numEvents
+	yAmount := euclid.numSteps - euclid.numEvents
 
 	for {
-		x_temp := x_amount
-		y_temp := y_amount
-		y_copy := y
+		xTemp := xAmount
+		yTemp := yAmount
+		yCopy := y
 
 		//Check which is the dominant pair
-		if x_temp >= y_temp {
+		if xTemp >= yTemp {
 			//Set the new number of pairs for X and Y
-			x_amount = y_temp
-			y_amount = x_temp - y_temp
+			xAmount = yTemp
+			yAmount = xTemp - yTemp
 
 			//The previous dominant pair becomes the new non dominant pair
 			y = x
 		} else {
-			x_amount = x_temp
-			y_amount = y_temp - x_temp
+			xAmount = xTemp
+			yAmount = yTemp - xTemp
 		}
 
 		//Create the new dominant pair by combining the previous pairs
-		x += y_copy
+		x += yCopy
 
-		if x_amount <= 1 || y_amount <= 1 {
+		if xAmount <= 1 || yAmount <= 1 {
 			break
 		}
 	}
@@ -68,11 +68,11 @@ func (euclid *Euclidean) recalculate() {
 
 	rhythm := ""
 
-	for i := 1; i <= x_amount; i++ {
+	for i := 1; i <= xAmount; i++ {
 		rhythm += x
 	}
 
-	for i := 1; i <= y_amount; i++ {
+	for i := 1; i <= yAmount; i++ {
 		rhythm += y
 	}
 

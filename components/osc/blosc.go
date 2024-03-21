@@ -2,7 +2,7 @@ package osc
 
 import "math"
 
-// Band limited oscillator
+// Osc Band limited oscillator
 type Osc struct {
 	lastOutput   float64
 	sr           float64

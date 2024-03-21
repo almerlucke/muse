@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float/shape"
 	"github.com/almerlucke/muse"
 
 	// Components
@@ -38,7 +39,7 @@ type TestVoice struct {
 	Filter  *moog.Moog
 }
 
-func paramMapper(param int, value any, shaper shaping.Shaper) {
+func paramMapper(param int, value any, shaper shape.Shaper) {
 	if param == 0 {
 		shaper.(*shaping.SuperSaw).SetM1(value.(float64))
 	}

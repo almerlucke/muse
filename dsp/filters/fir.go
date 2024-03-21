@@ -33,7 +33,7 @@ func (f *FIR) Convolve(input, kernels []float64) ([]float64, error) {
 		var sum float64
 
 		for j := 0; j < i; j++ {
-			sum += (input[j] * kernels[len(kernels)-(1+i-j)])
+			sum += input[j] * kernels[len(kernels)-(1+i-j)]
 		}
 		output[i] = sum
 	}
@@ -41,7 +41,7 @@ func (f *FIR) Convolve(input, kernels []float64) ([]float64, error) {
 	for i := len(kernels); i < len(input); i++ {
 		var sum float64
 		for j := 0; j < len(kernels); j++ {
-			sum += (input[i-j] * kernels[j])
+			sum += input[i-j] * kernels[j]
 		}
 		output[i] = sum
 	}

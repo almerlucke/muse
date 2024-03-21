@@ -2,10 +2,10 @@ package rbj
 
 import "math"
 
-type RBJFilterType int
+type FilterType int
 
 const (
-	Lowpass RBJFilterType = iota
+	Lowpass FilterType = iota
 	Highpass
 	BandpassCSG
 	BandpassCZPG
@@ -16,7 +16,7 @@ const (
 	Highshelf
 )
 
-type RBJFilter struct {
+type Filter struct {
 	b0a0 float64
 	b1a0 float64
 	b2a0 float64
@@ -27,15 +27,15 @@ type RBJFilter struct {
 	in1  float64
 	in2  float64
 
-	FilterType   RBJFilterType
+	FilterType   FilterType
 	Frequency    float64
 	Q            float64
 	DbGain       float64
 	QIsBandwidth bool
 }
 
-func NewRBJFilter(filterType RBJFilterType, frequency float64, q float64, dbGain float64, qIsBandwidth bool, sampleRate float64) *RBJFilter {
-	filter := &RBJFilter{
+func NewFilter(filterType FilterType, frequency float64, q float64, dbGain float64, qIsBandwidth bool, sampleRate float64) *Filter {
+	filter := &Filter{
 		FilterType:   filterType,
 		Frequency:    frequency,
 		Q:            q,
@@ -48,7 +48,7 @@ func NewRBJFilter(filterType RBJFilterType, frequency float64, q float64, dbGain
 	return filter
 }
 
-func (r *RBJFilter) Process(in0 float64) float64 {
+func (r *Filter) Process(in0 float64) float64 {
 	yn := r.b0a0*in0 + r.b1a0*r.in1 + r.b2a0*r.in2 - r.a1a0*r.ou1 - r.a2a0*r.ou2
 
 	r.in2 = r.in1
@@ -59,7 +59,7 @@ func (r *RBJFilter) Process(in0 float64) float64 {
 	return yn
 }
 
-func (r *RBJFilter) Update(sr float64) {
+func (r *Filter) Update(sr float64) {
 	var alpha, a0, a1, a2, b0, b1, b2 float64
 
 	omega := 2.0 * math.Pi * r.Frequency / sr

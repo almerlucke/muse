@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/almerlucke/sndfile/writer"
 	"math"
 	"math/rand"
 
@@ -271,7 +272,7 @@ func main() {
 		gr.Connect(i, root, i)
 	}
 
-	root.RenderToSoundFile("/Users/almerlucke/Desktop/chaosping.aifc", 30.0, 44100.0, true)
+	_ = root.RenderToSoundFile("/Users/almerlucke/Desktop/chaosping", writer.AIFC, 30.0, 44100.0, true)
 
 	// root.RenderToSoundFile("/Users/almerlucke/Desktop/chaosping.aiff", 180.0, root.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 	// root.RenderAudio()

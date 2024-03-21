@@ -21,7 +21,7 @@ func (z *ZeroCrossing) MatchesDirection(direction ZeroCrossingDirection) bool {
 	return z.Direction == direction
 }
 
-// Single channel buffer information
+// BufferInfo holds single channel buffer information
 type BufferInfo struct {
 	Buffer        []float64
 	ZeroCrossings []*ZeroCrossing

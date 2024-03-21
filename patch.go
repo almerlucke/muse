@@ -41,7 +41,7 @@ type BasePatch struct {
 }
 
 func NewPatch(numInputs int, numOutputs int) *BasePatch {
-	subModules := []Module{}
+	var subModules []Module
 
 	inputModules := make([]*ThruModule, numInputs)
 	for i := 0; i < numInputs; i++ {

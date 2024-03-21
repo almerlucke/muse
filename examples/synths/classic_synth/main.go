@@ -262,7 +262,7 @@ func main() {
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
-	listener, err := museMidi.NewMidiListener(1, reader.Each(func(pos *reader.Position, msg midi.Message) {
+	listener, err := museMidi.NewListener(1, reader.Each(func(pos *reader.Position, msg midi.Message) {
 
 		// inspect
 		log.Println(msg)

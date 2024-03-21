@@ -10,21 +10,19 @@ func (b Buffer) Clear() {
 
 func (b Buffer) Lookup(pos float64, wrap bool) float64 {
 	l := len(b)
-	integer1 := int(pos)
-	fraction := pos - float64(integer1)
-
-	var integer2 int
+	i1 := int(pos)
+	i2 := i1 + 1
+	fr := pos - float64(i1)
 
 	if wrap {
-		integer2 = (integer1 + 1) % l
+		i2 = i2 % l
 	} else {
-		integer2 = integer1 + 1
-		if integer2 >= l {
-			integer2 = l - 1
+		if i2 >= l {
+			i2 = l - 1
 		}
 	}
 
-	sample1 := b[integer1]
-	sample2 := b[integer2]
-	return sample1 + (sample2-sample1)*fraction
+	s1 := b[i1]
+
+	return s1 + (b[i2]-s1)*fr
 }

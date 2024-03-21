@@ -1,14 +1,11 @@
 package main
 
 import (
-	"log"
-	"math/rand"
-	"time"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"log"
 
 	"github.com/almerlucke/muse"
 
@@ -94,8 +91,6 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	root := muse.New(2)
 
 	ampEnvSetting := adsrc.NewSetting(1.0, 5.0, 0.2, 5.0, 0.0, 1300.0)

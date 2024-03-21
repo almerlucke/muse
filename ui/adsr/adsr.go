@@ -12,7 +12,7 @@ import (
 	"github.com/almerlucke/muse/ui"
 )
 
-type ADSRControl struct {
+type Control struct {
 	title                        string
 	setting                      *adsrc.Setting
 	attackDurationLabelBinding   binding.String
@@ -33,7 +33,7 @@ type ADSRControl struct {
 	releaseShapeSliderBinding    binding.Float
 }
 
-func (ctrl *ADSRControl) UI() fyne.CanvasObject {
+func (ctrl *Control) UI() fyne.CanvasObject {
 	// Attack Duration
 	ctrl.attackDurationLabelBinding = binding.NewString()
 	attackDurationLabel := widget.NewLabelWithData(ctrl.attackDurationLabelBinding)
@@ -211,68 +211,68 @@ func (ctrl *ADSRControl) UI() fyne.CanvasObject {
 	)
 }
 
-func (ctrl *ADSRControl) Setting() *adsrc.Setting {
+func (ctrl *Control) Setting() *adsrc.Setting {
 	return ctrl.setting
 }
 
-func (ctrl *ADSRControl) SetAttackDuration(ms float64) {
+func (ctrl *Control) SetAttackDuration(ms float64) {
 	ctrl.setting.AttackDuration = ms
 	if ctrl.attackDurationSliderBinding != nil {
 		ctrl.attackDurationSliderBinding.Set(ms)
 	}
 }
 
-func (ctrl *ADSRControl) SetAttackLevel(level float64) {
+func (ctrl *Control) SetAttackLevel(level float64) {
 	ctrl.setting.AttackLevel = level
 	if ctrl.attackLevelSliderBinding != nil {
 		ctrl.attackLevelSliderBinding.Set(level)
 	}
 }
 
-func (ctrl *ADSRControl) SetAttackShape(shape float64) {
+func (ctrl *Control) SetAttackShape(shape float64) {
 	ctrl.setting.AttackShape = shape
 	if ctrl.attackShapeSliderBinding != nil {
 		ctrl.attackShapeSliderBinding.Set(shape)
 	}
 }
 
-func (ctrl *ADSRControl) SetDecayDuration(ms float64) {
+func (ctrl *Control) SetDecayDuration(ms float64) {
 	ctrl.setting.DecayDuration = ms
 	if ctrl.decayDurationSliderBinding != nil {
 		ctrl.decayDurationSliderBinding.Set(ms)
 	}
 }
 
-func (ctrl *ADSRControl) SetDecayLevel(level float64) {
+func (ctrl *Control) SetDecayLevel(level float64) {
 	ctrl.setting.DecayLevel = level
 	if ctrl.decayLevelSliderBinding != nil {
 		ctrl.decayLevelSliderBinding.Set(level)
 	}
 }
 
-func (ctrl *ADSRControl) SetDecayShape(shape float64) {
+func (ctrl *Control) SetDecayShape(shape float64) {
 	ctrl.setting.DecayShape = shape
 	if ctrl.decayShapeSliderBinding != nil {
 		ctrl.decayShapeSliderBinding.Set(shape)
 	}
 }
 
-func (ctrl *ADSRControl) SetReleaseDuration(ms float64) {
+func (ctrl *Control) SetReleaseDuration(ms float64) {
 	ctrl.setting.ReleaseDuration = ms
 	if ctrl.releaseDurationSliderBinding != nil {
 		ctrl.releaseDurationSliderBinding.Set(ms)
 	}
 }
 
-func (ctrl *ADSRControl) SetReleaseShape(shape float64) {
+func (ctrl *Control) SetReleaseShape(shape float64) {
 	ctrl.setting.ReleaseShape = shape
 	if ctrl.releaseShapeSliderBinding != nil {
 		ctrl.releaseShapeSliderBinding.Set(shape)
 	}
 }
 
-func NewADSRControl(title string, setting *adsrc.Setting) *ADSRControl {
-	control := &ADSRControl{
+func NewADSRControl(title string, setting *adsrc.Setting) *Control {
+	control := &Control{
 		title:   title,
 		setting: setting,
 	}

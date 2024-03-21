@@ -1,12 +1,12 @@
 package main
 
 import (
+	"github.com/almerlucke/sndfile"
 	"log"
 	"math"
 	"math/rand"
 
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/modules/granular"
 	"github.com/almerlucke/muse/modules/granular/envelopes/trapezoidal"
 	"github.com/almerlucke/muse/utils/float"
@@ -77,7 +77,7 @@ func NewSFParam(duration float64, amplitude float64, panning float64, speed floa
 }
 
 type SFSource struct {
-	sf         io.SoundFiler
+	sf         sndfile.SoundFiler
 	phase      float64
 	delta      float64
 	speed      float64
@@ -113,7 +113,7 @@ func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
 			}
 		}
 
-		depth := io.SpeedToMipMapDepth(s.speed)
+		depth := sndfile.SpeedToMipMapDepth(s.speed)
 		if depth >= s.sf.Depth() {
 			depth = s.sf.Depth() - 1
 		}
@@ -156,7 +156,7 @@ func (s *SFSource) Activate(sampsToGo int64, p granular.Parameter, c *muse.Confi
 }
 
 type SFSourceFactory struct {
-	SoundFile io.SoundFiler
+	SoundFile sndfile.SoundFiler
 }
 
 func (sf *SFSourceFactory) New() granular.Source {
@@ -225,7 +225,7 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 }
 
 func main() {
-	sfb, err := io.NewMipMapSoundFile("resources/sounds/elisa.wav", 5)
+	sfb, err := sndfile.NewMipMapSoundFile("resources/sounds/elisa.wav", 5)
 	if err != nil {
 		log.Fatalf("fatal err: %v", err)
 	}

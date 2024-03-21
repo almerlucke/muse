@@ -1,6 +1,9 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float/shape/shapers/linear"
+	"github.com/almerlucke/genny/float/shape/shapers/mirror"
+	"github.com/almerlucke/genny/float/shape/shapers/series"
 	"math/rand"
 
 	"github.com/almerlucke/muse"
@@ -8,7 +11,6 @@ import (
 	"github.com/almerlucke/muse/components/interpolator"
 	"github.com/almerlucke/muse/components/iterator"
 	"github.com/almerlucke/muse/components/iterator/chaos"
-	"github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/controls/val"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/timer"
@@ -31,7 +33,7 @@ type ChaosVoice struct {
 	interpol         *interpolator.Interpolator
 	ampEnvSetting    *adsrc.Setting
 	filterEnvSetting *adsrc.Setting
-	filter           *korg35.Korg35LPF
+	filter           *korg35.LPF
 	ampEnv           *adsr.ADSR
 	filterEnv        *adsr.ADSR
 	genMod           *generator.Generator
@@ -52,9 +54,9 @@ func NewChaosVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting
 		ampEnvSetting:    ampEnvSetting,
 		filterEnvSetting: filterEnvSetting,
 		panner:           pan.New(0.5),
-		filter:           korg35.New(1500.0, 1.6, 1.0),
+		filter:           korg35.New(1500.0, 0.9, 1.0),
 		genMod:           generator.New(interpol, nil, nil),
-		waveShape:        waveshaper.New(waveshaping.NewSeries(waveshaping.NewMirror(0.0, 1.0), waveshaping.NewBipolar()), 0, nil, nil),
+		waveShape:        waveshaper.New(series.New(mirror.New(0.0, 1.0), linear.NewBipolar()), 0, nil, nil),
 		ampEnv:           adsr.New(ampEnvSetting, adsrc.Duration, 1.0),
 		filterEnv:        adsr.New(filterEnvSetting, adsrc.Duration, 1.0),
 	}
@@ -68,7 +70,7 @@ func NewChaosVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting
 	voice.AddModule(voice.filter)
 	voice.AddModule(voice.panner)
 
-	filterScaler := voice.AddModule(functor.NewBetween(50.0, 7000.0))
+	filterScaler := voice.AddModule(functor.NewBetween(50.0, 12000.0))
 
 	ampVCA := voice.AddModule(functor.NewMult(2))
 

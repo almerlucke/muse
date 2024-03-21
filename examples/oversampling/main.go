@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/almerlucke/sndfile/writer"
 	"log"
 
 	"github.com/almerlucke/muse"
@@ -30,6 +31,6 @@ func main() {
 	osa.AddTo(root)
 	root.In(osa)
 
-	root.RenderToSoundFile("/Users/almerlucke/Desktop/testosa.aifc", 4.0, 44100.0, false)
+	_ = root.RenderToSoundFile("/Users/almerlucke/Desktop/testosa", writer.AIFC, 4.0, 44100.0, false)
 	//root.RenderAudio()
 }

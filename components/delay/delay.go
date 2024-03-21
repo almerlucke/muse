@@ -8,7 +8,7 @@ type Delay struct {
 	WriteHead int
 }
 
-// NewDelay create a new delay
+// New create a new delay
 func New(length int) *Delay {
 	return &Delay{
 		Buffer: make([]float64, length),
