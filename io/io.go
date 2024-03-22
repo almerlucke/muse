@@ -4,32 +4,7 @@ import (
 	"fmt"
 	"github.com/almerlucke/muse/buffer"
 	"github.com/almerlucke/sndfile"
-	"github.com/almerlucke/sndfile/writer"
 )
-
-type InputBuffer struct {
-	conv    *writer.ChannelConverter[float64]
-	buffers [][]float64
-}
-
-func NewInputBuffer(frameSize int, numChannels int) *InputBuffer {
-	return &InputBuffer{
-		conv:    writer.NewChannelConverter[float64](frameSize, numChannels),
-		buffers: make([][]float64, numChannels),
-	}
-}
-
-func (ib *InputBuffer) Convert(input any) []float32 {
-	for i, b := range input.([]buffer.Buffer) {
-		ib.buffers[i] = b
-	}
-
-	return ib.conv.Convert(ib.buffers)
-}
-
-func (ib *InputBuffer) FrameSize() int {
-	return ib.conv.FrameSize()
-}
 
 type WaveTableSoundFile struct {
 	Tables    []buffer.Buffer

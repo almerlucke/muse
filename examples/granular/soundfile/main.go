@@ -221,7 +221,7 @@ func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configurati
 		param.speed *= -1.0
 	}
 
-	return param, int64(pgen.onsetClustering.Rand() * 0.001 * config.SampleRate)
+	return param, int64(pgen.onsetClustering.Rand() * 0.01 * config.SampleRate)
 }
 
 func main() {
@@ -237,9 +237,9 @@ func main() {
 	paramGen := &SFParameterGenerator{}
 
 	paramGen.speedClustering = museRand.NewClusterRand(1.3, 0.5, 1.0, 0.8, 0.8)
-	paramGen.amplitudeClustering = museRand.NewClusterRand(0.4, 0.3, 0.3, 0.3, 0.3)
-	paramGen.durationClustering = museRand.NewClusterRand(1200.0, 1155.0, 0.8, 0.7, 0.7)
-	paramGen.offsetClustering = museRand.NewClusterRand(0.5, 0.45, 0.8, 0.8, 0.8)
+	paramGen.amplitudeClustering = museRand.NewClusterRand(0.6, 0.3, 0.3, 0.3, 0.3)
+	paramGen.durationClustering = museRand.NewClusterRand(3200.0, 2155.0, 0.8, 0.7, 0.7)
+	paramGen.offsetClustering = museRand.NewClusterRand(0.2, 0.03, 0.8, 0.8, 0.8)
 	paramGen.onsetClustering = museRand.NewClusterRand(10.0, 6.5, 0.4, 0.8, 0.8)
 	paramGen.panClustering = museRand.NewClusterRand(0.5, 0.3, 0.3, 0.2, 0.5)
 	paramGen.reversePlayChance = 0.1

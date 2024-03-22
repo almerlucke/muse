@@ -2,7 +2,6 @@ package muse
 
 import (
 	"bufio"
-	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/sndfile/writer"
 	"log"
 	"math"
@@ -59,10 +58,8 @@ func (m *Muse) RenderToSoundFile(filePath string, fileFormat writer.FileFormat, 
 		buffers[c] = m.OutputAtIndex(c).Buffer
 	}
 
-	conv := io.NewInputBuffer(m.Config.BufferSize, numChannels)
-
 	wr, err := writer.NewWithOptions(filePath, fileFormat, numChannels, sampleRate, writer.Options{
-		InputConverter:    conv,
+		InputConverter:    buffer.NewWriterConverter(m.Config.BufferSize, numChannels),
 		Normalize:         normalize,
 		ConvertSampleRate: inputSampleRate != sampleRate,
 		InputSampleRate:   inputSampleRate,
