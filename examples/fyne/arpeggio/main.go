@@ -5,12 +5,13 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/emulations/jp8000"
 	"log"
 
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
@@ -38,7 +39,7 @@ type TestVoice struct {
 	filterEnv     *adsr.ADSR
 	phasor        *phasor.Phasor
 	filter        *moog.Moog
-	shaper        shaping.Shaper
+	shaper        shape.Shaper
 	ampEnvSetting *adsrc.Setting
 }
 
@@ -46,7 +47,7 @@ func NewTestVoice(ampEnvSetting *adsrc.Setting) *TestVoice {
 	testVoice := &TestVoice{
 		BasePatch:     muse.NewPatch(0, 1),
 		ampEnvSetting: ampEnvSetting,
-		shaper:        shaping.NewJP8000triMod(0.3),
+		shaper:        jp8000.NewTriMod(0.3),
 	}
 
 	ampEnv := testVoice.AddModule(adsr.New(ampEnvSetting, adsrc.Duration, 1.0))

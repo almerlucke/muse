@@ -1,21 +1,24 @@
 package lfo
 
 import (
+	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/linear"
+	"github.com/almerlucke/genny/float/shape/shapers/lookup"
+	"github.com/almerlucke/genny/float/shape/shapers/series"
 	"github.com/almerlucke/muse"
-	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/value/template"
 )
 
-var lfoSineShaper = shaping.NewNormalizedSineTable(512.0)
+var lfoSineShaper = lookup.NewNormalizedSineTable(512.0)
 
 type Target struct {
 	Address   string
-	Shaper    shaping.Shaper
+	Shaper    shape.Shaper
 	Parameter string
 	Template  template.Template
 }
 
-func NewTarget(address string, shaper shaping.Shaper, parameter string, template template.Template) *Target {
+func NewTarget(address string, shaper shape.Shaper, parameter string, template template.Template) *Target {
 	return &Target{Address: address, Shaper: shaper, Parameter: parameter, Template: template}
 }
 
@@ -45,11 +48,11 @@ type LFO struct {
 	min        float64
 	max        float64
 	shapeIndex int
-	shapes     []shaping.Shaper
+	shapes     []shape.Shaper
 	targets    []*Target
 }
 
-func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shapes []shaping.Shaper) *LFO {
+func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shapes []shape.Shaper) *LFO {
 	sampleRate := muse.SampleRate() / float64(muse.BufferSize())
 
 	if min > max {
@@ -75,7 +78,7 @@ func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shap
 }
 
 func NewBasicControlLFO(speed float64, min float64, max float64) *LFO {
-	return NewControlLFO(speed, min, max, 0, []shaping.Shaper{lfoSineShaper})
+	return NewControlLFO(speed, min, max, 0, []shape.Shaper{lfoSineShaper})
 }
 
 func NewLFO(speed float64, targets []*Target) *LFO {
@@ -88,7 +91,7 @@ func NewLFO(speed float64, targets []*Target) *LFO {
 		targets:       targets,
 		min:           0.0,
 		max:           1.0,
-		shapes:        []shaping.Shaper{lfoSineShaper},
+		shapes:        []shape.Shaper{lfoSineShaper},
 		config:        muse.CurrentConfiguration(),
 	}
 
@@ -100,7 +103,7 @@ func NewLFO(speed float64, targets []*Target) *LFO {
 func NewBasicLFO(speed float64, scale float64, offset float64, addresses []string, param string, templ template.Template) *LFO {
 	ts := make([]*Target, len(addresses))
 	for i, address := range addresses {
-		ts[i] = NewTarget(address, shaping.NewSeries(lfoSineShaper, shaping.NewLinear(scale, offset)), param, templ)
+		ts[i] = NewTarget(address, series.New(lfoSineShaper, linear.New(scale, offset)), param, templ)
 	}
 
 	return NewLFO(speed, ts)
@@ -235,7 +238,7 @@ func (lfo *LFO) Messages(timestamp int64, config *muse.Configuration) []*muse.Me
 		lfo.phase += 1.0
 	}
 
-	msgs := []*muse.Message{}
+	var msgs []*muse.Message
 
 	for _, target := range lfo.targets {
 		targetMsgs := target.Messages(out)

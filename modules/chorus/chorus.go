@@ -1,11 +1,12 @@
 package chorus
 
 import (
+	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/lookup"
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/buffer"
 	"github.com/almerlucke/muse/components/delay"
 	"github.com/almerlucke/muse/components/phasor"
-	"github.com/almerlucke/muse/components/waveshaping"
 )
 
 /*
@@ -17,7 +18,7 @@ echo : delay from 75 to 1000 ms (and beyond)
 speed : 0 - 20
 */
 
-var defaultModTable = waveshaping.NewSineTable(512)
+var defaultModTable = lookup.NewSineTable(512)
 
 const (
 	mod2SpeedDiv = 2.0
@@ -33,7 +34,7 @@ type Chorus struct {
 	delayLine   *delay.Delay
 	delayCenter float64
 	delayRange  float64
-	modShaper   waveshaping.Shaper
+	modShaper   shape.Shaper
 	mods        [4]*phasor.Phasor
 	modDepth    float64
 	modSpeed    float64
@@ -41,7 +42,7 @@ type Chorus struct {
 	mix         float64
 }
 
-func New(stereo bool, delayCenter float64, delayRange float64, modDepth float64, modSpeed float64, mix float64, modShaper waveshaping.Shaper) *Chorus {
+func New(stereo bool, delayCenter float64, delayRange float64, modDepth float64, modSpeed float64, mix float64, modShaper shape.Shaper) *Chorus {
 	numOutputs := 1
 	if stereo {
 		numOutputs = 2

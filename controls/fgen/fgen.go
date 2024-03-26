@@ -1,7 +1,7 @@
-package gen
+package fgen
 
 import (
-	"github.com/almerlucke/genny"
+	"github.com/almerlucke/genny/float"
 	"github.com/almerlucke/muse"
 )
 
@@ -9,15 +9,15 @@ type ControlFunction func(any, int)
 
 type MessageFunction func(any) []*muse.Message
 
-type Gen[T any] struct {
+type Gen struct {
 	*muse.BaseControl
-	gen             genny.Generator[T]
+	gen             float.FrameGenerator
 	controlFunction ControlFunction
 	messageFunction MessageFunction
 }
 
-func NewX[T any](gen genny.Generator[T], controlFunction ControlFunction, messageFunction MessageFunction) *Gen[T] {
-	g := &Gen[T]{
+func NewX(gen float.FrameGenerator, controlFunction ControlFunction, messageFunction MessageFunction) *Gen {
+	g := &Gen{
 		BaseControl:     muse.NewBaseControl(),
 		gen:             gen,
 		controlFunction: controlFunction,
@@ -29,15 +29,17 @@ func NewX[T any](gen genny.Generator[T], controlFunction ControlFunction, messag
 	return g
 }
 
-func New[T any](gen genny.Generator[T]) *Gen[T] {
+func New(gen float.FrameGenerator) *Gen {
 	return NewX(gen, nil, nil)
 }
 
-func (g *Gen[T]) bang() {
-	g.SendControlValue(g.gen.Generate(), 0)
+func (g *Gen) bang() {
+	for i, v := range g.gen.Generate() {
+		g.SendControlValue(v, i)
+	}
 }
 
-func (g *Gen[T]) ReceiveControlValue(value any, index int) {
+func (g *Gen) ReceiveControlValue(value any, index int) {
 	if index == 0 && muse.IsBang(value) {
 		g.bang()
 	}
@@ -47,7 +49,7 @@ func (g *Gen[T]) ReceiveControlValue(value any, index int) {
 	}
 }
 
-func (g *Gen[T]) ReceiveMessage(msg any) []*muse.Message {
+func (g *Gen) ReceiveMessage(msg any) []*muse.Message {
 	if muse.IsBang(msg) {
 		g.bang()
 	}
@@ -59,6 +61,8 @@ func (g *Gen[T]) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (g *Gen[T]) Tick(_ int64, _ *muse.Configuration) {
-	g.SendControlValue(g.gen.Generate(), 0)
+func (g *Gen) Tick(_ int64, _ *muse.Configuration) {
+	for i, v := range g.gen.Generate() {
+		g.SendControlValue(v, i)
+	}
 }

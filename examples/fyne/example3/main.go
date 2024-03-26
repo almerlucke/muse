@@ -1,19 +1,19 @@
 package main
 
 import (
-	"github.com/almerlucke/sndfile"
-	"log"
-	"math/rand"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/almerlucke/genny/float/shape/shapers/emulations/pwmod"
+	"github.com/almerlucke/genny/float/shape/shapers/linear"
+	"github.com/almerlucke/genny/float/shape/shapers/lookup"
+	"github.com/almerlucke/genny/float/shape/shapers/series"
+	"log"
 
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	shaping "github.com/almerlucke/muse/components/waveshaping"
 	adsrctrl "github.com/almerlucke/muse/ui/adsr"
 
 	"github.com/almerlucke/muse/messengers/banger"
@@ -33,7 +33,6 @@ import (
 	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
-	"github.com/almerlucke/muse/modules/player"
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/waveshaper"
 )
@@ -44,7 +43,7 @@ type TestVoice struct {
 	filterEnv        *adsr.ADSR
 	phasor           *phasor.Phasor
 	filter           *moog.Moog
-	shaper           *shaping.PulseWidthMod
+	shaper           *pwmod.PWMod
 	ampEnvSetting    *adsrc.Setting
 	filterEnvSetting *adsrc.Setting
 }
@@ -54,7 +53,7 @@ func NewTestVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting)
 		BasePatch:        muse.NewPatch(0, 1),
 		ampEnvSetting:    ampEnvSetting,
 		filterEnvSetting: filterEnvSetting,
-		shaper:           shaping.NewPulseWidthMod(),
+		shaper:           pwmod.New(),
 	}
 
 	testVoice.SetSelf(testVoice)
@@ -130,19 +129,6 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func addDrumTrack(p muse.Patch, moduleName string, soundFile *sndfile.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, steps value.Valuer[*swing.Step]) muse.Module {
-	identifier := moduleName + "Speed"
-
-	p.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
-
-	p.AddMessenger(banger.NewTemplateGenerator([]string{moduleName}, template.Template{
-		"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
-		"bang":  true,
-	}).MsgrNamed(identifier))
-
-	return p.AddModule(player.New(soundFile, 1.0, 1.0, true).Named(moduleName))
-}
-
 type Nums []float64
 
 func main() {
@@ -163,44 +149,17 @@ func main() {
 
 	milliPerBeat := 60000.0 / float64(bpm)
 
-	hihatSound, _ := sndfile.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	kickSound, _ := sndfile.NewSoundFile("resources/drums/kick/Cymatics - Humble Friday Kick - E.wav")
-	snareSound, _ := sndfile.NewSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
-
-	hihatPlayer := addDrumTrack(root, "hihat", hihatSound, bpm, 8, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
-		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
-			{}, {Shuffle: 0.3}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipChance: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
-		}), 2, 3),
-		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
-			{}, {Shuffle: 0.3}, {Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.3, ShuffleRand: 0.2}, {Skip: true}, {Shuffle: 0.1}, {SkipChance: 0.4}, {SkipChance: 0.4}, {SkipChance: 0.4, Shuffle: 0.2}, {Skip: true}, {Skip: true},
-		}), 1, 2),
-	}, true))
-
-	kickPlayer := addDrumTrack(root, "kick", kickSound, bpm, 4, 0.875, 1.125, value.NewAnd([]value.Valuer[*swing.Step]{
-		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
-			{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {SkipChance: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true},
-		}), 2, 3),
-		value.NewRepeat[*swing.Step](value.NewSequenceNC([]*swing.Step{
-			{}, {Skip: true}, {Shuffle: 0.2}, {Skip: true}, {SkipChance: 0.4}, {Skip: true}, {Skip: true}, {SkipChance: 0.4}, {Shuffle: 0.2}, {Skip: true}, {Skip: true}, {Skip: true},
-		}), 1, 2),
-	}, true))
-
-	snarePlayer := addDrumTrack(root, "snare", snareSound, bpm, 2, 0.875, 1.125, value.NewSequence([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {Shuffle: 0.1, ShuffleRand: 0.1},
-	}))
-
-	mult := root.AddModule(functor.NewAmp(0.3))
 	poly := root.AddModule(polyphony.New(1, voices).Named("polyphony"))
 	allpass := root.AddModule(allpass.New(milliPerBeat*1.5, milliPerBeat*1.5, 0.3))
 
-	sineTable := shaping.NewNormalizedSineTable(512)
+	sineTable := lookup.NewNormalizedSineTable(512)
 
-	targetShaper := lfo.NewTarget("polyphony", shaping.NewSeries(sineTable, shaping.NewLinear(0.8, 0.1)), "shaper", template.Template{
+	targetShaper := lfo.NewTarget("polyphony", series.New(sineTable, linear.New(0.8, 0.1)), "shaper", template.Template{
 		"command": "voice",
 		"shaper":  template.NewParameter("shaper", nil),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewSeries(sineTable, shaping.NewLinear(0.4, 0.1)), "adsrDecayLevel", template.Template{
+	targetFilter := lfo.NewTarget("polyphony", series.New(sineTable, linear.New(0.4, 0.1)), "adsrDecayLevel", template.Template{
 		"command":        "voice",
 		"adsrDecayLevel": template.NewParameter("adsrDecayLevel", nil),
 	})
@@ -231,11 +190,6 @@ func main() {
 		[]string{"template1"},
 	))
 
-	kickPlayer.Connect(0, mult, 0)
-	hihatPlayer.Connect(0, mult, 0)
-	snarePlayer.Connect(0, mult, 0)
-	mult.Connect(0, root, 0)
-	mult.Connect(0, root, 1)
 	poly.Connect(0, allpass, 0)
 	poly.Connect(0, root, 0)
 	allpass.Connect(0, root, 1)

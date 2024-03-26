@@ -1,6 +1,10 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float/shape/shapers/emulations/softsync"
+	"github.com/almerlucke/genny/float/shape/shapers/linear"
+	"github.com/almerlucke/genny/float/shape/shapers/lookup"
+	"github.com/almerlucke/genny/float/shape/shapers/series"
 	"github.com/almerlucke/sndfile"
 	"log"
 	"math/rand"
@@ -13,8 +17,6 @@ import (
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/components/waveshaping"
-	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -44,7 +46,7 @@ type TestVoice struct {
 	filterEnv        *adsr.ADSR
 	phasor           *phasor.Phasor
 	filter           *moog.Moog
-	shaper           *shaping.SoftSyncTriangle
+	shaper           *softsync.Triangle
 	ampEnvSetting    *adsrc.Setting
 	filterEnvSetting *adsrc.Setting
 }
@@ -54,7 +56,7 @@ func NewTestVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting)
 		BasePatch:        muse.NewPatch(0, 1),
 		ampEnvSetting:    ampEnvSetting,
 		filterEnvSetting: filterEnvSetting,
-		shaper:           shaping.NewSoftSyncTriangle(1.25),
+		shaper:           softsync.NewTriangle(1.25),
 	}
 
 	testVoice.SetSelf(testVoice)
@@ -164,14 +166,14 @@ func main() {
 	poly := root.AddModule(polyphony.New(1, voices).Named("polyphony"))
 	allpass := root.AddModule(allpass.New(50, 50, 0.3))
 
-	sineTable := shaping.NewNormalizedSineTable(512)
+	sineTable := lookup.NewNormalizedSineTable(512)
 
-	targetShaper := lfo.NewTarget("polyphony", shaping.NewSeries(sineTable, shaping.NewLinear(0.7, 1.0)), "shaper", template.Template{
+	targetShaper := lfo.NewTarget("polyphony", series.New(sineTable, linear.New(0.7, 1.0)), "shaper", template.Template{
 		"command": "voice",
 		"shaper":  template.NewParameter("shaper", nil),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewSeries(sineTable, shaping.NewLinear(0.1, 0.05)), "adsrDecayLevel", template.Template{
+	targetFilter := lfo.NewTarget("polyphony", series.New(sineTable, linear.New(0.1, 0.05)), "adsrDecayLevel", template.Template{
 		"command":        "voice",
 		"adsrDecayLevel": template.NewParameter("adsrDecayLevel", nil),
 	})
@@ -269,7 +271,7 @@ func main() {
 
 	mult := root.AddModule(functor.NewAmp(0.5))
 
-	chor1 := root.AddModule(chorus.New(false, 15, 10, 0.9, 1.3, 0.3, waveshaping.NewSineTable(512)))
+	chor1 := root.AddModule(chorus.New(false, 15, 10, 0.9, 1.3, 0.3, lookup.NewSineTable(512)))
 
 	kickPlayer.Connect(0, mult, 0)
 	hihatPlayer.Connect(0, mult, 0)

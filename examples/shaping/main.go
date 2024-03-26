@@ -2,10 +2,10 @@ package main
 
 import (
 	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/emulations/supersaw"
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/value"
 
@@ -21,7 +21,7 @@ import (
 	"github.com/almerlucke/muse/modules/waveshaper"
 )
 
-func msgMapper(msg any, shaper shaping.Shaper) {
+func msgMapper(msg any, shaper shape.Shaper) {
 	// params, ok := msg.(map[string]any)
 	// if ok {
 	// 	s, ok := params["sync"]
@@ -32,7 +32,7 @@ func msgMapper(msg any, shaper shaping.Shaper) {
 
 func paramMapper(param int, value any, shaper shape.Shaper) {
 	if param == 0 {
-		shaper.(*shaping.SuperSaw).SetM1(value.(float64))
+		shaper.(*supersaw.SuperSaw).SetM1(value.(float64))
 	}
 }
 
@@ -56,7 +56,7 @@ func main() {
 	mult1 := root.AddModule(functor.NewMult(2))
 	filterParam := root.AddModule(functor.NewScale(2200.0, 40.0))
 	osc1 := root.AddModule(phasor.New(140.0, 0.0).Named("osc1"))
-	shaper1 := root.AddModule(waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil))
+	shaper1 := root.AddModule(waveshaper.New(supersaw.New(1.5, 0.25, 0.88), 1, paramMapper, nil))
 	allpass := root.AddModule(allpass.New(375.0, 375.0, 0.3))
 	allpassAmp := root.AddModule(functor.NewAmp(0.5))
 	// filter := env.AddModule(butterworth.NewButterworth(300.0, 0.4, env.Config, "filter"))
@@ -85,7 +85,7 @@ func main() {
 	reverb.Connect(0, root, 0)
 	reverb.Connect(1, root, 1)
 
-	root.RenderAudio()
+	_ = root.RenderAudio()
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/shaper.aiff", 24.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

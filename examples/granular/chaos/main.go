@@ -1,17 +1,20 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float"
+	"github.com/almerlucke/genny/float/interp"
+	"github.com/almerlucke/genny/float/iter"
+	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/linear"
+	"github.com/almerlucke/genny/float/shape/shapers/mirror"
+	"github.com/almerlucke/genny/float/shape/shapers/series"
 	"github.com/almerlucke/sndfile/writer"
 	"math"
 	"math/rand"
 
+	"github.com/almerlucke/genny/float/iter/updaters/chaos"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/generator"
-	"github.com/almerlucke/muse/components/interpolator"
-	"github.com/almerlucke/muse/components/iterator"
-	"github.com/almerlucke/muse/components/iterator/chaos"
 	"github.com/almerlucke/muse/components/osc"
-	"github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/granular"
 	"github.com/almerlucke/muse/modules/granular/envelopes/trapezoidal"
@@ -75,8 +78,8 @@ func NewSFParam(duration float64, amplitude float64, attack float64, release flo
 type SFSource struct {
 	osc      *osc.Osc
 	aron     *chaos.Aronson
-	scale    *waveshaping.Linear
-	gen      generator.Generator
+	scale    *linear.Linear
+	gen      float.FrameGenerator
 	waveform int
 	panCur   float64
 	panInc   float64
@@ -85,15 +88,15 @@ type SFSource struct {
 func NewSource(sr float64) *SFSource {
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
 	aron := chaos.NewAronsonWithFunc(1.698, f)
-	iter := iterator.New([]float64{0.4, 0.4}, aron)
-	mirror := waveshaping.NewMirror(-1.0, 1.0)
-	uni := waveshaping.NewUnipolar()
-	scale := waveshaping.NewLinear(1400.0, 50.0)
-	series := waveshaping.NewSeries(mirror, uni, scale)
-	wrapper := interpolator.New(
-		waveshaping.NewGeneratorWrapper(iter, []waveshaping.Shaper{series, series}),
-		interpolator.Linear,
-		250,
+	iter := iter.New([]float64{0.4, 0.4}, aron)
+	mirror := mirror.New(-1.0, 1.0)
+	uni := linear.NewUnipolar()
+	scale := linear.New(1400.0, 50.0)
+	series := series.New(mirror, uni, scale)
+	wrapper := interp.New(
+		shape.New(iter, series),
+		interp.Linear,
+		1.0/250.0,
 	)
 
 	return &SFSource{
@@ -132,7 +135,7 @@ func (s *SFSource) Activate(sampsToGo int64, p granular.Parameter, c *muse.Confi
 	s.panInc = (sfp.panEnd - sfp.panStart) / float64(sampsToGo)
 	s.waveform = sfp.waveform
 	s.osc.SetMix([4]float64{0.25, 0.25, 0.25, 0.25})
-	s.gen.(*interpolator.Interpolator).SetDelta(sfp.interpolDelta)
+	s.gen.(*interp.Interpolator).SetDelta(sfp.interpolDelta)
 }
 
 type SFSourceFactory struct {
@@ -272,7 +275,7 @@ func main() {
 		gr.Connect(i, root, i)
 	}
 
-	_ = root.RenderToSoundFile("/Users/almerlucke/Desktop/chaosping", writer.AIFC, 30.0, 44100.0, true)
+	_ = root.RenderToSoundFile("/home/almer/Documents/chaosping", writer.AIFC, 30.0, 44100.0, true)
 
 	// root.RenderToSoundFile("/Users/almerlucke/Desktop/chaosping.aiff", 180.0, root.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 	// root.RenderAudio()

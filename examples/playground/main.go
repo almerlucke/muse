@@ -2,23 +2,28 @@ package main
 
 import (
 	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/emulations/hardsync"
+	"github.com/almerlucke/genny/float/shape/shapers/emulations/jp8000"
+	"github.com/almerlucke/genny/float/shape/shapers/emulations/softsync"
+	"github.com/almerlucke/genny/float/shape/shapers/emulations/supersaw"
+	"github.com/almerlucke/genny/float/shape/shapers/interp"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/oversampler"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/vartri"
 	"github.com/almerlucke/muse/modules/waveshaper"
 	"github.com/almerlucke/muse/modules/xfade"
+	"github.com/almerlucke/sndfile/writer"
 	"github.com/dh1tw/gosamplerate"
 )
 
 func oscSyncHandler(index int, val any, shaper shape.Shaper) {
-	interpol := shaper.(*waveshaping.Interpolator)
-	superSaw := interpol.Shapers[0].(*waveshaping.SuperSaw)
-	hardSync := interpol.Shapers[1].(*waveshaping.HardSync)
-	softSync := interpol.Shapers[2].(*waveshaping.SoftSyncTriangle)
-	triMod := interpol.Shapers[3].(*waveshaping.JP8000triMod)
+	interpol := shaper.(*interp.Interpolate)
+	superSaw := interpol.Shapers[0].(*supersaw.SuperSaw)
+	hardSync := interpol.Shapers[1].(*hardsync.HardSync)
+	softSync := interpol.Shapers[2].(*softsync.Triangle)
+	triMod := interpol.Shapers[3].(*jp8000.TriMod)
 
 	switch index {
 	case 0:
@@ -46,11 +51,11 @@ func main() {
 
 	p := muse.NewPatch(0, 2)
 
-	interpol := waveshaping.NewInterpolator(
-		waveshaping.NewSuperSaw(1.5, 0.25, 0.88),
-		waveshaping.NewHardSync(1.4),
-		waveshaping.NewSoftSyncTriangle(1.25),
-		waveshaping.NewJP8000triMod(0.7),
+	interpol := interp.New(
+		supersaw.New(1.5, 0.25, 0.88),
+		hardsync.New(1.4),
+		softsync.NewTriangle(1.25),
+		jp8000.NewTriMod(0.7),
 	)
 
 	/*
@@ -109,6 +114,8 @@ func main() {
 
 	root.In(osa, osa, 1)
 
+	root.RenderToSoundFile("/home/almer/Documents/shapers", writer.AIFC, 40, 44100.0, true)
+
 	// root.RenderToSoundFile("/Users/almerlucke/Desktop/wave_interpol.aifc", 40.0, root.Config.SampleRate, true)
-	root.RenderAudio()
+	// _ = root.RenderAudio()
 }

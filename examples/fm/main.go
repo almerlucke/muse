@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/almerlucke/genny/float/shape/shapers/lookup"
 	"log"
 	"strconv"
 	"strings"
@@ -12,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/ops"
-	"github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/timer"
 	"github.com/almerlucke/muse/modules/fmsynth"
@@ -69,7 +69,7 @@ func operatorControls(index int, setting fmsynth.OperatorSetting) *controls.Grou
 func main() {
 	root := muse.New(1)
 
-	fm := fmsynth.New(18, waveshaping.NewSineTable(2048)).Named("fm").(*fmsynth.FMSynth)
+	fm := fmsynth.New(18, lookup.NewSineTable(2048)).Named("fm").(*fmsynth.FMSynth)
 
 	fm.OperatorSettings[1].Level = 0.5
 	fm.OperatorSettings[5].Level = 0.5

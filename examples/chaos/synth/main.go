@@ -1,14 +1,16 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float/shape/shapers/linear"
+	"github.com/almerlucke/genny/float/shape/shapers/mirror"
+	"github.com/almerlucke/genny/float/shape/shapers/series"
 	"math/rand"
 
+	"github.com/almerlucke/genny/float/interp"
+	"github.com/almerlucke/genny/float/iter"
+	"github.com/almerlucke/genny/float/iter/updaters/chaos"
 	"github.com/almerlucke/muse"
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/components/interpolator"
-	"github.com/almerlucke/muse/components/iterator"
-	"github.com/almerlucke/muse/components/iterator/chaos"
-	"github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/controls/val"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/timer"
@@ -27,8 +29,8 @@ import (
 type ChaosVoice struct {
 	*muse.BasePatch
 	verhulst         *chaos.Verhulst
-	iter             *iterator.Iterator
-	interpol         *interpolator.Interpolator
+	iter             *iter.Iterator
+	interpol         *interp.Interpolator
 	ampEnvSetting    *adsrc.Setting
 	filterEnvSetting *adsrc.Setting
 	filter           *korg35.LPF
@@ -41,8 +43,8 @@ type ChaosVoice struct {
 
 func NewChaosVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *ChaosVoice {
 	verhulst := chaos.NewVerhulstWithFunc(3.6951, chaos.Iter1a)
-	iter := iterator.New([]float64{0.1231}, verhulst)
-	interpol := interpolator.New(iter, interpolator.Cubic, 1.0/120.0)
+	iter := iter.New([]float64{0.1231}, verhulst)
+	interpol := interp.New(iter, interp.Cubic, 1.0/120.0)
 
 	voice := &ChaosVoice{
 		BasePatch:        muse.NewPatch(0, 2),
@@ -54,7 +56,7 @@ func NewChaosVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting
 		panner:           pan.New(0.5),
 		filter:           korg35.New(1500.0, 1.2, 1.0),
 		genMod:           generator.New(interpol, nil, nil),
-		waveShape:        waveshaper.New(waveshaping.NewSeries(waveshaping.NewMirror(0.0, 1.0), waveshaping.NewBipolar()), 0, nil, nil),
+		waveShape:        waveshaper.New(series.New(mirror.New(0.0, 1.0), linear.NewBipolar()), 0, nil, nil),
 		ampEnv:           adsr.New(ampEnvSetting, adsrc.Duration, 1.0),
 		filterEnv:        adsr.New(filterEnvSetting, adsrc.Duration, 1.0),
 	}
@@ -180,6 +182,6 @@ func main() {
 	// chorus2.Connect(0, env, 0)
 	// chorus2.Connect(1, env, 1)
 
-	root.RenderAudio()
+	_ = root.RenderAudio()
 	// root.RenderToSoundFile("/Users/almerlucke/Desktop/chaos2.aiff", 20.0, 44100.0, true)
 }

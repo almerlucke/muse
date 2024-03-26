@@ -1,16 +1,17 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float/interp"
+	"github.com/almerlucke/genny/float/iter"
+	"github.com/almerlucke/genny/float/iter/updaters/chaos"
 	"github.com/almerlucke/genny/float/shape/shapers/linear"
 	"github.com/almerlucke/genny/float/shape/shapers/mirror"
 	"github.com/almerlucke/genny/float/shape/shapers/series"
+
 	"math/rand"
 
 	"github.com/almerlucke/muse"
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/components/interpolator"
-	"github.com/almerlucke/muse/components/iterator"
-	"github.com/almerlucke/muse/components/iterator/chaos"
 	"github.com/almerlucke/muse/controls/val"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/timer"
@@ -29,8 +30,8 @@ import (
 type ChaosVoice struct {
 	*muse.BasePatch
 	verhulst         *chaos.Verhulst
-	iter             *iterator.Iterator
-	interpol         *interpolator.Interpolator
+	iter             *iter.Iterator
+	interpol         *interp.Interpolator
 	ampEnvSetting    *adsrc.Setting
 	filterEnvSetting *adsrc.Setting
 	filter           *korg35.LPF
@@ -43,13 +44,13 @@ type ChaosVoice struct {
 
 func NewChaosVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *ChaosVoice {
 	verhulst := chaos.NewVerhulstWithFunc(3.6951, chaos.Iter1)
-	iter := iterator.New([]float64{0.1231}, verhulst)
-	interpol := interpolator.New(iter, interpolator.Linear, 1.0/120.0)
+	it := iter.New([]float64{0.1231}, verhulst)
+	interpol := interp.New(it, interp.Linear, 1.0/120.0)
 
 	voice := &ChaosVoice{
 		BasePatch:        muse.NewPatch(0, 2),
 		verhulst:         verhulst,
-		iter:             iter,
+		iter:             it,
 		interpol:         interpol,
 		ampEnvSetting:    ampEnvSetting,
 		filterEnvSetting: filterEnvSetting,
@@ -181,6 +182,6 @@ func main() {
 	// chorus2.Connect(0, env, 0)
 	// chorus2.Connect(1, env, 1)
 
-	root.RenderAudio()
+	_ = root.RenderAudio()
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/chaosPing1.aiff", 360.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)
 }

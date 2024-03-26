@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/emulations/supersaw"
 	"github.com/almerlucke/muse"
 
 	// Components
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/modules"
 
 	// Value
@@ -41,7 +41,7 @@ type TestVoice struct {
 
 func paramMapper(param int, value any, shaper shape.Shaper) {
 	if param == 0 {
-		shaper.(*shaping.SuperSaw).SetM1(value.(float64))
+		shaper.(*supersaw.SuperSaw).SetM1(value.(float64))
 	}
 }
 
@@ -54,7 +54,7 @@ func NewTestVoice() *TestVoice {
 
 	adsrEnv := adsr.New(setting, adsrc.Duration, 1.0).AddTo(testVoice)
 	osc := phasor.New(140.0, 0.0).AddTo(testVoice)
-	shape := waveshaper.New(shaping.NewSuperSaw(1.5, 0.25, 0.88), 1, paramMapper, nil).
+	shape := waveshaper.New(supersaw.New(1.5, 0.25, 0.88), 1, paramMapper, nil).
 		AddTo(testVoice).In(osc)
 	mult := modules.Mult(shape, adsrEnv).AddTo(testVoice)
 	filter := moog.New(1700.0, 0.48, 1.0).AddTo(testVoice).In(mult)
@@ -141,7 +141,7 @@ func main() {
 
 	root.In(reverb, reverb, 1)
 
-	root.RenderAudio()
+	_ = root.RenderAudio()
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/voices.aiff", 24.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }

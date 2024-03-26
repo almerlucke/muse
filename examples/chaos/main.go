@@ -1,14 +1,17 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float/interp"
+	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/linear"
+	"github.com/almerlucke/genny/float/shape/shapers/series"
+	"github.com/almerlucke/muse/controls/fgen"
 	"log"
 
+	"github.com/almerlucke/genny/float/iter"
+	"github.com/almerlucke/genny/float/iter/updaters/chaos"
+	"github.com/almerlucke/genny/float/shape/shapers/mirror"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/interpolator"
-	"github.com/almerlucke/muse/components/iterator"
-	"github.com/almerlucke/muse/components/iterator/chaos"
-	"github.com/almerlucke/muse/components/waveshaping"
-	"github.com/almerlucke/muse/controls/gen"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/generator"
 	"github.com/almerlucke/muse/modules/osc"
@@ -18,7 +21,7 @@ import (
 
 func genPlot() {
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
-	iter := iterator.New([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.978, f))
+	iter := iter.New([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.978, f))
 
 	pts := make(plotter.XYs, 20000)
 	vecX := make([]float64, 20000)
@@ -43,12 +46,12 @@ func genSound() {
 	root := muse.New(1)
 
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
-	iter := iterator.New([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.878, f))
-	mirror := waveshaping.NewMirror(-1.0, 1.0)
-	wrapper := interpolator.New(
-		waveshaping.NewGeneratorWrapper(iter, []waveshaping.Shaper{mirror, mirror}),
-		interpolator.Cubic,
-		60,
+	it := iter.New([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.878, f))
+	mir := mirror.New(-1.0, 1.0)
+	wrapper := interp.New(
+		shape.New(it, mir),
+		interp.Cubic,
+		1.0/60,
 	)
 
 	sgen := root.AddModule(generator.NewBasic(wrapper))
@@ -56,7 +59,7 @@ func genSound() {
 	sgen.Connect(0, root, 0)
 	// sgen.Connect(1, env, 1)
 
-	root.RenderAudio()
+	_ = root.RenderAudio()
 }
 
 func genFreq() {
@@ -64,18 +67,18 @@ func genFreq() {
 
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
 	aron := chaos.NewAronsonWithFunc(1.698, f)
-	iter := iterator.New([]float64{0.4, 0.4}, aron)
-	mirror := waveshaping.NewMirror(-1.0, 1.0)
-	uni := waveshaping.NewUnipolar()
-	scale := waveshaping.NewLinear(1400.0, 50.0)
-	chain := waveshaping.NewSeries(mirror, uni, scale)
-	wrapper := interpolator.New(
-		waveshaping.NewGeneratorWrapper(iter, []waveshaping.Shaper{chain, chain}),
-		interpolator.Cubic,
-		5,
+	it := iter.New([]float64{0.4, 0.4}, aron)
+	mir := mirror.New(-1.0, 1.0)
+	uni := linear.NewUnipolar()
+	scale := linear.New(1400.0, 50.0)
+	chain := series.New(mir, uni, scale)
+	wrapper := interp.New(
+		shape.New(it, chain),
+		interp.Cubic,
+		1.0/10.0,
 	)
 
-	cgen := root.AddControl(gen.NewGen(wrapper, func(value any, index int) {
+	cgen := root.AddControl(fgen.NewX(wrapper, func(value any, index int) {
 		if index == 0 {
 			aron.A = value.(float64)
 		} else if index == 1 {
@@ -96,7 +99,7 @@ func genFreq() {
 	osc1.Connect(2, root, 0)
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/lozi.aiff", 20.0, 44100.0, false, sndfile.SF_FORMAT_AIFF)
-	root.RenderAudio()
+	_ = root.RenderAudio()
 }
 
 func main() {

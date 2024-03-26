@@ -1,6 +1,10 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float/shape/shapers/emulations/supersaw"
+	"github.com/almerlucke/genny/float/shape/shapers/linear"
+	"github.com/almerlucke/genny/float/shape/shapers/lookup"
+	"github.com/almerlucke/genny/float/shape/shapers/series"
 	"log"
 
 	"fyne.io/fyne/v2"
@@ -12,7 +16,6 @@ import (
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	shaping "github.com/almerlucke/muse/components/waveshaping"
 	"github.com/almerlucke/muse/messengers/lfo"
 	adsrctrl "github.com/almerlucke/muse/ui/adsr"
 	"github.com/almerlucke/muse/ui/theme"
@@ -35,7 +38,7 @@ type TestVoice struct {
 	filterEnv        *adsr.ADSR
 	phasor           *phasor.Phasor
 	filter           *moog.Moog
-	superSaw         *shaping.SuperSaw
+	superSaw         *supersaw.SuperSaw
 	ampEnvSetting    *adsrc.Setting
 	filterEnvSetting *adsrc.Setting
 }
@@ -45,7 +48,7 @@ func NewTestVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting)
 		BasePatch:        muse.NewPatch(0, 1),
 		ampEnvSetting:    ampEnvSetting,
 		filterEnvSetting: filterEnvSetting,
-		superSaw:         shaping.NewSuperSaw(1.5, 0.25, 0.88),
+		superSaw:         supersaw.New(1.5, 0.25, 0.88),
 	}
 
 	testVoice.SetSelf(testVoice)
@@ -134,14 +137,14 @@ func main() {
 	poly := polyphony.New(1, voices).Named("polyphony").AddTo(root)
 	allpass := root.AddModule(allpass.New(50, 50, 0.3))
 
-	sineTable := shaping.NewNormalizedSineTable(512)
+	sineTable := lookup.NewNormalizedSineTable(512)
 
-	targetSuperSaw := lfo.NewTarget("polyphony", shaping.NewSeries(sineTable, shaping.NewLinear(0.15, 0.1)), "superSawM1", template.Template{
+	targetSuperSaw := lfo.NewTarget("polyphony", series.New(sineTable, linear.New(0.15, 0.1)), "superSawM1", template.Template{
 		"command":    "voice",
 		"superSawM1": template.NewParameter("superSawM1", nil),
 	})
 
-	targetFilter := lfo.NewTarget("polyphony", shaping.NewSeries(sineTable, shaping.NewLinear(6000.0, 800.0)), "frequency", template.Template{
+	targetFilter := lfo.NewTarget("polyphony", series.New(sineTable, linear.New(6000.0, 800.0)), "frequency", template.Template{
 		"command":         "voice",
 		"filterFrequency": template.NewParameter("frequency", nil),
 	})

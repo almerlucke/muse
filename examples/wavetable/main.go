@@ -1,9 +1,10 @@
 package main
 
 import (
+	"github.com/almerlucke/genny/float"
+	"github.com/almerlucke/genny/float/phasor"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/phasor"
-	"github.com/almerlucke/muse/controls/gen"
+	"github.com/almerlucke/muse/controls/fgen"
 	"github.com/almerlucke/muse/io"
 	"github.com/almerlucke/muse/modules/wtosc"
 	"log"
@@ -19,7 +20,7 @@ func main() {
 
 	ctrlRate := root.Config.SampleRate / float64(root.Config.BufferSize)
 
-	g := gen.NewGen(phasor.New(0.05, ctrlRate, 0.0), nil, nil)
+	g := fgen.New(float.ToFrame(phasor.New(0.05, ctrlRate, 0.0)))
 	g.CtrlAddTo(root)
 
 	osc := wtosc.New(sf, 30.0, 0.0, 0.0, 0.4).AddTo(root)
