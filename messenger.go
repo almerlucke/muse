@@ -18,7 +18,6 @@ type MessageReceiver interface {
 
 type Messenger interface {
 	Control
-	Stater
 	MsgrNamed(string) Messenger
 	MsgrAddTo(Patch) Messenger
 	Messages(timestamp int64, config *Configuration) []*Message
@@ -42,15 +41,6 @@ func (m *BaseMessenger) ReceiveMessage(msg any) []*Message {
 func (m *BaseMessenger) Messages(timestamp int64, config *Configuration) []*Message {
 	// STUB
 	return nil
-}
-
-func (m *BaseMessenger) SetState(state map[string]any) {
-	// STUB
-}
-
-func (m *BaseMessenger) GetState() map[string]any {
-	// STUB
-	return map[string]any{}
 }
 
 func (m *BaseMessenger) MsgrNamed(name string) Messenger {

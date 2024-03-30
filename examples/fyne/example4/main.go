@@ -146,6 +146,11 @@ func addDrumTrack(p muse.Patch, moduleName string, soundBuffer *sndfile.SoundFil
 }
 
 func main() {
+	muse.PushConfiguration(&muse.Configuration{
+		SampleRate: 44100.0,
+		BufferSize: 512,
+	})
+
 	root := muse.New(2)
 
 	ampEnvSetting := adsrc.NewSetting(1.0, 5.0, 0.2, 37.0, 0.0, 1630.0)

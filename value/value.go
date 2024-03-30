@@ -2,12 +2,9 @@ package value
 
 import (
 	"math/rand"
-
-	"github.com/almerlucke/muse"
 )
 
 type Valuer[T any] interface {
-	muse.Stater
 	Value() T
 	Continuous() bool
 	Reset()
@@ -59,22 +56,6 @@ func (c *Const[T]) Reset() {}
 
 func (c *Const[T]) Finished() bool {
 	return false
-}
-
-func (c *Const[T]) GetState() map[string]any {
-	if _, ok := any(c.value).(muse.Stater); ok {
-		return map[string]any{"value": any(c.value).(muse.Stater).GetState()}
-	}
-
-	return map[string]any{"value": c.value}
-}
-
-func (c *Const[T]) SetState(state map[string]any) {
-	if _, ok := any(c.value).(muse.Stater); ok {
-		any(c.value).(muse.Stater).SetState(state["value"].(map[string]any))
-	} else {
-		c.value = state["value"].(T)
-	}
 }
 
 type Sequence[T any] struct {
@@ -133,16 +114,6 @@ func (s *Sequence[T]) Finished() bool {
 	return !s.continuous && s.index == len(s.values)
 }
 
-func (s *Sequence[T]) GetState() map[string]any {
-	return map[string]any{"values": s.values, "index": s.index, "continuous": s.continuous}
-}
-
-func (s *Sequence[T]) SetState(state map[string]any) {
-	s.values = state["values"].([]T)
-	s.index = state["index"].(int)
-	s.continuous = state["continuous"].(bool)
-}
-
 func (s *Sequence[T]) Randomize() {
 	rand.Shuffle(len(s.values), func(i, j int) {
 		s.values[i], s.values[j] = s.values[j], s.values[i]
@@ -169,13 +140,6 @@ func (f *Function[T]) Reset() {}
 
 func (f *Function[T]) Finished() bool {
 	return false
-}
-
-func (f *Function[T]) GetState() map[string]any {
-	return map[string]any{}
-}
-
-func (f *Function[T]) SetState(state map[string]any) {
 }
 
 // Repeat can make a continous generator non-continous by only repeating Next() n times,
@@ -225,17 +189,6 @@ func (r *Repeat[T]) Reset() {
 
 func (r *Repeat[T]) Finished() bool {
 	return r.n == 0
-}
-
-func (r *Repeat[T]) GetState() map[string]any {
-	return map[string]any{"value": r.value.GetState(), "min": r.min, "max": r.max, "n": r.n}
-}
-
-func (r *Repeat[T]) SetState(state map[string]any) {
-	r.value.SetState(state["value"].(map[string]any))
-	r.min = state["min"].(int)
-	r.max = state["max"].(int)
-	r.n = state["n"].(int)
 }
 
 // And is a meta-sequence, a sequence of Generators
@@ -306,29 +259,6 @@ func (a *And[T]) Finished() bool {
 	return !a.continuous && a.index == len(a.values)
 }
 
-func (a *And[T]) GetState() map[string]any {
-	states := []map[string]any{}
-	for index, val := range a.values {
-		states[index] = val.GetState()
-	}
-
-	return map[string]any{"values": states, "isCurrentSet": a.current != nil, "index": a.index, "continuous": a.continuous}
-}
-
-func (a *And[T]) SetState(state map[string]any) {
-	for index, state := range state["values"].([]map[string]any) {
-		a.values[index].SetState(state)
-	}
-
-	a.continuous = state["continuous"].(bool)
-	a.index = state["index"].(int)
-	a.current = nil
-
-	if state["isCurrentSet"].(bool) {
-		a.current = a.values[a.index]
-	}
-}
-
 // Or chooses one of the generators each cycle
 type Or[T any] struct {
 	values     []Valuer[T]
@@ -394,29 +324,6 @@ func (o *Or[T]) Finished() bool {
 	return !o.continuous && o.finished
 }
 
-func (o *Or[T]) GetState() map[string]any {
-	states := []map[string]any{}
-	for index, val := range o.values {
-		states[index] = val.GetState()
-	}
-
-	return map[string]any{"values": states, "isCurrentSet": o.current != nil, "index": o.index, "continuous": o.continuous, "finished": o.finished}
-}
-
-func (o *Or[T]) SetState(state map[string]any) {
-	for index, state := range state["values"].([]map[string]any) {
-		o.values[index].SetState(state)
-	}
-
-	o.index = state["index"].(int)
-	o.continuous = state["continuous"].(bool)
-	o.finished = state["finished"].(bool)
-
-	if state["isCurrentSet"].(bool) {
-		o.current = o.values[o.index]
-	}
-}
-
 // Flatten flattens a Valuer that generates slices of a certain type
 type Flatten[T any] struct {
 	sliceGenerator Valuer[[]T]
@@ -460,14 +367,6 @@ func (f *Flatten[T]) Finished() bool {
 	return f.sliceGenerator.Finished() && (f.currentSlice == nil || f.currentIndex >= len(f.currentSlice))
 }
 
-func (f *Flatten[T]) GetState() map[string]any {
-	return map[string]any{}
-}
-
-func (f *Flatten[T]) SetState(state map[string]any) {
-
-}
-
 // Transform transforms the output of a value with a transformer
 type Transform[T any] struct {
 	value       Valuer[T]
@@ -495,14 +394,6 @@ func (t *Transform[T]) Reset() {
 
 func (t *Transform[T]) Finished() bool {
 	return t.value.Finished()
-}
-
-func (t *Transform[T]) GetState() map[string]any {
-	return t.value.GetState()
-}
-
-func (t *Transform[T]) SetState(state map[string]any) {
-	t.value.SetState(state)
 }
 
 type TFunc[T any] func(T) T

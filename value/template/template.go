@@ -150,43 +150,6 @@ func (t Template) SetParameters(parameters []*Parameter) {
 /*
 	Valuer interface methods
 */
-func (t Template) SetState(m map[string]any) {
-	for k, v := range t {
-		switch vt := t[k].(type) {
-		case Template:
-			vt.SetState(v.(map[string]any))
-		case value.Valuer[any]:
-			vt.SetState(v.(map[string]any))
-		case *Parameter:
-			vt.Value = v
-		case Parameter:
-			vt.Value = v
-		default:
-			t[k] = v
-		}
-	}
-}
-
-func (t Template) GetState() map[string]any {
-	m := map[string]any{}
-
-	for k, v := range t {
-		switch vt := v.(type) {
-		case Template:
-			m[k] = vt.GetState()
-		case value.Valuer[any]:
-			m[k] = vt.GetState()
-		case *Parameter:
-			m[k] = vt.Value
-		case Parameter:
-			m[k] = vt.Value
-		default:
-			m[k] = v
-		}
-	}
-
-	return m
-}
 
 func (t Template) Value() []map[string]any {
 	intermediate := t.intermediate()

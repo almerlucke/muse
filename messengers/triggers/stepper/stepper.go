@@ -6,7 +6,6 @@ import (
 )
 
 type StepProvider interface {
-	muse.Stater
 	NextStep() float64
 }
 
@@ -66,7 +65,7 @@ func (s *Stepper) Tick(timestamp int64, config *muse.Configuration) {
 }
 
 func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.Message {
-	messages := []*muse.Message{}
+	var messages []*muse.Message
 	bang, duration := s.tick(timestamp, config)
 
 	if bang {
@@ -100,12 +99,4 @@ func (vs *ValueStepProvider) NextStep() float64 {
 		vs.value.Reset()
 	}
 	return v
-}
-
-func (vs *ValueStepProvider) GetState() map[string]any {
-	return vs.value.GetState()
-}
-
-func (vs *ValueStepProvider) SetState(state map[string]any) {
-	vs.value.SetState(state)
 }

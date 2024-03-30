@@ -105,28 +105,28 @@ func (sw *Swing) NextStep() float64 {
 	return milliPerNote
 }
 
-func (sw *Swing) GetState() map[string]any {
-	return map[string]any{
-		"steps":             sw.steps.GetState(),
-		"noteDivision":      sw.noteDivision,
-		"milliPerNote":      sw.milliPerNote,
-		"bpm":               sw.bpm,
-		"remainingDuration": sw.remainingDuration,
-		"delayed":           sw.delayed,
-		"burstCount":        sw.burstCount,
-		"burstMode":         sw.burstMode,
-		"burstDuration":     sw.burstDuration,
-	}
-}
-
-func (sw *Swing) SetState(state map[string]any) {
-	sw.steps.SetState(state["steps"].(map[string]any))
-	sw.noteDivision = state["noteDivision"].(int)
-	sw.bpm = state["bpm"].(int)
-	sw.milliPerNote = (60000.0 / float64(sw.bpm)) / float64(sw.noteDivision)
-	sw.remainingDuration = state["remainingDuration"].(float64)
-	sw.delayed = state["delayed"].(bool)
-	sw.burstCount = state["burstCount"].(int)
-	sw.burstMode = state["burstMode"].(bool)
-	sw.burstDuration = state["burstDuration"].(float64)
-}
+//func (sw *Swing) GetState() map[string]any {
+//	return map[string]any{
+//		"steps":             sw.steps.GetState(),
+//		"noteDivision":      sw.noteDivision,
+//		"milliPerNote":      sw.milliPerNote,
+//		"bpm":               sw.bpm,
+//		"remainingDuration": sw.remainingDuration,
+//		"delayed":           sw.delayed,
+//		"burstCount":        sw.burstCount,
+//		"burstMode":         sw.burstMode,
+//		"burstDuration":     sw.burstDuration,
+//	}
+//}
+//
+//func (sw *Swing) SetState(state map[string]any) {
+//	sw.steps.SetState(state["steps"].(map[string]any))
+//	sw.noteDivision = state["noteDivision"].(int)
+//	sw.bpm = state["bpm"].(int)
+//	sw.milliPerNote = (60000.0 / float64(sw.bpm)) / float64(sw.noteDivision)
+//	sw.remainingDuration = state["remainingDuration"].(float64)
+//	sw.delayed = state["delayed"].(bool)
+//	sw.burstCount = state["burstCount"].(int)
+//	sw.burstMode = state["burstMode"].(bool)
+//	sw.burstDuration = state["burstDuration"].(float64)
+//}

@@ -1,12 +1,12 @@
 package chorus
 
 import (
+	"github.com/almerlucke/genny/float/phasor"
 	"github.com/almerlucke/genny/float/shape"
 	"github.com/almerlucke/genny/float/shape/shapers/lookup"
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/buffer"
 	"github.com/almerlucke/muse/components/delay"
-	"github.com/almerlucke/muse/components/phasor"
 )
 
 /*
@@ -44,6 +44,7 @@ type Chorus struct {
 
 func New(stereo bool, delayCenter float64, delayRange float64, modDepth float64, modSpeed float64, mix float64, modShaper shape.Shaper) *Chorus {
 	numOutputs := 1
+
 	if stereo {
 		numOutputs = 2
 	}
@@ -165,10 +166,10 @@ func (c *Chorus) Synthesize() bool {
 			c.SetMix(c.Inputs[3].Buffer[i])
 		}
 
-		d1 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[0].Tick()[0])))
-		d2 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[1].Tick()[0])))
-		d3 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[2].Tick()[0])))
-		d4 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[3].Tick()[0])))
+		d1 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[0].Generate())))
+		d2 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[1].Generate())))
+		d3 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[2].Generate())))
+		d4 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[3].Generate())))
 
 		c.delayLine.Write(in[i])
 

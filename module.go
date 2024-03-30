@@ -2,7 +2,6 @@ package muse
 
 type Module interface {
 	Control
-	Stater
 	Named(string) Module
 	AddTo(Patch) Module
 	Configuration() *Configuration
@@ -223,13 +222,4 @@ func (m *BaseModule) MustSynthesize() bool {
 func (m *BaseModule) ReceiveMessage(msg any) []*Message {
 	// STUB
 	return nil
-}
-
-func (m *BaseModule) SetState(state map[string]any) {
-	// STUB
-}
-
-func (m *BaseModule) GetState() map[string]any {
-	// STUB
-	return map[string]any{}
 }
