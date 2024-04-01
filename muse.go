@@ -21,7 +21,10 @@ func init() {
 
 type Muse struct {
 	*BasePatch
-	stream *portaudio.Stream
+	stream           *portaudio.Stream
+	outputFile       *writer.Writer
+	isRecording      bool
+	recordingBuffers []buffer.Buffer
 }
 
 func New(numOutputs int) *Muse {
@@ -47,6 +50,33 @@ func NewWithInputs(numInputs, numOutputs int) *Muse {
 func (m *Muse) Synthesize() bool {
 	m.PrepareSynthesis()
 	return m.BasePatch.Synthesize()
+}
+
+func (m *Muse) StartRecording(filePath string, fileFormat writer.FileFormat, sampleRate float64, normalize bool) error {
+	inputSampleRate := m.Config.SampleRate
+	numChannels := m.NumOutputs()
+
+	wr, err := writer.NewWithOptions(filePath, fileFormat, numChannels, sampleRate, writer.Options{
+		InputConverter:    buffer.NewWriterConverter(m.Config.BufferSize, numChannels),
+		Normalize:         normalize,
+		ConvertSampleRate: inputSampleRate != sampleRate,
+		InputSampleRate:   inputSampleRate,
+		SrConvQuality:     gosamplerate.SRC_SINC_BEST_QUALITY,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	m.outputFile = wr
+	m.isRecording = true
+	m.recordingBuffers = make([]buffer.Buffer, numChannels)
+
+	for c := 0; c < numChannels; c++ {
+		m.recordingBuffers[c] = m.OutputAtIndex(c).Buffer
+	}
+
+	return nil
 }
 
 func (m *Muse) RenderToSoundFile(filePath string, fileFormat writer.FileFormat, numSeconds float64, sampleRate float64, normalize bool) error {
@@ -116,6 +146,11 @@ func (m *Muse) audioCallback(in, out [][]float32) {
 	// Synthesize rest of the patch like normal
 	m.BasePatch.Synthesize()
 
+	// Record to file
+	if m.isRecording {
+		_ = m.outputFile.Write(m.recordingBuffers, false)
+	}
+
 	// Copy outputs to system audio output
 	numOutputs := m.NumOutputs()
 
@@ -159,6 +194,10 @@ func (m *Muse) StopAudio() error {
 }
 
 func (m *Muse) TerminateAudio() {
+	if m.isRecording {
+		_ = m.outputFile.Close()
+	}
+
 	if m.stream != nil {
 		_ = m.stream.Close()
 		m.stream = nil

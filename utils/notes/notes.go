@@ -260,3 +260,11 @@ func Mtofs(notes ...int) []float64 {
 	}
 	return f
 }
+
+func Mtofa(notes ...int) []any {
+	f := make([]any, len(notes))
+	for i, note := range notes {
+		f[i] = Mtof(note)
+	}
+	return f
+}

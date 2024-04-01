@@ -6,6 +6,7 @@ import (
 	"github.com/almerlucke/genny/float/shape/shapers/lookup"
 	"github.com/almerlucke/genny/float/shape/shapers/series"
 	"github.com/almerlucke/sndfile"
+	"github.com/almerlucke/sndfile/writer"
 	"log"
 	"math/rand"
 
@@ -192,10 +193,8 @@ func main() {
 		"amplitude": value.NewSequence([]any{0.6, 0.3, 0.6, 0.5, 0.4, 0.3, 0.4, 0.5, 0.6, 0.4, 0.2}),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": value.NewTransform[any](value.NewSequence([]any{
-					notes.Mtof(60), notes.Mtof(67), notes.Mtof(62), notes.Mtof(69), notes.Mtof(64), notes.Mtof(71),
-					notes.Mtof(66), notes.Mtof(61), notes.Mtof(68), notes.Mtof(63), notes.Mtof(70), notes.Mtof(65),
-				}),
+				"frequency": value.NewTransform[any](value.NewSequence(
+					notes.Mtofa(60, 67, 62, 69, 64, 71, 66, 61, 68, 63, 70, 65)),
 					value.TFunc[any](func(v any) any { return v.(float64) / 2.0 })),
 				"phase": 0.0,
 			},
@@ -208,10 +207,8 @@ func main() {
 		"amplitude": value.NewSequence([]any{1.0, 1.0, 0.6, 0.6, 1.0, 1.0, 0.6, 1.0}),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": value.NewTransform[any](value.NewSequence([]any{
-					notes.Mtof(67), notes.Mtof(62), notes.Mtof(69), notes.Mtof(64), notes.Mtof(71), notes.Mtof(66),
-					notes.Mtof(61), notes.Mtof(68), notes.Mtof(63), notes.Mtof(70), notes.Mtof(65), notes.Mtof(72),
-				}),
+				"frequency": value.NewTransform[any](value.NewSequence(
+					notes.Mtofa(67, 62, 69, 64, 71, 66, 61, 68, 63, 70, 65, 72)),
 					value.TFunc[any](func(v any) any { return v.(float64) / 4.0 })),
 				"phase": 0.375,
 			},
@@ -294,9 +291,14 @@ func main() {
 	mult.Connect(0, root, 1)
 	allpass.Connect(0, root, 1)
 
-	err := root.InitializeAudio()
+	err := root.StartRecording("/home/almer/Documents/thisisfyne", writer.AIFC, 44100.0, true)
 	if err != nil {
-		log.Fatalf("error opening portaudio stream, %v", err)
+		log.Fatalf("error starting live recording: %v", err)
+	}
+
+	err = root.InitializeAudio()
+	if err != nil {
+		log.Fatalf("error opening portaudio stream: %v", err)
 	}
 
 	defer root.TerminateAudio()
