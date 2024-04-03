@@ -3,9 +3,9 @@ package banger
 import (
 	"fmt"
 
+	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/value"
-	"github.com/almerlucke/muse/value/template"
 )
 
 type Banger interface {
@@ -137,7 +137,7 @@ func (d *templateDestination) ReceiveMessage(msg any) []*muse.Message {
 }
 
 func (d *templateDestination) resolveParams() {
-	params := []*template.Parameter{}
+	var params []*template.Parameter
 	for k, v := range d.paramMap {
 		params = append(params, template.NewParameter(k, v))
 	}
@@ -146,11 +146,11 @@ func (d *templateDestination) resolveParams() {
 }
 
 func (d *templateDestination) MessageBang(msg any) []*muse.Message {
-	allMessages := []*muse.Message{}
+	var allMessages []*muse.Message
 
 	d.resolveParams()
 
-	protoMessages := d.template.Value()
+	protoMessages := d.template.Generate()
 
 	for _, address := range d.addresses {
 		for _, message := range protoMessages {
@@ -164,7 +164,7 @@ func (d *templateDestination) MessageBang(msg any) []*muse.Message {
 func (d *templateDestination) ControlBang() []any {
 	d.resolveParams()
 
-	protoMessages := d.template.Value()
+	protoMessages := d.template.Generate()
 
 	contents := make([]any, len(protoMessages))
 	for i, msg := range protoMessages {

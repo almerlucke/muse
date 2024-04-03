@@ -1,10 +1,9 @@
 package swing
 
 import (
+	"github.com/almerlucke/genny"
 	"math"
 	"math/rand"
-
-	"github.com/almerlucke/muse/value"
 )
 
 var _shuffleMultiplier = 0.7
@@ -35,7 +34,7 @@ func (s *Step) SkipStep() bool {
 }
 
 type Swing struct {
-	steps             value.Valuer[*Step]
+	steps             genny.Generator[*Step]
 	bpm               int
 	noteDivision      int
 	milliPerNote      float64
@@ -46,7 +45,7 @@ type Swing struct {
 	burstDuration     float64
 }
 
-func New(bpm int, noteDivision int, steps value.Valuer[*Step]) *Swing {
+func New(bpm int, noteDivision int, steps genny.Generator[*Step]) *Swing {
 	return &Swing{
 		steps:        steps,
 		noteDivision: noteDivision,
@@ -56,7 +55,7 @@ func New(bpm int, noteDivision int, steps value.Valuer[*Step]) *Swing {
 }
 
 func (sw *Swing) NextStep() float64 {
-	if sw.steps.Finished() {
+	if sw.steps.Done() {
 		sw.steps.Reset()
 	}
 
@@ -74,7 +73,7 @@ func (sw *Swing) NextStep() float64 {
 		return sw.burstDuration
 	}
 
-	step := sw.steps.Value()
+	step := sw.steps.Generate()
 
 	multiply := 1.0
 

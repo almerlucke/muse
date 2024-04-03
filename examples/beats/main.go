@@ -1,9 +1,12 @@
 package main
 
 import (
+	"github.com/almerlucke/genny"
+	"github.com/almerlucke/genny/flatten"
+	"github.com/almerlucke/genny/markov"
+	"github.com/almerlucke/genny/sequence"
+
 	"github.com/almerlucke/sndfile"
-	"github.com/almerlucke/sndfile/writer"
-	"log"
 	"math/rand"
 
 	"github.com/almerlucke/muse"
@@ -13,12 +16,11 @@ import (
 	"github.com/almerlucke/muse/synths/drums"
 	"github.com/almerlucke/muse/utils"
 
-	"github.com/almerlucke/muse/value"
-	"github.com/almerlucke/muse/value/markov"
-	"github.com/almerlucke/muse/value/template"
+	"github.com/almerlucke/genny/function"
+	"github.com/almerlucke/genny/template"
 )
 
-func addDrumTrack(p muse.Patch, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) {
+func addDrumTrack(p muse.Patch, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps genny.Generator[*swing.Step]) {
 	identifier := sounds[0] + "Drum"
 
 	p.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
@@ -28,147 +30,139 @@ func addDrumTrack(p muse.Patch, polyName string, sounds []string, tempo int, div
 		"duration":  0.0,
 		"amplitude": amp,
 		"message": template.Template{
-			"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
-			"sound": value.NewSequence(utils.ToAnySlice(sounds)),
+			"speed": function.New(nil, func(ctx any) any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
+			"sound": sequence.New(utils.ToAnySlice(sounds)...),
 		},
 	}).MsgrNamed(identifier))
 }
 
-func kickRhythm() value.Valuer[*swing.Step] {
-	rhythm1 := markov.NewState([]*swing.Step{
+func kickRhythm() genny.Generator[*swing.Step] {
+	rhythm1 := markov.NewProbabilityState([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm2 := markov.NewState([]*swing.Step{
+	rhythm2 := markov.NewProbabilityState([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm3 := markov.NewState([]*swing.Step{
+	rhythm3 := markov.NewProbabilityState([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm4 := markov.NewState([]*swing.Step{
+	rhythm4 := markov.NewProbabilityState([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
 		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm5 := markov.NewState([]*swing.Step{
+	rhythm5 := markov.NewProbabilityState([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {}, {Skip: true},
 		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
-	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
-	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
-	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
-	rhythm5.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
+	rhythm1.SetProbabilities(rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.SetProbabilities(rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.SetProbabilities(rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
+	rhythm4.SetProbabilities(rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
+	rhythm5.SetProbabilities(rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
 
-	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
-
-	return value.NewFlatten[*swing.Step](m)
+	return flatten.New[*swing.Step](markov.New[[]*swing.Step](rhythm1, 1))
 }
 
-func snareRhythm() value.Valuer[*swing.Step] {
-	rhythm1 := markov.NewState([]*swing.Step{
+func snareRhythm() genny.Generator[*swing.Step] {
+	rhythm1 := markov.NewProbabilityState([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm2 := markov.NewState([]*swing.Step{
+	rhythm2 := markov.NewProbabilityState([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm3 := markov.NewState([]*swing.Step{
+	rhythm3 := markov.NewProbabilityState([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {BurstChance: 0.5, NumBurst: 3}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm4 := markov.NewState([]*swing.Step{
+	rhythm4 := markov.NewProbabilityState([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {BurstChance: 0.5, NumBurst: 3}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm5 := markov.NewState([]*swing.Step{
+	rhythm5 := markov.NewProbabilityState([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {BurstChance: 0.5, NumBurst: 3},
 		{Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {},
-	}, nil)
+	})
 
-	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
-	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
-	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
-	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
-	rhythm5.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
+	rhythm1.SetProbabilities(rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.SetProbabilities(rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.SetProbabilities(rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
+	rhythm4.SetProbabilities(rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
+	rhythm5.SetProbabilities(rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
 
-	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
-
-	return value.NewFlatten[*swing.Step](m)
+	return flatten.New[*swing.Step](markov.New[[]*swing.Step](rhythm1, 1))
 }
 
-func bassRhythm() value.Valuer[*swing.Step] {
-	rhythm1 := markov.NewState([]*swing.Step{
+func bassRhythm() genny.Generator[*swing.Step] {
+	rhythm1 := markov.NewProbabilityState([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm2 := markov.NewState([]*swing.Step{
+	rhythm2 := markov.NewProbabilityState([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm3 := markov.NewState([]*swing.Step{
+	rhythm3 := markov.NewProbabilityState([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm4 := markov.NewState([]*swing.Step{
+	rhythm4 := markov.NewProbabilityState([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
 		{Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {},
-	}, nil)
+	})
 
-	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
-	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
-	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 3.0, rhythm4, 2.0, rhythm1, 1.0)
-	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 4.0, rhythm1, 2.0, rhythm2, 1.0)
+	rhythm1.SetProbabilities(rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.SetProbabilities(rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.SetProbabilities(rhythm3, 3.0, rhythm4, 2.0, rhythm1, 1.0)
+	rhythm4.SetProbabilities(rhythm4, 4.0, rhythm1, 2.0, rhythm2, 1.0)
 
-	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
-
-	return value.NewFlatten[*swing.Step](m)
+	return flatten.New[*swing.Step](markov.New[[]*swing.Step](rhythm1, 1))
 }
 
-func hihatRhythm() value.Valuer[*swing.Step] {
-	rhythm1 := markov.NewState([]*swing.Step{
+func hihatRhythm() genny.Generator[*swing.Step] {
+	rhythm1 := markov.NewProbabilityState([]*swing.Step{
 		{}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm2 := markov.NewState([]*swing.Step{
+	rhythm2 := markov.NewProbabilityState([]*swing.Step{
 		{BurstChance: 0.5, NumBurst: 3}, {Shuffle: 0.1}, {}, {Skip: true}, {}, {Shuffle: 0.1}, {}, {Skip: true},
-	}, nil)
+	})
 
-	rhythm3 := markov.NewState([]*swing.Step{
+	rhythm3 := markov.NewProbabilityState([]*swing.Step{
 		{BurstChance: 0.5, NumBurst: 3}, {Shuffle: 0.1}, {Skip: true}, {Shuffle: 0.1}, {}, {Shuffle: 0.1}, {Skip: true}, {Shuffle: 0.1},
-	}, nil)
+	})
 
-	rhythm4 := markov.NewState([]*swing.Step{
+	rhythm4 := markov.NewProbabilityState([]*swing.Step{
 		{BurstChance: 0.5, NumBurst: 3}, {Skip: true}, {}, {Shuffle: 0.1}, {}, {Skip: true}, {}, {Shuffle: 0.1},
-	}, nil)
+	})
 
-	rhythm5 := markov.NewState([]*swing.Step{
+	rhythm5 := markov.NewProbabilityState([]*swing.Step{
 		{}, {Shuffle: 0.1}, {}, {Shuffle: 0.1}, {}, {Shuffle: 0.1}, {BurstChance: 0.5, NumBurst: 3}, {Shuffle: 0.1},
-	}, nil)
+	})
 
-	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 2.0, rhythm2, 1.0, rhythm3, 1.0)
-	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 2.0, rhythm3, 1.0, rhythm4, 1.0)
-	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 2.0, rhythm4, 1.0, rhythm5, 1.0)
-	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 3.0, rhythm5, 1.0, rhythm1, 1.0)
-	rhythm5.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm5, 3.0, rhythm1, 1.0, rhythm2, 1.0)
+	rhythm1.SetProbabilities(rhythm1, 2.0, rhythm2, 1.0, rhythm3, 1.0)
+	rhythm2.SetProbabilities(rhythm2, 2.0, rhythm3, 1.0, rhythm4, 1.0)
+	rhythm3.SetProbabilities(rhythm3, 2.0, rhythm4, 1.0, rhythm5, 1.0)
+	rhythm4.SetProbabilities(rhythm4, 3.0, rhythm5, 1.0, rhythm1, 1.0)
+	rhythm5.SetProbabilities(rhythm5, 3.0, rhythm1, 1.0, rhythm2, 1.0)
 
-	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
-
-	return value.NewFlatten[*swing.Step](m)
+	return flatten.New[*swing.Step](markov.New[[]*swing.Step](rhythm1, 1))
 }
 
 func main() {
@@ -202,10 +196,10 @@ func main() {
 
 	m.In(dr, dr, 1)
 
-	err := m.RenderToSoundFile("/home/almer/Documents/drums", writer.AIFC, 240, 44100.0, true)
-	if err != nil {
-		log.Printf("error rendering drums! %v", err)
-	}
+	//err := m.RenderToSoundFile("/home/almer/Documents/drums", writer.AIFC, 240, 44100.0, true)
+	//if err != nil {
+	//	log.Printf("error rendering drums! %v", err)
+	//}
 
-	// _ = m.RenderAudio()
+	_ = m.RenderAudio()
 }
