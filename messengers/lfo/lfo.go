@@ -5,8 +5,8 @@ import (
 	"github.com/almerlucke/genny/float/shape/shapers/linear"
 	"github.com/almerlucke/genny/float/shape/shapers/lookup"
 	"github.com/almerlucke/genny/float/shape/shapers/series"
+	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/value/template"
 )
 
 var lfoSineShaper = lookup.NewNormalizedSineTable(512.0)
@@ -29,7 +29,7 @@ func (t *Target) Messages(value float64) []*muse.Message {
 		t.Template.SetParameter(t.Parameter, t.Shaper.Shape(value))
 	}
 
-	raw := t.Template.Value()
+	raw := t.Template.Generate()
 	msgs := make([]*muse.Message, len(raw))
 
 	for i, msg := range raw {

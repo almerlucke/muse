@@ -4,6 +4,8 @@ import (
 	"github.com/almerlucke/genny/float/shape/shapers/linear"
 	"github.com/almerlucke/genny/float/shape/shapers/mirror"
 	"github.com/almerlucke/genny/float/shape/shapers/series"
+	"github.com/almerlucke/genny/function"
+	"github.com/almerlucke/genny/template"
 	"math/rand"
 
 	"github.com/almerlucke/genny/float/interp"
@@ -23,7 +25,6 @@ import (
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/waveshaper"
 	"github.com/almerlucke/muse/value"
-	"github.com/almerlucke/muse/value/template"
 )
 
 type ChaosVoice struct {
@@ -148,20 +149,21 @@ func main() {
 
 	trigger := banger.NewControlTemplateGenerator(template.Template{
 		"command": "trigger",
-		"duration": value.NewFunction(func() any {
+		"duration": function.New(nil, func(_ any) any {
+
 			return randMinMax(1600, 5000.0)
 		}),
-		"amplitude": value.NewFunction(func() any {
+		"amplitude": function.New(nil, func(_ any) any {
 			return randMinMax(0.1, 0.3)
 		}),
 		"message": template.Template{
-			"numCycles": value.NewFunction(func() any {
+			"numCycles": function.New(nil, func(_ any) any {
 				return randMinMax(60, 160.0)
 			}),
-			"chaos": value.NewFunction(func() any {
+			"chaos": function.New(nil, func(_ any) any {
 				return randMinMax(0.1, 3.0)
 			}),
-			"pan": value.NewFunction(func() any {
+			"pan": function.New(nil, func(_ any) any {
 				return randMinMax(0.0, 1.0)
 			}),
 		},

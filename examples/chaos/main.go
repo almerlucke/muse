@@ -2,20 +2,22 @@ package main
 
 import (
 	"github.com/almerlucke/genny/float/interp"
-	"github.com/almerlucke/genny/float/shape"
-	"github.com/almerlucke/genny/float/shape/shapers/linear"
-	"github.com/almerlucke/genny/float/shape/shapers/series"
-	"github.com/almerlucke/muse/controls/fgen"
-	"log"
-
 	"github.com/almerlucke/genny/float/iter"
 	"github.com/almerlucke/genny/float/iter/updaters/chaos"
+	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/linear"
 	"github.com/almerlucke/genny/float/shape/shapers/mirror"
+	"github.com/almerlucke/genny/float/shape/shapers/series"
+
+	"log"
+
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/controls/fgen"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/generator"
 	"github.com/almerlucke/muse/modules/osc"
 	"github.com/almerlucke/muse/plot"
+
 	"gonum.org/v1/plot/plotter"
 )
 

@@ -33,6 +33,40 @@ func (s *Step) SkipStep() bool {
 	return s.Skip || rand.Float64() < s.SkipChance
 }
 
+/*
+[]*swing.Step{
+		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
+	})
+
+
+*/
+
+func QuickSteps(args ...any) []*Step {
+	steps := make([]*Step, len(args))
+
+	for index, arg := range args {
+		var step *Step
+
+		switch v := arg.(type) {
+		case int:
+			step = &Step{
+				Skip: v == 0,
+			}
+		case *Step:
+			step = v
+		default:
+			step = &Step{
+				Skip: true,
+			}
+		}
+
+		steps[index] = step
+	}
+
+	return steps
+}
+
 type Swing struct {
 	steps             genny.Generator[*Step]
 	bpm               int
