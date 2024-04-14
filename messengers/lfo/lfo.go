@@ -53,7 +53,7 @@ type LFO struct {
 }
 
 func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shapes []shape.Shaper) *LFO {
-	sampleRate := muse.SampleRate() / float64(muse.BufferSize())
+	controlRate := muse.ControlRate()
 
 	if min > max {
 		tmp := min
@@ -63,7 +63,7 @@ func NewControlLFO(speed float64, min float64, max float64, shapeIndex int, shap
 
 	lfo := &LFO{
 		BaseMessenger: muse.NewBaseMessenger(),
-		delta:         speed / sampleRate,
+		delta:         speed / controlRate,
 		speed:         speed,
 		min:           min,
 		max:           max,
@@ -82,11 +82,11 @@ func NewBasicControlLFO(speed float64, min float64, max float64) *LFO {
 }
 
 func NewLFO(speed float64, targets []*Target) *LFO {
-	sampleRate := muse.SampleRate() / float64(muse.BufferSize())
+	controlRate := muse.ControlRate()
 
 	lfo := &LFO{
 		BaseMessenger: muse.NewBaseMessenger(),
-		delta:         speed / sampleRate,
+		delta:         speed / controlRate,
 		speed:         speed,
 		targets:       targets,
 		min:           0.0,
@@ -160,8 +160,7 @@ func (lfo *LFO) Speed() float64 {
 }
 
 func (lfo *LFO) SetSpeed(speed float64) {
-	sampleRate := lfo.config.SampleRate / float64(lfo.config.BufferSize)
-	lfo.delta = speed / sampleRate
+	lfo.delta = speed / lfo.config.ControlRate()
 	lfo.speed = speed
 }
 

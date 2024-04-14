@@ -2,10 +2,10 @@ package banger
 
 import (
 	"fmt"
+	"github.com/almerlucke/genny"
 
 	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/value"
 )
 
 type Banger interface {
@@ -15,86 +15,86 @@ type Banger interface {
 	ControlBang() []any
 }
 
-type Generator struct {
+type Bang struct {
 	*muse.BaseMessenger
 	banger Banger
 }
 
-func NewGenerator(banger Banger) *Generator {
-	g := &Generator{
+func NewBang(banger Banger) *Bang {
+	b := &Bang{
 		BaseMessenger: muse.NewBaseMessenger(),
 		banger:        banger,
 	}
 
-	g.SetSelf(g)
+	b.SetSelf(b)
 
-	return g
+	return b
 }
 
-func (g *Generator) ReceiveControlValue(value any, index int) {
+func (b *Bang) ReceiveControlValue(value any, index int) {
 	if index == 0 {
 		if value == muse.Bang {
-			contents := g.banger.ControlBang()
+			contents := b.banger.ControlBang()
 			for _, content := range contents {
-				g.SendControlValue(content, 0)
+				b.SendControlValue(content, 0)
 			}
 		}
 	} else {
-		g.banger.ReceiveControlValue(value, index)
+		b.banger.ReceiveControlValue(value, index)
 	}
 }
 
-func (g *Generator) ReceiveMessage(msg any) []*muse.Message {
+func (b *Bang) ReceiveMessage(msg any) []*muse.Message {
 	if muse.IsBang(msg) {
-		msgsToSend := g.banger.MessageBang(msg)
+		msgsToSend := b.banger.MessageBang(msg)
 		for _, msgToSend := range msgsToSend {
-			g.SendControlValue(msgToSend.Content, 0)
+			b.SendControlValue(msgToSend.Content, 0)
 		}
 
 		return msgsToSend
 	}
 
-	return g.banger.ReceiveMessage(msg)
+	return b.banger.ReceiveMessage(msg)
 }
 
-type ValueBang struct {
-	value value.Valuer[[]*muse.Message]
+type genBanger struct {
+	gen genny.Generator[[]*muse.Message]
 }
 
-func NewValueBang(val value.Valuer[[]*muse.Message]) *ValueBang {
-	return &ValueBang{
-		value: val,
+func newGenBanger(gen genny.Generator[[]*muse.Message]) *genBanger {
+	return &genBanger{
+		gen: gen,
 	}
 }
 
-func NewValueGenerator(val value.Valuer[[]*muse.Message]) *Generator {
-	return NewGenerator(NewValueBang(val))
+func NewGenBang(gen genny.Generator[[]*muse.Message]) *Bang {
+	return NewBang(newGenBanger(gen))
 }
 
-func (vb *ValueBang) ReceiveControlValue(value any, index int) {
+func (gb *genBanger) ReceiveControlValue(value any, index int) {
 	// STUB
 }
 
-func (vb *ValueBang) ReceiveMessage(msg any) []*muse.Message {
+func (gb *genBanger) ReceiveMessage(msg any) []*muse.Message {
 	// STUB
 	return nil
 }
 
-func (vb *ValueBang) MessageBang(msg any) []*muse.Message {
-	msgs := vb.value.Value()
+func (gb *genBanger) MessageBang(msg any) []*muse.Message {
+	msgs := gb.gen.Generate()
 
-	if vb.value.Finished() {
-		vb.value.Reset()
+	if gb.gen.Done() {
+		gb.gen.Reset()
 	}
 
 	return msgs
 }
 
-func (vb *ValueBang) ControlBang() []any {
-	msgs := vb.value.Value()
+func (gb *genBanger) ControlBang() []any {
+	msgs := gb.gen.Generate()
 
-	if vb.value.Finished() {
-		vb.value.Reset()
+	if gb.gen.Done() {
+		gb.gen.Reset()
 	}
 
 	contents := make([]any, len(msgs))
@@ -119,12 +119,12 @@ func newTemplateDestination(addresses []string, template template.Template) *tem
 	}
 }
 
-func NewTemplateGenerator(addresses []string, template template.Template) *Generator {
-	return NewGenerator(newTemplateDestination(addresses, template))
+func NewTemplateBang(addresses []string, template template.Template) *Bang {
+	return NewBang(newTemplateDestination(addresses, template))
 }
 
-func NewControlTemplateGenerator(template template.Template) *Generator {
-	return NewGenerator(newTemplateDestination(nil, template))
+func NewControlTemplateGenerator(template template.Template) *Bang {
+	return NewBang(newTemplateDestination(nil, template))
 }
 
 func (d *templateDestination) ReceiveControlValue(value any, index int) {
@@ -150,6 +150,10 @@ func (d *templateDestination) MessageBang(msg any) []*muse.Message {
 
 	d.resolveParams()
 
+	if d.template.Done() {
+		d.template.Reset()
+	}
+
 	protoMessages := d.template.Generate()
 
 	for _, address := range d.addresses {
@@ -163,6 +167,10 @@ func (d *templateDestination) MessageBang(msg any) []*muse.Message {
 
 func (d *templateDestination) ControlBang() []any {
 	d.resolveParams()
+
+	if d.template.Done() {
+		d.template.Reset()
+	}
 
 	protoMessages := d.template.Generate()
 

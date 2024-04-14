@@ -139,8 +139,8 @@ func addDrumTrack(p muse.Patch, moduleName string, soundBuffer *sndfile.SoundFil
 
 	p.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
 
-	p.AddMessenger(banger.NewTemplateGenerator([]string{moduleName}, template.Template{
-		"speed": function.New(nil, func(_ any) any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
+	p.AddMessenger(banger.NewTemplateBang([]string{moduleName}, template.Template{
+		"speed": function.New(func() float64 { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
 		"bang":  true,
 	}).MsgrNamed(identifier))
 
@@ -160,7 +160,7 @@ func main() {
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR", ampEnvSetting)
 	filterEnvControl := adsrctrl.NewADSRControl("Filter ADSR", filterEnvSetting)
 
-	voices := []polyphony.Voice{}
+	var voices []polyphony.Voice
 	for i := 0; i < 20; i++ {
 		voice := NewTestVoice(ampEnvSetting, filterEnvSetting)
 		voices = append(voices, voice)
@@ -188,36 +188,38 @@ func main() {
 	root.AddMessenger(lfo.NewLFO(0.03, []*lfo.Target{targetShaper}).MsgrNamed("lfo1"))
 	root.AddMessenger(lfo.NewLFO(0.13, []*lfo.Target{targetFilter}).MsgrNamed("lfo2"))
 
-	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	root.AddMessenger(banger.NewTemplateBang([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
-		"duration":  sequence.NewContinuous([]any{125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0}...),
-		"amplitude": sequence.NewContinuous([]any{0.6, 0.3, 0.6, 0.5, 0.4, 0.3, 0.4, 0.5, 0.6, 0.4, 0.2}...),
+		"duration":  sequence.NewLoop[float64](125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0),
+		"amplitude": sequence.NewLoop[float64](0.6, 0.3, 0.6, 0.5, 0.4, 0.3, 0.4, 0.5, 0.6, 0.4, 0.2),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": transform.New[any](sequence.NewContinuous[any](
-					notes.Mtofa(60, 67, 62, 69, 64, 71, 66, 61, 68, 63, 70, 65)...),
-					transform.Function[any](func(v any) any { return v.(float64) / 2.0 })),
+				"frequency": transform.New(
+					sequence.NewLoop(notes.Mtofs(60, 67, 62, 69, 64, 71, 66, 61, 68, 63, 70, 65)...),
+					func(v float64) float64 { return v / 2.0 },
+				),
 				"phase": 0.0,
 			},
 		},
 	}).MsgrNamed("template1"))
 
-	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	root.AddMessenger(banger.NewTemplateBang([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
-		"duration":  sequence.NewContinuous[any]([]any{375.0, 500.0, 375.0, 1000.0, 375.0, 250.0}...),
-		"amplitude": sequence.NewContinuous[any]([]any{1.0, 1.0, 0.6, 0.6, 1.0, 1.0, 0.6, 1.0}...),
+		"duration":  sequence.NewLoop[float64](375.0, 500.0, 375.0, 1000.0, 375.0, 250.0),
+		"amplitude": sequence.NewLoop[float64](1.0, 1.0, 0.6, 0.6, 1.0, 1.0, 0.6, 1.0),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": transform.New[any](sequence.NewContinuous[any](
-					notes.Mtofa(67, 62, 69, 64, 71, 66, 61, 68, 63, 70, 65, 72)...),
-					transform.Function[any](func(v any) any { return v.(float64) / 4.0 })),
+				"frequency": transform.New(
+					sequence.NewLoop(notes.Mtofs(67, 62, 69, 64, 71, 66, 61, 68, 63, 70, 65, 72)...),
+					func(v float64) float64 { return v / 4.0 },
+				),
 				"phase": 0.375,
 			},
 		},
 	}).MsgrNamed("template2"))
 
 	root.AddMessenger(stepper.NewStepper(
-		swing.New(bpm, 4, sequence.NewContinuous[*swing.Step](
+		swing.New(bpm, 4, sequence.NewLoop[*swing.Step](
 			[]*swing.Step{{}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {SkipChance: 0.3},
 				{}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {}, {SkipChance: 0.3}, {SkipChance: 0.3}}...,
 		)),
@@ -225,7 +227,7 @@ func main() {
 	))
 
 	root.AddMessenger(stepper.NewStepper(
-		swing.New(bpm, 2, sequence.NewContinuous[*swing.Step](
+		swing.New(bpm, 2, sequence.NewLoop[*swing.Step](
 			[]*swing.Step{{Skip: true}, {}, {}, {Skip: true}, {Skip: true}, {}, {}, {SkipChance: 0.3}}...,
 		)),
 		[]string{"template2"},
@@ -240,35 +242,35 @@ func main() {
 	swirlSound, _ := sndfile.NewSoundFile("resources/sounds/Cymatics - Orchid KEYS Swirl (C).wav")
 	vocalSound, _ := sndfile.NewSoundFile("resources/sounds/Cymatics - Blurry Vocal - 80 BPM F Min.wav")
 
-	hihatPlayer := addDrumTrack(root, "hihat", hihatSound, bpm, 8, 1.875, 2.125, 0.75, sequence.NewContinuous[*swing.Step]([]*swing.Step{
+	hihatPlayer := addDrumTrack(root, "hihat", hihatSound, bpm, 8, 1.875, 2.125, 0.75, sequence.NewLoop[*swing.Step]([]*swing.Step{
 		{}, {Shuffle: 0.1}, {SkipChance: 0.3, BurstChance: 1.0, NumBurst: 3}, {}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipChance: 0.4}, {Skip: true}, {Skip: true},
 	}...))
 
-	kickPlayer := addDrumTrack(root, "kick", kickSound, bpm, 4, 0.875, 1.125, 1.0, sequence.NewContinuous[*swing.Step]([]*swing.Step{
+	kickPlayer := addDrumTrack(root, "kick", kickSound, bpm, 4, 0.875, 1.125, 1.0, sequence.NewLoop[*swing.Step]([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {SkipChance: 0.4}, {}, {Skip: true}, {Skip: true},
 	}...))
 
-	snarePlayer := addDrumTrack(root, "snare", snareSound, bpm, 2, 0.875, 1.125, 1.0, sequence.NewContinuous[*swing.Step]([]*swing.Step{
+	snarePlayer := addDrumTrack(root, "snare", snareSound, bpm, 2, 0.875, 1.125, 1.0, sequence.NewLoop[*swing.Step]([]*swing.Step{
 		{Skip: true}, {Skip: true}, {Skip: true}, {BurstChance: 0.2, NumBurst: 2}, {Skip: true}, {Skip: true}, {Skip: true}, {},
 	}...))
 
-	bassPlayer := addDrumTrack(root, "bass", bassSound, bpm, 1, 0.875, 1.125, 1.0, sequence.NewContinuous[*swing.Step]([]*swing.Step{
+	bassPlayer := addDrumTrack(root, "bass", bassSound, bpm, 1, 0.875, 1.125, 1.0, sequence.NewLoop[*swing.Step]([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 	}...))
 
-	ridePlayer := addDrumTrack(root, "ride", rideSound, bpm, 2, 0.875, 1.25, 0.3, sequence.NewContinuous[*swing.Step]([]*swing.Step{
+	ridePlayer := addDrumTrack(root, "ride", rideSound, bpm, 2, 0.875, 1.25, 0.3, sequence.NewLoop[*swing.Step]([]*swing.Step{
 		{Skip: true}, {Skip: true}, {BurstChance: 0.2, NumBurst: 4}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 	}...))
 
-	waterPlayer := addDrumTrack(root, "water", waterSound, int(float64(bpm)*0.125), 2, 0.875, 1.25, 0.5, sequence.NewContinuous[*swing.Step]([]*swing.Step{
+	waterPlayer := addDrumTrack(root, "water", waterSound, int(float64(bpm)*0.125), 2, 0.875, 1.25, 0.5, sequence.NewLoop[*swing.Step]([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 	}...))
 
-	swirlPlayer := addDrumTrack(root, "swirl", swirlSound, int(float64(bpm)*0.5), 1.0, 0.875, 1.25, 0.2, sequence.NewContinuous[*swing.Step]([]*swing.Step{
+	swirlPlayer := addDrumTrack(root, "swirl", swirlSound, int(float64(bpm)*0.5), 1.0, 0.875, 1.25, 0.2, sequence.NewLoop[*swing.Step]([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 	}...))
 
-	vocalPlayer := addDrumTrack(root, "vocal", vocalSound, int(float64(bpm)*0.125), 1.0, 0.975, 1.025, 0.2, sequence.NewContinuous[*swing.Step]([]*swing.Step{
+	vocalPlayer := addDrumTrack(root, "vocal", vocalSound, int(float64(bpm)*0.125), 1.0, 0.975, 1.025, 0.2, sequence.NewLoop[*swing.Step]([]*swing.Step{
 		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
 	}...))
 

@@ -17,6 +17,10 @@ type Configuration struct {
 	BufferSize int
 }
 
+func (cfg *Configuration) ControlRate() float64 {
+	return cfg.SampleRate / float64(cfg.BufferSize)
+}
+
 func PushConfiguration(config *Configuration) {
 	configList.PushFront(config)
 }
@@ -34,6 +38,10 @@ func CurrentConfiguration() *Configuration {
 
 func SampleRate() float64 {
 	return CurrentConfiguration().SampleRate
+}
+
+func ControlRate() float64 {
+	return CurrentConfiguration().ControlRate()
 }
 
 func BufferSize() int {

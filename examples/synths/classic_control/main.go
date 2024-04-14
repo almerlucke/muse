@@ -1,7 +1,18 @@
 package main
 
 import (
+	"github.com/almerlucke/genny"
+	"github.com/almerlucke/genny/and"
+	"github.com/almerlucke/genny/arpeggio"
+	"github.com/almerlucke/genny/constant"
+	"github.com/almerlucke/genny/flatten"
+	"github.com/almerlucke/genny/function"
+	"github.com/almerlucke/genny/markov"
+	"github.com/almerlucke/genny/repeat"
+	"github.com/almerlucke/genny/sequence"
+	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/sndfile"
+
 	"math/rand"
 	"strings"
 
@@ -19,12 +30,7 @@ import (
 	"github.com/almerlucke/muse/synths/classic"
 	"github.com/almerlucke/muse/synths/drums"
 	"github.com/almerlucke/muse/ui/controls"
-	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/muse/utils/notes"
-	"github.com/almerlucke/muse/value"
-	"github.com/almerlucke/muse/value/arpeggio"
-	"github.com/almerlucke/muse/value/markov"
-	"github.com/almerlucke/muse/value/template"
 )
 
 type ClassicSynth struct {
@@ -169,204 +175,133 @@ func (cs *ClassicSynth) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func noteSequence(octave notes.Note) value.Valuer[any] {
-	return value.NewAnd(
-		[]value.Valuer[any]{
-			// Row 1
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMinor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, true), 2, 2),
-			// Row 2
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMajor7.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Exclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.EMinor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 2, 2),
-			// Row 3
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMinor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, true), 2, 2),
-			// Row 4
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMajor7.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor.FreqAny(octave), arpeggio.Converge, arpeggio.Exclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.BMinor.FreqAny(octave), arpeggio.Converge, arpeggio.Inclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.AMinor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 2),
-			// Row 5
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Converge, arpeggio.None, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.EMinor.FreqAny(octave), arpeggio.Converge, arpeggio.None, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.CMajor.FreqAny(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 1),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.DMajor7.FreqAny(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 2),
-			value.NewRepeat[any](arpeggio.NewArpeggioNC(notes.GMajor.FreqAny(octave), arpeggio.Alternate, arpeggio.None, false), 1, 1),
-		}, true)
+func noteSequence(octave notes.Note) genny.Generator[float64] {
+	return and.NewLoop[float64](
+		// Row 1
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor.Freq(octave), arpeggio.Alternate, arpeggio.None, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.CMajor.Freq(octave), arpeggio.Converge, arpeggio.None, false), 1, 3),
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Converge, arpeggio.None, true), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.AMinor.Freq(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 3),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor7.Freq(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Alternate, arpeggio.None, false), 1, 3),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor.Freq(octave), arpeggio.Converge, arpeggio.Inclusive, true), 2, 4),
+		// Row 2
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.AMajor7.Freq(octave), arpeggio.Alternate, arpeggio.None, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor.Freq(octave), arpeggio.Converge, arpeggio.Exclusive, true), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.EMinor.Freq(octave), arpeggio.Converge, arpeggio.Inclusive, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.AMajor7.Freq(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor.Freq(octave), arpeggio.Random, arpeggio.Exclusive, false), 2, 4),
+		// Row 3
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Alternate, arpeggio.None, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor.Freq(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.CMajor.Freq(octave), arpeggio.Converge, arpeggio.Inclusive, false), 1, 3),
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Converge, arpeggio.Exclusive, true), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.AMinor.Freq(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 3),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor7.Freq(octave), arpeggio.Alternate, arpeggio.Inclusive, true), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Up, arpeggio.None, false), 1, 3),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor.Freq(octave), arpeggio.Converge, arpeggio.Inclusive, true), 2, 4),
+		// Row 4
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.AMajor7.Freq(octave), arpeggio.Alternate, arpeggio.None, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor.Freq(octave), arpeggio.Converge, arpeggio.Exclusive, true), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.BMinor.Freq(octave), arpeggio.Converge, arpeggio.Inclusive, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.AMinor.Freq(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor7.Freq(octave), arpeggio.Random, arpeggio.Exclusive, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Up, arpeggio.Inclusive, false), 2, 4),
+		// Row 5
+		repeat.NewRand[float64](arpeggio.New(notes.CMajor.Freq(octave), arpeggio.Up, arpeggio.Exclusive, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor7.Freq(octave), arpeggio.Alternate, arpeggio.None, false), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Converge, arpeggio.None, false), 1, 3),
+		repeat.NewRand[float64](arpeggio.New(notes.EMinor.Freq(octave), arpeggio.Converge, arpeggio.None, true), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.CMajor.Freq(octave), arpeggio.Random, arpeggio.Exclusive, false), 1, 3),
+		repeat.NewRand[float64](arpeggio.New(notes.DMajor7.Freq(octave), arpeggio.Up, arpeggio.Inclusive, true), 2, 4),
+		repeat.NewRand[float64](arpeggio.New(notes.GMajor.Freq(octave), arpeggio.Alternate, arpeggio.None, false), 1, 3),
+	)
 }
 
-func addDrumTrack(p muse.Patch, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps value.Valuer[*swing.Step]) {
+func addDrumTrack(p muse.Patch, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps genny.Generator[*swing.Step]) {
 	identifier := sounds[0] + "Drum"
 
 	p.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
 
-	p.AddMessenger(banger.NewTemplateGenerator([]string{polyName}, template.Template{
+	p.AddMessenger(banger.NewTemplateBang([]string{polyName}, template.Template{
 		"command":   "trigger",
 		"duration":  0.0,
 		"amplitude": amp,
 		"message": template.Template{
-			"speed": value.NewFunction(func() any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
-			"sound": value.NewSequence(utils.ToAnySlice(sounds)),
+			"speed": function.New(func() float64 { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
+			"sound": sequence.NewLoop(sounds...),
 		},
 	}).MsgrNamed(identifier))
 }
 
-func kickRhythm() value.Valuer[*swing.Step] {
-	rhythm1 := markov.NewState([]*swing.Step{
-		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+func kickRhythm() genny.Generator[*swing.Step] {
+	rhythm1 := markov.NewProbabilityState(swing.QuickSteps(1, 0, 0, 1, 0, 0, 0, 0 /* 8 */, 0, 0, 0, 0, 0, 0, 0, 0))
+	rhythm2 := markov.NewProbabilityState(swing.QuickSteps(1, 0, 0, 1, 0, 0, 0, 0 /* 8 */, 0, 0, 1, 0, 0, 0, 0, 0))
+	rhythm3 := markov.NewProbabilityState(swing.QuickSteps(1, 0, 0, 1, 0, 0, 0, 0 /* 8 */, 0, 0, 1, 0, 0, 0, 1, 0))
+	rhythm4 := markov.NewProbabilityState(swing.QuickSteps(1, 0, 0, 0, 0, 0, 1, 0 /* 8 */, 0, 0, 1, 0, 0, 0, 1, 0))
+	rhythm5 := markov.NewProbabilityState(swing.QuickSteps(1, 0, 0, 1, 0, 0, 1, 0 /* 8 */, 0, 0, 1, 0, 0, 0, 1, 0))
 
-	rhythm2 := markov.NewState([]*swing.Step{
-		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	rhythm1.SetProbabilities(rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.SetProbabilities(rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.SetProbabilities(rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
+	rhythm4.SetProbabilities(rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
+	rhythm5.SetProbabilities(rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
 
-	rhythm3 := markov.NewState([]*swing.Step{
-		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
-	}, nil)
-
-	rhythm4 := markov.NewState([]*swing.Step{
-		{}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
-		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
-	}, nil)
-
-	rhythm5 := markov.NewState([]*swing.Step{
-		{}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {}, {Skip: true},
-		{Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true},
-	}, nil)
-
-	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
-	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
-	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
-	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
-	rhythm5.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
-
-	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
-
-	return value.NewFlatten[*swing.Step](m)
+	return flatten.New[*swing.Step](markov.New[[]*swing.Step](rhythm1, 1))
 }
 
-func snareRhythm() value.Valuer[*swing.Step] {
-	rhythm1 := markov.NewState([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+func snareRhythm() genny.Generator[*swing.Step] {
+	b := &swing.Step{BurstChance: 0.5, NumBurst: 3}
 
-	rhythm2 := markov.NewState([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	rhythm1 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 0 /* 8 */, 0, 0, 0, 0, 0, 0, 0, 0))
+	rhythm2 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 0 /* 8 */, 0, 0, 0, 0, 1, 0, 0, 0))
+	rhythm3 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 0 /* 8 */, 0, 0, 0, 0, b, 0, 0, 0))
+	rhythm4 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 1 /* 8 */, 0, 0, 0, 0, b, 0, 0, 0))
+	rhythm5 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, b /* 8 */, 0, 1, 0, 0, 0, 0, 0, 1))
 
-	rhythm3 := markov.NewState([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {BurstChance: 0.5, NumBurst: 3}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	rhythm1.SetProbabilities(rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.SetProbabilities(rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.SetProbabilities(rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
+	rhythm4.SetProbabilities(rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
+	rhythm5.SetProbabilities(rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
 
-	rhythm4 := markov.NewState([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {BurstChance: 0.5, NumBurst: 3}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
-
-	rhythm5 := markov.NewState([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {BurstChance: 0.5, NumBurst: 3},
-		{Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {},
-	}, nil)
-
-	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
-	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
-	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
-	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
-	rhythm5.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
-
-	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
-
-	return value.NewFlatten[*swing.Step](m)
+	return flatten.New[*swing.Step](markov.New[[]*swing.Step](rhythm1, 1))
 }
 
-func bassRhythm() value.Valuer[*swing.Step] {
-	rhythm1 := markov.NewState([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+func bassRhythm() genny.Generator[*swing.Step] {
+	rhythm1 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 0 /* 8 */, 0, 0, 0, 0, 0, 0, 0, 0))
+	rhythm2 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 0 /* 8 */, 0, 0, 0, 0, 1, 0, 0, 0))
+	rhythm3 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 1 /* 8 */, 0, 0, 0, 0, 1, 0, 0, 0))
+	rhythm4 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 1 /* 8 */, 0, 1, 0, 0, 0, 0, 0, 1))
 
-	rhythm2 := markov.NewState([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
+	rhythm1.SetProbabilities(rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.SetProbabilities(rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.SetProbabilities(rhythm3, 3.0, rhythm4, 2.0, rhythm1, 1.0)
+	rhythm4.SetProbabilities(rhythm4, 4.0, rhythm1, 2.0, rhythm2, 1.0)
 
-	rhythm3 := markov.NewState([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true},
-	}, nil)
-
-	rhythm4 := markov.NewState([]*swing.Step{
-		{Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {}, {Skip: true}, {Skip: true}, {},
-		{Skip: true}, {}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {Skip: true}, {},
-	}, nil)
-
-	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
-	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
-	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 3.0, rhythm4, 2.0, rhythm1, 1.0)
-	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 4.0, rhythm1, 2.0, rhythm2, 1.0)
-
-	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
-
-	return value.NewFlatten[*swing.Step](m)
+	return flatten.New[*swing.Step](markov.New[[]*swing.Step](rhythm1, 1))
 }
 
-func hihatRhythm() value.Valuer[*swing.Step] {
-	rhythm1 := markov.NewState([]*swing.Step{
-		{}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true},
-	}, nil)
+func hihatRhythm() genny.Generator[*swing.Step] {
+	b := &swing.Step{BurstChance: 0.5, NumBurst: 3}
+	s := &swing.Step{Shuffle: 0.1}
 
-	rhythm2 := markov.NewState([]*swing.Step{
-		{BurstChance: 0.5, NumBurst: 3}, {Shuffle: 0.1}, {}, {Skip: true}, {}, {Shuffle: 0.1}, {}, {Skip: true},
-	}, nil)
+	rhythm1 := markov.NewProbabilityState(swing.QuickSteps(1, 0, 1, 0, 1, 0, 1, 0))
+	rhythm2 := markov.NewProbabilityState(swing.QuickSteps(b, s, 1, 0, 1, s, 1, 0))
+	rhythm3 := markov.NewProbabilityState(swing.QuickSteps(b, s, 0, s, 1, s, 0, s))
+	rhythm4 := markov.NewProbabilityState(swing.QuickSteps(b, 0, 1, s, 1, 0, 1, s))
+	rhythm5 := markov.NewProbabilityState(swing.QuickSteps(1, s, 1, s, 1, s, b, s))
 
-	rhythm3 := markov.NewState([]*swing.Step{
-		{BurstChance: 0.5, NumBurst: 3}, {Shuffle: 0.1}, {Skip: true}, {Shuffle: 0.1}, {}, {Shuffle: 0.1}, {Skip: true}, {Shuffle: 0.1},
-	}, nil)
+	rhythm1.SetProbabilities(rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
+	rhythm2.SetProbabilities(rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
+	rhythm3.SetProbabilities(rhythm3, 3.0, rhythm4, 2.0, rhythm5, 1.0)
+	rhythm4.SetProbabilities(rhythm4, 4.0, rhythm5, 2.0, rhythm1, 1.0)
+	rhythm5.SetProbabilities(rhythm5, 4.0, rhythm1, 2.0, rhythm2, 1.0)
 
-	rhythm4 := markov.NewState([]*swing.Step{
-		{BurstChance: 0.5, NumBurst: 3}, {Skip: true}, {}, {Shuffle: 0.1}, {}, {Skip: true}, {}, {Shuffle: 0.1},
-	}, nil)
-
-	rhythm5 := markov.NewState([]*swing.Step{
-		{}, {Shuffle: 0.1}, {}, {Shuffle: 0.1}, {}, {Shuffle: 0.1}, {BurstChance: 0.5, NumBurst: 3}, {Shuffle: 0.1},
-	}, nil)
-
-	rhythm1.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm1, 2.0, rhythm2, 1.0, rhythm3, 1.0)
-	rhythm2.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm2, 2.0, rhythm3, 1.0, rhythm4, 1.0)
-	rhythm3.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm3, 2.0, rhythm4, 1.0, rhythm5, 1.0)
-	rhythm4.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm4, 3.0, rhythm5, 1.0, rhythm1, 1.0)
-	rhythm5.Transitioner = markov.NewProbabilityTransitionerVariadic[[]*swing.Step](rhythm5, 3.0, rhythm1, 1.0, rhythm2, 1.0)
-
-	m := markov.NewMarkov[[]*swing.Step](markov.NewStateStarter(rhythm1), 1)
-
-	return value.NewFlatten[*swing.Step](m)
+	return flatten.New[*swing.Step](markov.New[[]*swing.Step](rhythm1, 1))
 }
 
 func main() {
@@ -381,52 +316,52 @@ func main() {
 
 	soundBank := sndfile.SoundBank{}
 
-	soundBank["hihat"], _ = sndfile.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	soundBank["kick"], _ = sndfile.NewSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
-	soundBank["snare"], _ = sndfile.NewSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav")
-	soundBank["808_1"], _ = sndfile.NewSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav")
-	soundBank["808_2"], _ = sndfile.NewSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav")
-	soundBank["808_3"], _ = sndfile.NewSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav")
-	soundBank["808_4"], _ = sndfile.NewSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav")
-	soundBank["shaker"], _ = sndfile.NewSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav")
+	soundBank["hihat"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav", 4)
+	soundBank["kick"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav", 4)
+	soundBank["snare"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav", 4)
+	soundBank["808_1"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav", 4)
+	soundBank["808_2"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav", 4)
+	soundBank["808_3"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav", 4)
+	soundBank["808_4"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav", 4)
+	soundBank["shaker"], _ = sndfile.NewMipMapSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav", 4)
 
 	drumMachine := drums.NewDrums(soundBank, 20).Named("drums").AddTo(root)
 
 	addDrumTrack(root, "drums", []string{"hihat"}, int(bpm), 8, 0.875, 1.125, 0.6, hihatRhythm())
 	addDrumTrack(root, "drums", []string{"kick"}, int(bpm), 8, 0.875, 1.125, 1.0, kickRhythm())
 	addDrumTrack(root, "drums", []string{"snare"}, int(bpm), 8, 1.0, 1.0, 0.7, snareRhythm())
-	addDrumTrack(root, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, int(bpm), 2, 1.0, 1.0, 0.7, bassRhythm())
+	addDrumTrack(root, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, int(bpm), 2, 1.0, 1.0, 0.3, bassRhythm())
 	addDrumTrack(root, "drums", []string{"shaker"}, int(bpm), 2, 1.0, 1.0, 1.0, kickRhythm())
 
 	synth := NewClassicSynth(bpm).AddTo(root).(*ClassicSynth)
 
 	root.In(
-		drumMachine, 0,
-		drumMachine, 1,
-		modules.Amp(synth, 0, 0.7).AddTo(root), 0, 0,
-		modules.Amp(synth, 1, 0.7).AddTo(root), 0, 1,
+		modules.Amp(drumMachine, 0, 0.2).AddTo(root), 0,
+		modules.Amp(drumMachine, 1, 0.2).AddTo(root), 0,
+		modules.Amp(synth, 0, 0.15).AddTo(root), 0, 0,
+		modules.Amp(synth, 1, 0.15).AddTo(root), 0, 1,
 	)
 
-	synth.AddMessenger(banger.NewTemplateGenerator([]string{"poly"}, template.Template{
+	synth.AddMessenger(banger.NewTemplateBang([]string{"poly"}, template.Template{
 		"command":   "trigger",
-		"duration":  value.NewSequence([]any{375.0, 750.0, 1000.0, 250.0, 250.0, 375.0, 750.0}),
-		"amplitude": value.NewConst[any](1.0),
+		"duration":  sequence.NewLoop[float64](375.0, 750.0, 1000.0, 250.0, 250.0, 375.0, 750.0),
+		"amplitude": constant.New(1.0),
 		"message": template.Template{
-			"osc1SineMix":  value.NewSequence([]any{1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7}),
-			"osc1SawMix":   value.NewSequence([]any{0.0, 0.1, 0.3, 0.5, 0.7, 1.0, 0.7, 0.5, 0.3, 0.2, 0.1}),
-			"osc1PulseMix": value.NewSequence([]any{0.2, 0.5, 0.7, 1.0, 0.7, 0.5, 0.2, 0.1, 0.0}),
-			"osc1TriMix":   value.NewSequence([]any{0.7, 1.0, 1.0, 0.7, 0.3, 0.1, 0.0, 0.0, 0.0}),
-			"osc2SineMix":  value.NewSequence([]any{0.7, 1.0, 1.0, 0.7, 0.3, 0.1, 0.0, 0.0, 0.0}),
-			"osc2SawMix":   value.NewSequence([]any{0.2, 0.5, 0.7, 1.0, 0.7, 0.5, 0.2, 0.1, 0.0}),
-			"osc2PulseMix": value.NewSequence([]any{0.0, 0.1, 0.3, 0.5, 0.7, 1.0, 0.7, 0.5, 0.3, 0.2, 0.1}),
-			"osc2TriMix":   value.NewSequence([]any{1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7}),
+			"osc1SineMix":  sequence.NewLoop[float64](1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7),
+			"osc1SawMix":   sequence.NewLoop[float64](0.0, 0.1, 0.3, 0.5, 0.7, 1.0, 0.7, 0.5, 0.3, 0.2, 0.1),
+			"osc1PulseMix": sequence.NewLoop[float64](0.2, 0.5, 0.7, 1.0, 0.7, 0.5, 0.2, 0.1, 0.0),
+			"osc1TriMix":   sequence.NewLoop[float64](0.7, 1.0, 1.0, 0.7, 0.3, 0.1, 0.0, 0.0, 0.0),
+			"osc2SineMix":  sequence.NewLoop[float64](0.7, 1.0, 1.0, 0.7, 0.3, 0.1, 0.0, 0.0, 0.0),
+			"osc2SawMix":   sequence.NewLoop[float64](0.2, 0.5, 0.7, 1.0, 0.7, 0.5, 0.2, 0.1, 0.0),
+			"osc2PulseMix": sequence.NewLoop[float64](0.0, 0.1, 0.3, 0.5, 0.7, 1.0, 0.7, 0.5, 0.3, 0.2, 0.1),
+			"osc2TriMix":   sequence.NewLoop[float64](1.0, 0.7, 0.5, 0.3, 0.1, 0.0, 0.1, 0.2, 0.3, 0.5, 0.7),
 			"frequency":    noteSequence(notes.O3),
 		},
 	}).MsgrNamed("control"))
 
 	synth.AddMessenger(stepper.NewStepper(
 		swing.New(int(bpm), 4,
-			value.NewSequence([]*swing.Step{{}, {Skip: true}}),
+			sequence.NewLoop([]*swing.Step{{}, {Skip: true}}...),
 		),
 		[]string{"control"},
 	))
@@ -475,7 +410,7 @@ func main() {
 		"adsr.filter.decayDuration": template.NewParameter("val", nil),
 	}))
 
-	root.RenderAudio()
+	_ = root.RenderAudio()
 
 	// root.RenderToSoundFile("/Users/almerlucke/Desktop/classic_control.aifc", 240.0, 44100.0, true)
 

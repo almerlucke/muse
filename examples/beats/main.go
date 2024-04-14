@@ -5,21 +5,16 @@ import (
 	"github.com/almerlucke/genny/flatten"
 	"github.com/almerlucke/genny/markov"
 	"github.com/almerlucke/genny/sequence"
-	"github.com/almerlucke/sndfile/writer"
-	"log"
-
 	"github.com/almerlucke/sndfile"
 	"math/rand"
 
+	"github.com/almerlucke/genny/function"
+	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/synths/drums"
-	"github.com/almerlucke/muse/utils"
-
-	"github.com/almerlucke/genny/function"
-	"github.com/almerlucke/genny/template"
 )
 
 func addDrumTrack(p muse.Patch, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps genny.Generator[*swing.Step]) {
@@ -27,13 +22,13 @@ func addDrumTrack(p muse.Patch, polyName string, sounds []string, tempo int, div
 
 	p.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
 
-	p.AddMessenger(banger.NewTemplateGenerator([]string{polyName}, template.Template{
+	p.AddMessenger(banger.NewTemplateBang([]string{polyName}, template.Template{
 		"command":   "trigger",
 		"duration":  0.0,
 		"amplitude": amp,
 		"message": template.Template{
-			"speed": function.New(nil, func(ctx any) any { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
-			"sound": sequence.New(utils.ToAnySlice(sounds)...),
+			"speed": function.New(func() float64 { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
+			"sound": sequence.NewLoop(sounds...),
 		},
 	}).MsgrNamed(identifier))
 }
@@ -55,11 +50,13 @@ func kickRhythm() genny.Generator[*swing.Step] {
 }
 
 func snareRhythm() genny.Generator[*swing.Step] {
+	b := &swing.Step{BurstChance: 0.5, NumBurst: 3}
+
 	rhythm1 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 0 /* 8 */, 0, 0, 0, 0, 0, 0, 0, 0 /* 16 */))
 	rhythm2 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 0 /* 8 */, 0, 0, 0, 0, 1, 0, 0, 0 /* 16 */))
-	rhythm3 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 0 /* 8 */, 0, 0, 0, 0, &swing.Step{BurstChance: 0.5, NumBurst: 3}, 0, 0, 0 /* 16 */))
-	rhythm4 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 1 /* 8 */, 0, 0, 0, 0, &swing.Step{BurstChance: 0.5, NumBurst: 3}, 0, 0, 0 /* 16 */))
-	rhythm5 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, &swing.Step{BurstChance: 0.5, NumBurst: 3} /* 8 */, 0, 1, 0, 0, 0, 0, 0, 1 /* 16 */))
+	rhythm3 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 0 /* 8 */, 0, 0, 0, 0, b, 0, 0, 0 /* 16 */))
+	rhythm4 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, 1 /* 8 */, 0, 0, 0, 0, b, 0, 0, 0 /* 16 */))
+	rhythm5 := markov.NewProbabilityState(swing.QuickSteps(0, 0, 0, 0, 1, 0, 0, b /* 8 */, 0, 1, 0, 0, 0, 0, 0, 1 /* 16 */))
 
 	rhythm1.SetProbabilities(rhythm1, 3.0, rhythm2, 2.0, rhythm3, 1.0)
 	rhythm2.SetProbabilities(rhythm2, 3.0, rhythm3, 2.0, rhythm4, 1.0)
@@ -139,10 +136,10 @@ func main() {
 
 	m.In(dr, dr, 1)
 
-	err := m.RenderToSoundFile("/home/almer/Documents/drums", writer.AIFC, 240, 44100.0, true)
-	if err != nil {
-		log.Printf("error rendering drums! %v", err)
-	}
+	//err := m.RenderToSoundFile("/home/almer/Documents/drums", writer.AIFC, 240, 44100.0, true)
+	//if err != nil {
+	//	log.Printf("error rendering drums! %v", err)
+	//}
 
-	//_ = m.RenderAudio()
+	_ = m.RenderAudio()
 }
