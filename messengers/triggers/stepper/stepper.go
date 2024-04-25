@@ -1,8 +1,8 @@
 package stepper
 
 import (
+	"github.com/almerlucke/genny"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/value"
 )
 
 type StepProvider interface {
@@ -83,20 +83,22 @@ func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.
 	return messages
 }
 
-type ValueStepProvider struct {
-	value value.Valuer[float64]
+type GennyStepProvider struct {
+	gen genny.Generator[float64]
 }
 
-func NewValueStepProvider(val value.Valuer[float64]) *ValueStepProvider {
-	return &ValueStepProvider{
-		value: val,
+func NewGennyStepProvider(gen genny.Generator[float64]) *GennyStepProvider {
+	return &GennyStepProvider{
+		gen: gen,
 	}
 }
 
-func (vs *ValueStepProvider) NextStep() float64 {
-	v := vs.value.Value()
-	if vs.value.Finished() {
-		vs.value.Reset()
+func (gs *GennyStepProvider) NextStep() float64 {
+	v := gs.gen.Generate()
+
+	if gs.gen.Done() {
+		gs.gen.Reset()
 	}
+
 	return v
 }

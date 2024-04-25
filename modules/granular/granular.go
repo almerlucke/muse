@@ -20,7 +20,7 @@ type ParameterGenerator interface {
 
 type Envelope interface {
 	Synthesize([]float64, int)
-	Activate(float64, int64, Parameter)
+	Activate(float64, int64, Parameter, *muse.Configuration)
 }
 
 type Source interface {
@@ -38,7 +38,7 @@ func (g *grain) activate(p Parameter, config *muse.Configuration) {
 	g.sampsToGo = int64(p.Duration() * 0.001 * config.SampleRate)
 
 	g.source.Activate(g.sampsToGo, p, config)
-	g.envelope.Activate(p.Amplitude(), g.sampsToGo, p)
+	g.envelope.Activate(p.Amplitude(), g.sampsToGo, p, config)
 }
 
 func (g *grain) synthesize(sourceBufs [][]float64, envBuf []float64, bufSize int) int {
@@ -96,8 +96,8 @@ func New(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], g
 
 	for i := 0; i < grainPoolSize; i++ {
 		g := &grain{}
-		g.source = sf.New()
-		g.envelope = ef.New()
+		g.source = sf.New(config)
+		g.envelope = ef.New(config)
 		e := &pool.Element[*grain]{Value: g}
 		gl.freeGrains.Push(e)
 	}

@@ -1,6 +1,7 @@
 package trapezoidal
 
 import (
+	"github.com/almerlucke/muse"
 	"math"
 
 	"github.com/almerlucke/muse/modules/granular"
@@ -32,13 +33,11 @@ type Envelope struct {
 	cnt             int64
 }
 
-type Factory struct{}
-
-func (f *Factory) New() granular.Envelope {
+func (e *Envelope) New(_ any) granular.Envelope {
 	return &Envelope{}
 }
 
-func (e *Envelope) Activate(amplitude float64, durationSamples int64, parameter granular.Parameter) {
+func (e *Envelope) Activate(amplitude float64, durationSamples int64, parameter granular.Parameter, _ *muse.Configuration) {
 	envParam := any(parameter).(Parameter)
 
 	e.smoothness = envParam.Smoothness()

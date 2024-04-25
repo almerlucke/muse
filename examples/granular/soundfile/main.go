@@ -159,7 +159,7 @@ type SFSourceFactory struct {
 	SoundFile sndfile.SoundFiler
 }
 
-func (sf *SFSourceFactory) New() granular.Source {
+func (sf *SFSourceFactory) New(_ any) granular.Source {
 	return &SFSource{
 		sf: sf.SoundFile,
 	}
@@ -244,7 +244,7 @@ func main() {
 	paramGen.panClustering = museRand.NewClusterRand(0.5, 0.3, 0.3, 0.2, 0.5)
 	paramGen.reversePlayChance = 0.1
 
-	gr := root.AddModule(granular.New(numChannels, &SFSourceFactory{SoundFile: sfb}, &trapezoidal.Factory{}, 400, paramGen))
+	gr := root.AddModule(granular.New(numChannels, &SFSourceFactory{SoundFile: sfb}, &trapezoidal.Envelope{}, 400, paramGen))
 
 	for i := 0; i < numChannels; i++ {
 		gr.Connect(i, root, i)

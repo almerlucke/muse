@@ -15,7 +15,7 @@ func ToAnySlice[T any](s []T) []any {
 }
 
 type Factory[T any] interface {
-	New() T
+	New(any) T
 }
 
 func ReadJSON[T any](file string) (T, error) {

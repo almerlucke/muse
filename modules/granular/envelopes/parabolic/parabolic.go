@@ -1,6 +1,7 @@
 package parabolic
 
 import (
+	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/modules/granular"
 )
 
@@ -10,13 +11,11 @@ type Envelope struct {
 	curve      float64
 }
 
-type Factory struct{}
-
-func (f *Factory) New() granular.Envelope {
+func (e *Envelope) New(_ any) granular.Envelope {
 	return &Envelope{}
 }
 
-func (e *Envelope) Activate(amplitude float64, durationSamples int64, parameter granular.Parameter) {
+func (e *Envelope) Activate(amplitude float64, durationSamples int64, _ granular.Parameter, _ *muse.Configuration) {
 	e.currentAmp = 0
 	rdur := 1.0 / float64(durationSamples)
 	rdur2 := rdur * rdur

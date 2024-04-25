@@ -3,12 +3,10 @@ package main
 import (
 	"github.com/almerlucke/genny/float/shape"
 	"github.com/almerlucke/genny/float/shape/shapers/emulations/supersaw"
+	"github.com/almerlucke/genny/sequence"
 	"github.com/almerlucke/muse"
 
 	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/utils"
-	"github.com/almerlucke/muse/value"
-
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/modules/adsr"
@@ -19,6 +17,7 @@ import (
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/vartri"
 	"github.com/almerlucke/muse/modules/waveshaper"
+	"github.com/almerlucke/muse/utils"
 )
 
 func msgMapper(msg any, shaper shape.Shaper) {
@@ -39,11 +38,11 @@ func paramMapper(param int, value any, shaper shape.Shaper) {
 func main() {
 	root := muse.New(2)
 
-	sequence := value.NewSequence(utils.ReadJSONNull[[][]*muse.Message]("examples/shaping/sequence1.json"))
-	root.AddMessenger(banger.NewValueGenerator(sequence).MsgrNamed("sequencer1"))
+	seq := sequence.NewLoop(utils.ReadJSONNull[[][]*muse.Message]("examples/shaping/sequence1.json")...)
+	root.AddMessenger(banger.NewGenBang(seq).MsgrNamed("sequencer1"))
 
 	root.AddMessenger(stepper.NewStepper(
-		stepper.NewValueStepProvider(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
+		stepper.NewGennyStepProvider(sequence.New[float64](250, -125, 250, 250, -125, 125, -125, 250)),
 		[]string{"sequencer1", "adsr1"},
 	))
 

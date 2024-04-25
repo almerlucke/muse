@@ -338,8 +338,8 @@ func main() {
 	root.In(
 		modules.Amp(drumMachine, 0, 0.2).AddTo(root), 0,
 		modules.Amp(drumMachine, 1, 0.2).AddTo(root), 0,
-		modules.Amp(synth, 0, 0.15).AddTo(root), 0, 0,
-		modules.Amp(synth, 1, 0.15).AddTo(root), 0, 1,
+		modules.Amp(synth, 0, 0.2).AddTo(root), 0, 0,
+		modules.Amp(synth, 1, 0.2).AddTo(root), 0, 1,
 	)
 
 	synth.AddMessenger(banger.NewTemplateBang([]string{"poly"}, template.Template{
