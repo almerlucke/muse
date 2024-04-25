@@ -23,10 +23,13 @@ func (e *Envelope) Activate(amplitude float64, durationSamples int64, _ granular
 	e.curve = -8.0 * amplitude * rdur2
 }
 
-func (e *Envelope) Synthesize(buf []float64, bufSize int) {
+func (e *Envelope) Synthesize(bufs [][]float64, bufSize int) {
 	for i := 0; i < bufSize; i++ {
-		buf[i] = e.currentAmp
+		amp := e.currentAmp
 		e.currentAmp = e.currentAmp + e.slope
 		e.slope = e.slope + e.curve
+		for _, buf := range bufs {
+			buf[i] *= amp
+		}
 	}
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/almerlucke/genny/float/shape/shapers/linear"
 	"github.com/almerlucke/genny/float/shape/shapers/mirror"
 	"github.com/almerlucke/genny/float/shape/shapers/series"
-	"github.com/almerlucke/sndfile/writer"
 	"math"
 	"math/rand"
 
@@ -268,10 +267,7 @@ func main() {
 		gr.Connect(i, root, i)
 	}
 
-	_ = root.RenderToSoundFile("/home/almer/Documents/chaosNew", writer.AIFC, 300, muse.SampleRate(), true)
+	// _ = root.RenderToSoundFile("/home/almer/Documents/chaosNew", writer.AIFC, 300, muse.SampleRate(), true)
 
-	// _ = root.RenderToSoundFile("/home/almer/Documents/chaosping", writer.AIFC, 30.0, 44100.0, true)
-
-	// root.RenderToSoundFile("/Users/almerlucke/Desktop/chaosping.aiff", 180.0, root.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
-	// _ = root.RenderAudio()
+	_ = root.RenderAudio()
 }

@@ -19,7 +19,7 @@ type ParameterGenerator interface {
 }
 
 type Envelope interface {
-	Synthesize([]float64, int)
+	Synthesize([][]float64, int)
 	Activate(float64, int64, Parameter, *muse.Configuration)
 }
 
@@ -36,12 +36,11 @@ type grain struct {
 
 func (g *grain) activate(p Parameter, config *muse.Configuration) {
 	g.sampsToGo = int64(p.Duration() * 0.001 * config.SampleRate)
-
 	g.source.Activate(g.sampsToGo, p, config)
 	g.envelope.Activate(p.Amplitude(), g.sampsToGo, p, config)
 }
 
-func (g *grain) synthesize(sourceBufs [][]float64, envBuf []float64, bufSize int) int {
+func (g *grain) synthesize(sourceBufs [][]float64, bufSize int) int {
 	sampsToSynthesize := g.sampsToGo
 	if sampsToSynthesize > int64(bufSize) {
 		sampsToSynthesize = int64(bufSize)
@@ -52,13 +51,7 @@ func (g *grain) synthesize(sourceBufs [][]float64, envBuf []float64, bufSize int
 	n := int(sampsToSynthesize)
 
 	g.source.Synthesize(sourceBufs, n)
-	g.envelope.Synthesize(envBuf, n)
-
-	for _, sourceBuf := range sourceBufs {
-		for i := 0; i < n; i++ {
-			sourceBuf[i] *= envBuf[i]
-		}
-	}
+	g.envelope.Synthesize(sourceBufs, n)
 
 	return n
 }
@@ -72,7 +65,6 @@ type Granulator struct {
 	interOnset    int64
 	timestamp     int64
 	sourceBufs    [][]float64
-	envBuf        []float64
 	outBufs       [][]float64
 }
 
@@ -84,9 +76,8 @@ func New(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], g
 		freeGrains:   pool.NewPool[*grain](),
 		activeGrains: pool.NewPool[*grain](),
 		paramGen:     paramGen,
-		sourceBufs:   make([][]float64, numOutputs),      // synthesize buffer for grain source
-		envBuf:       make([]float64, muse.BufferSize()), // synthesize buffer for grain envelope
-		outBufs:      make([][]float64, numOutputs),      // output buffers
+		sourceBufs:   make([][]float64, numOutputs), // synthesize buffer for grain source
+		outBufs:      make([][]float64, numOutputs), // output buffers
 	}
 
 	for i := 0; i < numOutputs; i++ {
@@ -124,7 +115,7 @@ func (gl *Granulator) synthesizePool(p *pool.Pool[*grain], out [][]float64, bufS
 	for e != end {
 		g := e.Value
 
-		n := g.synthesize(gl.sourceBufs, gl.envBuf, bufSize)
+		n := g.synthesize(gl.sourceBufs, bufSize)
 
 		for outIndex, outBuf := range out {
 			for i := 0; i < n; i++ {
@@ -181,7 +172,7 @@ func (gl *Granulator) Synthesize() bool {
 				e.Value.activate(gl.nextParameter, gl.Config)
 
 				// Synthesize remaining samples in this frame
-				n := e.Value.synthesize(gl.sourceBufs, gl.envBuf, int(sampsLeft))
+				n := e.Value.synthesize(gl.sourceBufs, int(sampsLeft))
 
 				for outBufIndex, outBuf := range gl.outBufs {
 					for i := 0; i < n; i++ {

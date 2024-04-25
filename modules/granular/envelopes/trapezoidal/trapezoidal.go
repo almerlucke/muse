@@ -51,7 +51,7 @@ func (e *Envelope) Activate(amplitude float64, durationSamples int64, parameter 
 	e.cnt = 0
 }
 
-func (e *Envelope) Synthesize(buf []float64, bufSize int) {
+func (e *Envelope) Synthesize(bufs [][]float64, bufSize int) {
 	for i := 0; i < bufSize; i++ {
 		var out float64
 
@@ -84,6 +84,8 @@ func (e *Envelope) Synthesize(buf []float64, bufSize int) {
 			}
 		}
 
-		buf[i] = out
+		for _, buf := range bufs {
+			buf[i] *= out
+		}
 	}
 }

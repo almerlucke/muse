@@ -58,8 +58,11 @@ func (e *Envelope) Activate(amplitude float64, durationSamples int64, param gran
 	e.adsr.TriggerFull(grainDuration, amplitude, &outputSetting, adsr.Automatic)
 }
 
-func (e *Envelope) Synthesize(buf []float64, bufSize int) {
+func (e *Envelope) Synthesize(bufs [][]float64, bufSize int) {
 	for i := 0; i < bufSize; i++ {
-		buf[i] = e.adsr.Generate()
+		amp := e.adsr.Generate()
+		for _, buf := range bufs {
+			buf[i] *= amp
+		}
 	}
 }
