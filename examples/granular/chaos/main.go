@@ -22,6 +22,7 @@ import (
 )
 
 type SFParam struct {
+	onset         int64
 	duration      float64
 	amplitude     float64
 	chaos         float64
@@ -34,6 +35,10 @@ type SFParam struct {
 	panStart      float64
 	panEnd        float64
 	adsrSetting   *adsr.Setting
+}
+
+func (p *SFParam) Onset() int64 {
+	return p.onset
 }
 
 func (p *SFParam) Duration() float64 {
@@ -141,6 +146,7 @@ func quantize(v float64, binSize float64) float64 {
 
 type SFParameterGenerator struct {
 	parameter           SFParam // single parameter can be passed for each NextParameter call, prevent from allocating new params
+	returnParams        [1]granular.Parameter
 	amplitudeClustering *museRand.ClusterRand
 	onsetClustering     *museRand.ClusterRand
 	chaosClustering     *museRand.ClusterRand
@@ -189,28 +195,35 @@ func (pgen *SFParameterGenerator) ReceiveControlValue(value any, index int) {
 	}
 }
 
-func (pgen *SFParameterGenerator) ReceiveMessage(msg any) []*muse.Message {
+func (pgen *SFParameterGenerator) ReceiveMessage(_ any) []*muse.Message {
 	return nil
 }
 
-func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configuration) (granular.Parameter, int64) {
-	param := &pgen.parameter
+func (pgen *SFParameterGenerator) Next(_ int64, config *muse.Configuration) []granular.Parameter {
+	p := &pgen.parameter
 
-	param.duration = pgen.durationClustering.Rand()
-	param.amplitude = pgen.amplitudeClustering.Rand()
-	param.chaos = pgen.chaosClustering.Rand()
-	param.freqLow = pgen.freqLowClustering.Rand()
-	param.freqHigh = pgen.freqHighClustering.Rand()
-	param.panStart = pgen.panStartClustering.Rand()
-	param.panEnd = pgen.panEndClustering.Rand()
-	param.interpolDelta = pgen.deltaClustering.Rand()
-	param.waveform = int(pgen.waveformClustering.Rand()) % 5
-	param.attack = pgen.attackClustering.Rand()
-	param.release = pgen.releaseClustering.Rand()
+	p.duration = pgen.durationClustering.Rand()
+	p.amplitude = pgen.amplitudeClustering.Rand()
+	p.chaos = pgen.chaosClustering.Rand()
+	p.freqLow = pgen.freqLowClustering.Rand()
+	p.freqHigh = pgen.freqHighClustering.Rand()
+	p.panStart = pgen.panStartClustering.Rand()
+	p.panEnd = pgen.panEndClustering.Rand()
+	p.interpolDelta = pgen.deltaClustering.Rand()
+	p.waveform = int(pgen.waveformClustering.Rand()) % 5
+	p.attack = pgen.attackClustering.Rand()
+	p.release = pgen.releaseClustering.Rand()
+	p.onset = int64(pgen.onsetClustering.Rand() * 0.001 * config.SampleRate)
 	//param.adsrSetting.AttackDuration = param.attack
 	//param.adsrSetting.ReleaseDuration = param.release
 
-	return param, int64(pgen.onsetClustering.Rand() * 0.001 * config.SampleRate)
+	pgen.returnParams[0] = p
+
+	return pgen.returnParams[:]
+}
+
+func (pgen *SFParameterGenerator) Type() granular.ParameterGeneratorType {
+	return granular.Onset
 }
 
 func main() {

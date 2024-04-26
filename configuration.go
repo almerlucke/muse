@@ -1,6 +1,9 @@
 package muse
 
-import "container/list"
+import (
+	"container/list"
+	"github.com/almerlucke/muse/utils/duration"
+)
 
 var configList *list.List
 
@@ -15,6 +18,14 @@ func configurationInit() {
 type Configuration struct {
 	SampleRate float64
 	BufferSize int
+}
+
+func (cfg *Configuration) MilliToSamps(milli float64) int64 {
+	return duration.MilliToSamps(milli, cfg.SampleRate)
+}
+
+func (cfg *Configuration) SecToSamps(sec float64) int64 {
+	return duration.SecToSamps(sec, cfg.SampleRate)
 }
 
 func (cfg *Configuration) ControlRate() float64 {

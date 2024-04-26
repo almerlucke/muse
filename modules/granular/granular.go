@@ -6,16 +6,24 @@ import (
 	"github.com/almerlucke/muse/utils/pool"
 )
 
+type ParameterGeneratorType int
+
+const (
+	Onset ParameterGeneratorType = iota
+	PerFrame
+)
+
 type Parameter interface {
-	// Duration in milliseconds
-	Duration() float64
+	Onset() int64      // Onset in samples
+	Duration() float64 // Duration in milliseconds
 	Amplitude() float64
 }
 
 type ParameterGenerator interface {
 	muse.MessageReceiver
 	muse.ControlReceiver
-	Next(int64, *muse.Configuration) (Parameter, int64)
+	Next(int64, *muse.Configuration) []Parameter
+	Type() ParameterGeneratorType
 }
 
 type Envelope interface {
@@ -35,7 +43,7 @@ type grain struct {
 }
 
 func (g *grain) activate(p Parameter, config *muse.Configuration) {
-	g.sampsToGo = int64(p.Duration() * 0.001 * config.SampleRate)
+	g.sampsToGo = config.MilliToSamps(p.Duration())
 	g.source.Activate(g.sampsToGo, p, config)
 	g.envelope.Activate(p.Amplitude(), g.sampsToGo, p, config)
 }
@@ -93,7 +101,10 @@ func New(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], g
 		gl.freeGrains.Push(e)
 	}
 
-	gl.nextParameter, gl.interOnset = paramGen.Next(0, config)
+	if paramGen.Type() == Onset {
+		gl.nextParameter = paramGen.Next(0, config)[0]
+		gl.interOnset = gl.nextParameter.Onset()
+	}
 
 	gl.SetSelf(gl)
 
@@ -133,27 +144,17 @@ func (gl *Granulator) synthesizePool(p *pool.Pool[*grain], out [][]float64, bufS
 	}
 }
 
-func (gl *Granulator) Synthesize() bool {
-	if !gl.BaseModule.Synthesize() {
-		return false
-	}
-
-	// Zero buffers for new frame
-	for _, outBuf := range gl.outBufs {
-		for i := 0; i < gl.Config.BufferSize; i++ {
-			outBuf[i] = 0.0
-		}
-	}
-
-	// First run all currently active grains for full buffer size
-	gl.synthesizePool(gl.activeGrains, gl.outBufs, gl.Config.BufferSize)
-
-	outIndex := 0
-	sampsLeft := int64(gl.Config.BufferSize)
+func (gl *Granulator) onsetSynthesize() {
+	var (
+		outIndex     int
+		sampsLeft    = int64(gl.Config.BufferSize)
+		timestamp    = gl.timestamp
+		endTimestamp = timestamp + sampsLeft
+	)
 
 	// Step through inter onsets in current cycle
 	for {
-		// If interonset is greater then samps left, decrement interonset and break
+		// If interOnset is greater then sampsLeft, decrement interOnset and break
 		if gl.interOnset > sampsLeft {
 			gl.interOnset -= sampsLeft
 			break
@@ -162,10 +163,11 @@ func (gl *Granulator) Synthesize() bool {
 		// Skip interonset samples
 		sampsLeft -= gl.interOnset
 		outIndex += int(gl.interOnset)
+		timestamp += gl.interOnset
 
 		gl.interOnset = 0
 
-		// While interonset == 0 generate new grains and synthesize for remaining samples in this frame
+		// While interOnset == 0 generate new grains and synthesize for remaining samples in this frame
 		for gl.interOnset == 0 {
 			e := gl.freeGrains.Pop()
 			if e != nil {
@@ -188,12 +190,82 @@ func (gl *Granulator) Synthesize() bool {
 				}
 			}
 
-			gl.nextParameter, gl.interOnset = gl.paramGen.Next(gl.timestamp, gl.Config)
+			gl.nextParameter = gl.paramGen.Next(timestamp, gl.Config)[0]
+			gl.interOnset = gl.nextParameter.Onset()
 		}
 	}
 
 	// Update timestamp
-	gl.timestamp += int64(gl.Config.BufferSize)
+	gl.timestamp = endTimestamp
+}
+
+func (gl *Granulator) perFrameSynthesize() {
+	var (
+		bufferSize = int64(gl.Config.BufferSize)
+		timestamp  = gl.timestamp
+	)
+
+	// Get parameters for this frame
+	params := gl.paramGen.Next(timestamp, gl.Config)
+
+	// For each parameter activate a grain and run it for the remaining samples in this frame
+	for _, param := range params {
+		e := gl.freeGrains.Pop()
+		if e == nil {
+			continue
+		}
+
+		e.Value.activate(param, gl.Config)
+
+		// Bookkeeping
+		interFrameOnset := param.Onset()
+		outIndex := int(interFrameOnset)
+		sampsToSynthesize := bufferSize - interFrameOnset
+
+		// Synthesize remaining samples in this frame
+		n := e.Value.synthesize(gl.sourceBufs, int(sampsToSynthesize))
+
+		// Copy grain output to output buffers
+		for outBufIndex, outBuf := range gl.outBufs {
+			for i := 0; i < n; i++ {
+				outBuf[outIndex+i] += gl.sourceBufs[outBufIndex][i]
+			}
+		}
+
+		// If grain is done, put it back in free list, otherwise keep it for next frame in active grains
+		if e.Value.sampsToGo == 0 {
+			gl.freeGrains.Push(e)
+		} else {
+			gl.activeGrains.Push(e)
+		}
+	}
+
+	// Update timestamp
+	gl.timestamp = timestamp + bufferSize
+}
+
+func (gl *Granulator) Synthesize() bool {
+	if !gl.BaseModule.Synthesize() {
+		return false
+	}
+
+	// Zero buffers for new frame
+	for _, outBuf := range gl.outBufs {
+		for i := 0; i < gl.Config.BufferSize; i++ {
+			outBuf[i] = 0.0
+		}
+	}
+
+	// First run all currently active grains for full buffer size
+	gl.synthesizePool(gl.activeGrains, gl.outBufs, gl.Config.BufferSize)
+
+	// Synthesize based on parameter generator type
+	switch gl.paramGen.Type() {
+	case Onset:
+		gl.onsetSynthesize()
+	case PerFrame:
+		gl.perFrameSynthesize()
+	}
 
 	return true
 }

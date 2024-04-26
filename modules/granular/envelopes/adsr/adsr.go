@@ -29,6 +29,8 @@ func (e *Envelope) Activate(amplitude float64, durationSamples int64, param gran
 		scale               = 1.0
 	)
 
+	e.adsr.Clear()
+
 	envRelativeDuration += inputSetting.AttackDuration
 
 	if !inputSetting.SkipDecay {

@@ -21,12 +21,17 @@ const (
 )
 
 type SFParam struct {
+	onset      int64
 	duration   float64
 	amplitude  float64
 	panning    float64
 	speed      float64
 	offset     float64
 	lookupMode LookupMode
+}
+
+func (p *SFParam) Onset() int64 {
+	return p.onset
 }
 
 func (p *SFParam) Duration() float64 {
@@ -175,6 +180,7 @@ func quantize(v float64, binSize float64) float64 {
 
 type SFParameterGenerator struct {
 	parameter           SFParam // single parameter can be passed for each NextParameter call, prevent from allocating new params
+	returnParams        [1]granular.Parameter
 	amplitudeClustering *museRand.ClusterRand
 	offsetClustering    *museRand.ClusterRand
 	speedClustering     *museRand.ClusterRand
@@ -207,21 +213,28 @@ func (pgen *SFParameterGenerator) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configuration) (granular.Parameter, int64) {
-	param := &pgen.parameter
+func (pgen *SFParameterGenerator) Next(timestamp int64, config *muse.Configuration) []granular.Parameter {
+	p := &pgen.parameter
 
-	param.duration = pgen.durationClustering.Rand()
-	param.amplitude = pgen.amplitudeClustering.Rand()
-	param.speed = pgen.speedClustering.Rand()
-	param.offset = pgen.offsetClustering.Rand()
-	param.panning = pgen.panClustering.Rand()
-	param.lookupMode = Wrap
+	p.duration = pgen.durationClustering.Rand()
+	p.amplitude = pgen.amplitudeClustering.Rand()
+	p.speed = pgen.speedClustering.Rand()
+	p.offset = pgen.offsetClustering.Rand()
+	p.panning = pgen.panClustering.Rand()
+	p.lookupMode = Wrap
+	p.onset = int64(pgen.onsetClustering.Rand() * 0.01 * config.SampleRate)
 
 	if rand.Float64() < pgen.reversePlayChance {
-		param.speed *= -1.0
+		p.speed *= -1.0
 	}
 
-	return param, int64(pgen.onsetClustering.Rand() * 0.01 * config.SampleRate)
+	pgen.returnParams[0] = p
+
+	return pgen.returnParams[:]
+}
+
+func (pgen *SFParameterGenerator) Type() granular.ParameterGeneratorType {
+	return granular.Onset
 }
 
 func main() {
@@ -250,7 +263,7 @@ func main() {
 		gr.Connect(i, root, i)
 	}
 
-	root.RenderAudio()
+	_ = root.RenderAudio()
 
 	//env.SynthesizeToFile("/Users/almerlucke/Desktop/children.aiff", 180.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 }
