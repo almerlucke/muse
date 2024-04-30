@@ -1,18 +1,20 @@
 package main
 
 import (
+	adsrc "github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/genny/float/interp"
 	"github.com/almerlucke/genny/float/iter"
 	"github.com/almerlucke/genny/float/iter/updaters/chaos"
 	"github.com/almerlucke/genny/float/shape/shapers/linear"
 	"github.com/almerlucke/genny/float/shape/shapers/mirror"
 	"github.com/almerlucke/genny/float/shape/shapers/series"
+	"github.com/almerlucke/genny/function"
+	"github.com/almerlucke/genny/template"
 
 	"math/rand"
 
 	"github.com/almerlucke/muse"
-	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/controls/val"
+	"github.com/almerlucke/muse/controls/gen"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/timer"
 	"github.com/almerlucke/muse/modules/adsr"
@@ -23,8 +25,6 @@ import (
 	"github.com/almerlucke/muse/modules/pan"
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/waveshaper"
-	"github.com/almerlucke/muse/value"
-	"github.com/almerlucke/muse/value/template"
 )
 
 type ChaosVoice struct {
@@ -45,7 +45,7 @@ type ChaosVoice struct {
 func NewChaosVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *ChaosVoice {
 	verhulst := chaos.NewVerhulstWithFunc(3.6951, chaos.Iter1)
 	it := iter.New([]float64{0.1231}, verhulst)
-	interpol := interp.New(it, interp.Linear, 1.0/120.0)
+	interpol := interp.New(it, interp.Linear, 1.0/160.0)
 
 	voice := &ChaosVoice{
 		BasePatch:        muse.NewPatch(0, 2),
@@ -138,36 +138,36 @@ func main() {
 	}
 
 	poly := polyphony.New(2, voices).Named("chaosSynth").AddTo(root)
-	timer := timer.NewControlTimer(500.0).CtrlAddTo(root)
-	randomizeTimer := val.New[float64](value.NewFunction(func() float64 {
+	tim := timer.NewControlTimer(500.0).CtrlAddTo(root)
+	randomizeTimer := gen.New[float64](function.New(func() float64 {
 		return randMinMax(100, 5500.0)
-	}))
+	}), false)
 
-	timer.CtrlConnect(0, randomizeTimer, 0)
-	randomizeTimer.CtrlConnect(0, timer, 0)
+	tim.CtrlConnect(0, randomizeTimer, 0)
+	randomizeTimer.CtrlConnect(0, tim, 0)
 
 	trigger := banger.NewControlTemplateGenerator(template.Template{
 		"command": "trigger",
-		"duration": value.NewFunction(func() any {
+		"duration": function.New(func() float64 {
 			return randMinMax(100, 1000.0)
 		}),
-		"amplitude": value.NewFunction(func() any {
+		"amplitude": function.New(func() any {
 			return randMinMax(0.6, 0.9)
 		}),
 		"message": template.Template{
-			"numCycles": value.NewFunction(func() any {
-				return randMinMax(20, 90.0)
+			"numCycles": function.New(func() any {
+				return randMinMax(20, 130.0)
 			}),
-			"chaos": value.NewFunction(func() any {
+			"chaos": function.New(func() any {
 				return randMinMax(3.1, 4.0)
 			}),
-			"pan": value.NewFunction(func() any {
+			"pan": function.New(func() any {
 				return randMinMax(0.0, 1.0)
 			}),
 		},
 	})
 
-	timer.CtrlConnect(0, trigger, 0)
+	tim.CtrlConnect(0, trigger, 0)
 	trigger.CtrlConnect(0, poly, 0)
 
 	chorus1 := root.AddModule(chorus.New(false, 30.0, 20.0, 0.4, 1.21, 0.4, nil))
@@ -178,9 +178,6 @@ func main() {
 
 	chorus1.Connect(0, root, 0)
 	chorus2.Connect(0, root, 1)
-
-	// chorus2.Connect(0, env, 0)
-	// chorus2.Connect(1, env, 1)
 
 	_ = root.RenderAudio()
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/chaosPing1.aiff", 360.0, 44100.0, true, sndfile.SF_FORMAT_AIFF)

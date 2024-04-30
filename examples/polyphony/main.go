@@ -1,26 +1,16 @@
 package main
 
 import (
+	adsrc "github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/genny/float/shape"
 	"github.com/almerlucke/genny/float/shape/shapers/emulations/supersaw"
+	"github.com/almerlucke/genny/sequence"
+	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
-
-	// Components
-	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	"github.com/almerlucke/muse/modules"
-
-	// Value
-	"github.com/almerlucke/muse/value"
-
-	// Template
-	"github.com/almerlucke/muse/value/template"
-
-	// Messengers
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
-
-	// Modules
+	"github.com/almerlucke/muse/modules"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/filters/moog"
@@ -91,13 +81,13 @@ func (tv *TestVoice) NoteOff() {
 func main() {
 	root := muse.New(2)
 
-	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	root.AddMessenger(banger.NewTemplateBang([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
-		"duration":  value.NewSequence([]any{75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0}),
-		"amplitude": value.NewSequence([]any{1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7}),
+		"duration":  sequence.NewLoop(75.0, 125.0, 75.0, 250.0, 75.0, 250.0, 75.0, 75.0, 75.0, 250.0, 125.0),
+		"amplitude": sequence.NewLoop(1.0, 0.6, 1.0, 0.5, 0.5, 1.0, 0.3, 1.0, 0.7),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": value.NewSequence([]any{50.0, 50.0, 25.0, 50.0, 150.0, 25.0, 150.0, 100.0, 100.0, 200.0, 50.0}),
+				"frequency": sequence.NewLoop(50.0, 50.0, 25.0, 50.0, 150.0, 25.0, 150.0, 100.0, 100.0, 200.0, 50.0),
 				"phase":     0.0,
 			},
 		},
@@ -106,9 +96,9 @@ func main() {
 	bpm := 120
 
 	root.AddMessenger(stepper.NewStepper(
-		swing.New(bpm, 4, value.NewSequence([]*swing.Step{
+		swing.New(bpm, 4, sequence.NewLoop([]*swing.Step{
 			{}, {Shuffle: 0.2}, {Skip: true}, {Shuffle: 0.4, ShuffleRand: 0.2}, {}, {Shuffle: 0.3}, {Shuffle: 0.1}, {SkipChance: 0.3},
-		})),
+		}...)),
 		[]string{"prototype"},
 	))
 

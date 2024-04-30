@@ -3,7 +3,7 @@ package classic
 import (
 	"github.com/almerlucke/muse"
 	// shaping "github.com/almerlucke/muse/components/waveshaping"
-	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
+	adsrc "github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/filters/korg35"
 	"github.com/almerlucke/muse/modules/functor"

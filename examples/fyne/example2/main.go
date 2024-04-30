@@ -15,13 +15,13 @@ import (
 
 	"github.com/almerlucke/muse"
 
-	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
+	adsrc "github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/muse/messengers/lfo"
 	adsrctrl "github.com/almerlucke/muse/ui/adsr"
 	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils/notes"
 
-	"github.com/almerlucke/muse/value/template"
+	"github.com/almerlucke/genny/template"
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"

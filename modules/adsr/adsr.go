@@ -1,26 +1,25 @@
 package adsr
 
 import (
+	"github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/muse"
-
-	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 )
 
 type ADSR struct {
 	*muse.BaseModule
-	adsr     *adsrc.ADSR
+	adsr     *adsr.ADSR
 	level    float64
 	duration float64
 }
 
-func New(setting *adsrc.Setting, releaseMode adsrc.ReleaseMode, level float64) *ADSR {
+func New(setting *adsr.Setting, releaseMode adsr.ReleaseMode, level float64) *ADSR {
 	a := &ADSR{
 		BaseModule: muse.NewBaseModule(0, 1),
 	}
 
 	a.level = level
 	a.duration = 250.0
-	a.adsr = adsrc.New(setting, releaseMode, muse.SampleRate())
+	a.adsr = adsr.New(setting, releaseMode, muse.SampleRate())
 
 	a.SetSelf(a)
 
@@ -33,10 +32,12 @@ func (a *ADSR) SetDuration(duration float64) {
 
 func (a *ADSR) Bang() {
 	switch a.adsr.ReleaseMode() {
-	case adsrc.Duration:
+	case adsr.Duration:
 		a.adsr.TriggerWithDuration(a.duration, a.level)
-	case adsrc.Automatic:
+	case adsr.Automatic:
 		a.adsr.Trigger(a.level)
+	default:
+		break
 	}
 }
 
@@ -75,7 +76,7 @@ func (a *ADSR) Trigger(level float64) {
 	a.adsr.Trigger(level)
 }
 
-func (a *ADSR) TriggerFull(duration float64, level float64, setting *adsrc.Setting, releaseMode adsrc.ReleaseMode) {
+func (a *ADSR) TriggerFull(duration float64, level float64, setting *adsr.Setting, releaseMode adsr.ReleaseMode) {
 	a.adsr.TriggerFull(duration, level, setting, releaseMode)
 }
 
@@ -84,11 +85,15 @@ func (a *ADSR) TriggerWithDuration(duration float64, maxLevel float64) {
 }
 
 func (a *ADSR) IsActive() bool {
-	return !a.adsr.IsFinished()
+	return !a.adsr.Done()
 }
 
 func (a *ADSR) Release() {
 	a.adsr.Release()
+}
+
+func (a *ADSR) Clear() {
+	a.adsr.Clear()
 }
 
 func (a *ADSR) Synthesize() bool {
@@ -99,7 +104,7 @@ func (a *ADSR) Synthesize() bool {
 	out := a.Outputs[0].Buffer
 
 	for i := 0; i < a.Config.BufferSize; i++ {
-		out[i] = a.adsr.Tick()[0]
+		out[i] = a.adsr.Generate()
 	}
 
 	return true

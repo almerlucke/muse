@@ -1,35 +1,30 @@
 package main
 
 import (
-	"github.com/almerlucke/genny/float/shape"
-	"github.com/almerlucke/genny/float/shape/shapers/lookup"
-	"log"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
-
+	"github.com/almerlucke/genny/constant"
+	adsrc "github.com/almerlucke/genny/float/envelopes/adsr"
+	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/lookup"
+	"github.com/almerlucke/genny/sequence"
+	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
-
-	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/modules"
-	adsrctrl "github.com/almerlucke/muse/ui/adsr"
-	"github.com/almerlucke/muse/ui/theme"
-	"github.com/almerlucke/muse/value"
-
-	"github.com/almerlucke/muse/value/template"
-
-	"github.com/almerlucke/muse/utils/notes"
-
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/waveshaper"
+	adsrctrl "github.com/almerlucke/muse/ui/adsr"
+	"github.com/almerlucke/muse/ui/theme"
+	"github.com/almerlucke/muse/utils/notes"
+	"log"
 )
 
 type TestVoice struct {
@@ -71,6 +66,7 @@ func (tv *TestVoice) IsActive() bool {
 func (tv *TestVoice) Note(duration float64, amplitude float64, message any, config *muse.Configuration) {
 	msg := message.(map[string]any)
 
+	tv.ampEnv.Clear()
 	tv.ampEnv.TriggerFull(duration, amplitude, tv.ampEnvSetting, adsrc.Duration)
 	tv.phasor.ReceiveMessage(msg["osc"])
 }
@@ -92,7 +88,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 func main() {
 	root := muse.New(1)
 
-	ampEnvSetting := adsrc.NewSetting(1.0, 5.0, 0.3, 5.0, 0.0, 1300.0)
+	ampEnvSetting := adsrc.NewSetting(1.0, 5.0, 0.3, 5.0, 0.1, 1300.0)
 	ampEnvControl := adsrctrl.NewADSRControl("Amplitude ADSR", ampEnvSetting)
 
 	voices := []polyphony.Voice{}
@@ -109,19 +105,19 @@ func main() {
 
 	octave := notes.O3
 
-	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	root.AddMessenger(banger.NewTemplateBang([]string{"polyphony"}, template.Template{
 		"command": "trigger",
-		"duration": value.NewSequence([]any{
+		"duration": sequence.NewLoop(
 			750.0, 750.0, 750.0, 750.0, 375.0, 375.0, 750.0, 750.0,
 			750.0, 750.0, 750.0, 750.0, 750.0, 750.0, 750.0,
 			750.0, 750.0, 750.0, 750.0, 375.0, 375.0, 750.0, 750.0,
 			750.0, 750.0, 750.0, 750.0, 750.0, 750.0, 750.0,
 			750.0, 750.0, 750.0, 750.0, 750.0, 750.0, 750.0,
-		}),
-		"amplitude": value.NewConst[any](1.0),
+		),
+		"amplitude": constant.New(0.3),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": value.NewSequence([]any{
+				"frequency": sequence.NewLoop(
 					// Row 1
 					notes.GMajor.Freq(octave), notes.DMajor.Freq(octave), notes.CMajor.Freq(octave), notes.GMajor.Freq(octave),
 					notes.AMinor.Freq(octave), notes.DMajor7.Freq(octave), notes.GMajor.Freq(octave), notes.DMajor.Freq(octave),
@@ -137,13 +133,13 @@ func main() {
 					// Row 5
 					notes.CMajor.Freq(octave), notes.DMajor7.Freq(octave), notes.GMajor.Freq(octave), notes.EMinor.Freq(octave),
 					notes.CMajor.Freq(octave), notes.DMajor7.Freq(octave), notes.GMajor.Freq(octave),
-				}),
+				),
 			},
 		},
 	}).MsgrNamed("template"))
 
 	root.AddMessenger(stepper.NewStepper(
-		swing.New(bpm, 1, value.NewSequence(
+		swing.New(bpm, 1, sequence.NewLoop(
 			[]*swing.Step{
 				// Row 1
 				// G              D                 C                 G                 Am  D7  G                 D
@@ -160,7 +156,7 @@ func main() {
 				// Row 5
 				// C              D7                G                 Em                 C                 D7               G
 				{}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true}, {}, {Skip: true},
-			},
+			}...,
 		)),
 		[]string{"template"},
 	))

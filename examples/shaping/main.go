@@ -6,7 +6,7 @@ import (
 	"github.com/almerlucke/genny/sequence"
 	"github.com/almerlucke/muse"
 
-	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
+	adsrc "github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/modules/adsr"

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/almerlucke/genny"
 	"github.com/almerlucke/genny/float/interp"
 	"github.com/almerlucke/genny/float/iter"
 	"github.com/almerlucke/genny/float/iter/updaters/chaos"
@@ -8,11 +9,11 @@ import (
 	"github.com/almerlucke/genny/float/shape/shapers/linear"
 	"github.com/almerlucke/genny/float/shape/shapers/mirror"
 	"github.com/almerlucke/genny/float/shape/shapers/series"
-
+	"github.com/almerlucke/muse/controls/gen"
+	"github.com/almerlucke/muse/controls/unpack"
 	"log"
 
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/controls/fgen"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/modules/generator"
 	"github.com/almerlucke/muse/modules/osc"
@@ -80,7 +81,7 @@ func genFreq() {
 		1.0/10.0,
 	)
 
-	cgen := root.AddControl(fgen.NewX(wrapper, func(value any, index int) {
+	cgen := root.AddControl(gen.NewWithFunctions[[]float64](wrapper, true, func(_ genny.Generator[[]float64], value any, index int) {
 		if index == 0 {
 			aron.A = value.(float64)
 		} else if index == 1 {
@@ -96,7 +97,9 @@ func genFreq() {
 
 	osc1 := root.AddModule(osc.New(100.0, 0.0))
 
-	cgen.CtrlConnect(1, osc1, 0)
+	up := unpack.New()
+	cgen.CtrlConnect(0, up, 0)
+	up.CtrlConnect(1, osc1, 0)
 
 	osc1.Connect(2, root, 0)
 

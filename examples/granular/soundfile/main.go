@@ -123,10 +123,9 @@ func (s *SFSource) Synthesize(outBuffers [][]float64, bufSize int) {
 			depth = s.sf.Depth() - 1
 		}
 
-		samps := s.sf.LookupAll(pos, depth, true)
+		samps := s.sf.LookupAll(pos, depth, false)
 
 		for outIndex, outBuf := range outBuffers {
-
 			outBuf[i] = pan[outIndex] * samps[outIndex]
 		}
 	}

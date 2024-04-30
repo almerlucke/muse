@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/envelopes/adsr"
 	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/polyphony"

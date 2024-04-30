@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/almerlucke/genny/float/shape/shapers/lookup"
+	"github.com/almerlucke/genny/sequence"
 	"log"
 	"strconv"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/ops"
 	"github.com/almerlucke/muse/messengers/banger"
@@ -18,8 +20,6 @@ import (
 	"github.com/almerlucke/muse/modules/fmsynth"
 	"github.com/almerlucke/muse/ui/controls"
 	"github.com/almerlucke/muse/ui/theme"
-	"github.com/almerlucke/muse/value"
-	"github.com/almerlucke/muse/value/template"
 )
 
 func strtof(s string) any {
@@ -109,9 +109,9 @@ func main() {
 		fm.ApplySettingsChange()
 	}))
 
-	root.AddMessenger(banger.NewTemplateGenerator([]string{"fm"}, template.Template{
-		"noteOn":   value.NewSequence([]any{36, 36, 48, 41, 51, 51, 49, 47, 32, 33}),
-		"duration": value.NewSequence([]any{500.0, 300.0, 250.0, 150.0, 300.0, 125.0, 125.0, 500.0, 375.0}),
+	root.AddMessenger(banger.NewTemplateBang([]string{"fm"}, template.Template{
+		"noteOn":   sequence.NewLoop(36, 36, 48, 41, 51, 51, 49, 47, 32, 33),
+		"duration": sequence.NewLoop(500.0, 300.0, 250.0, 150.0, 300.0, 125.0, 125.0, 500.0, 375.0),
 		"level":    1.0,
 	}).MsgrNamed("notes"))
 

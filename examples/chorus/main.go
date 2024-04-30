@@ -5,6 +5,8 @@ import (
 	"github.com/almerlucke/genny/float/shape/shapers/linear"
 	"github.com/almerlucke/genny/float/shape/shapers/lookup"
 	"github.com/almerlucke/genny/float/shape/shapers/series"
+	"github.com/almerlucke/genny/sequence"
+	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
@@ -13,8 +15,6 @@ import (
 	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/osc"
 	"github.com/almerlucke/muse/utils/notes"
-	"github.com/almerlucke/muse/value"
-	"github.com/almerlucke/muse/value/template"
 )
 
 func makeLFO(speed float64, targets []string, shaper shape.Shaper, param string, templ template.Template) *lfo.LFO {
@@ -29,16 +29,16 @@ func makeLFO(speed float64, targets []string, shaper shape.Shaper, param string,
 func main() {
 	root := muse.New(2)
 
-	root.AddMessenger(banger.NewTemplateGenerator([]string{"osc"}, template.Template{
-		"frequency": value.NewSequence([]any{notes.A3.Freq(), notes.C3.Freq(), notes.E3.Freq()}),
+	root.AddMessenger(banger.NewTemplateBang([]string{"osc"}, template.Template{
+		"frequency": sequence.NewLoop(notes.A3.Freq(), notes.C3.Freq(), notes.E3.Freq()),
 	}).MsgrNamed("sequencer"))
 
-	root.AddMessenger(banger.NewTemplateGenerator([]string{"osc2"}, template.Template{
-		"frequency": value.NewSequence([]any{notes.A2.Freq(), notes.C2.Freq(), notes.E2.Freq()}),
+	root.AddMessenger(banger.NewTemplateBang([]string{"osc2"}, template.Template{
+		"frequency": sequence.NewLoop(notes.A2.Freq(), notes.C2.Freq(), notes.E2.Freq()),
 	}).MsgrNamed("sequencer2"))
 
 	root.AddMessenger(stepper.NewStepper(
-		stepper.NewValueStepProvider(value.NewSequence([]float64{250, -125, 250, 250, -125, 125, -125, 250})),
+		stepper.NewGennyStepProvider(sequence.NewLoop([]float64{250, -125, 250, 250, -125, 125, -125, 250}...)),
 		[]string{"sequencer", "sequencer2"},
 	))
 
@@ -52,7 +52,7 @@ func main() {
 	root.AddMessenger(makeLFO(0.13, []string{"osc2"}, series.New(sineTable, oscScale), "pw", template.Template{
 		"pulseWidth": template.NewParameter("pw", nil),
 	}))
-	root.AddMessenger(makeLFO(0.16, []string{"filter"}, series.New(sineTable, linear.New(8500.0, 1300.0)), "freq", template.Template{
+	root.AddMessenger(makeLFO(0.16, []string{"filter"}, series.New(sineTable, linear.New(16500.0, 1300.0)), "freq", template.Template{
 		"frequency": template.NewParameter("freq", nil),
 	}))
 
@@ -84,7 +84,7 @@ func main() {
 
 	osc1 := root.AddModule(osc.NewX(100.0, 0.0, 0.2, [4]float64{0.1, 0.1, 0.4, 0.1}).Named("osc"))
 	osc2 := root.AddModule(osc.NewX(100.0, 0.5, 0.2, [4]float64{0.1, 0.1, 0.4, 0.1}).Named("osc2"))
-	filter := root.AddModule(moog.New(2300.0, 0.63, 0.7))
+	filter := root.AddModule(moog.New(8300.0, 0.63, 0.7))
 	ch := root.AddModule(chorus.New(true, 56, 14, 0.2, 3.6, 0.6, lookup.NewSineTable(512.0)))
 
 	osc1.Connect(4, filter, 0)

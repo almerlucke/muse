@@ -5,23 +5,25 @@ import (
 	"github.com/almerlucke/muse"
 )
 
-type ControlFunction func(any, int)
+type ControlFunction[T any] func(genny.Generator[T], any, int)
 
-type MessageFunction func(any) []*muse.Message
+type MessageFunction[T any] func(genny.Generator[T], any) []*muse.Message
 
 type Gen[T any] struct {
 	*muse.BaseControl
 	gen             genny.Generator[T]
-	controlFunction ControlFunction
-	messageFunction MessageFunction
+	controlFunction ControlFunction[T]
+	messageFunction MessageFunction[T]
+	useTick         bool
 }
 
-func NewX[T any](gen genny.Generator[T], controlFunction ControlFunction, messageFunction MessageFunction) *Gen[T] {
+func NewWithFunctions[T any](gen genny.Generator[T], useTick bool, controlFunction ControlFunction[T], messageFunction MessageFunction[T]) *Gen[T] {
 	g := &Gen[T]{
 		BaseControl:     muse.NewBaseControl(),
 		gen:             gen,
 		controlFunction: controlFunction,
 		messageFunction: messageFunction,
+		useTick:         useTick,
 	}
 
 	g.SetSelf(g)
@@ -29,8 +31,8 @@ func NewX[T any](gen genny.Generator[T], controlFunction ControlFunction, messag
 	return g
 }
 
-func New[T any](gen genny.Generator[T]) *Gen[T] {
-	return NewX(gen, nil, nil)
+func New[T any](gen genny.Generator[T], useTick bool) *Gen[T] {
+	return NewWithFunctions(gen, useTick, nil, nil)
 }
 
 func (g *Gen[T]) bang() {
@@ -38,12 +40,25 @@ func (g *Gen[T]) bang() {
 }
 
 func (g *Gen[T]) ReceiveControlValue(value any, index int) {
-	if index == 0 && muse.IsBang(value) {
-		g.bang()
+	if muse.IsBang(value) {
+		switch index {
+		case 0:
+			v := g.gen.Generate()
+
+			if g.gen.Done() {
+				g.SendControlValue(muse.Bang, 1)
+			}
+
+			g.SendControlValue(v, 0)
+		case 1:
+			g.gen.Reset()
+		default:
+			break
+		}
 	}
 
 	if g.controlFunction != nil {
-		g.controlFunction(value, index)
+		g.controlFunction(g.gen, value, index)
 	}
 }
 
@@ -53,12 +68,14 @@ func (g *Gen[T]) ReceiveMessage(msg any) []*muse.Message {
 	}
 
 	if g.messageFunction != nil {
-		return g.messageFunction(msg)
+		return g.messageFunction(g.gen, msg)
 	}
 
 	return nil
 }
 
 func (g *Gen[T]) Tick(_ int64, _ *muse.Configuration) {
-	g.SendControlValue(g.gen.Generate(), 0)
+	if g.useTick {
+		g.SendControlValue(g.gen.Generate(), 0)
+	}
 }

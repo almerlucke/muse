@@ -6,6 +6,7 @@ import (
 	"github.com/almerlucke/genny/arpeggio"
 	"github.com/almerlucke/genny/constant"
 	"github.com/almerlucke/genny/flatten"
+	"github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/genny/function"
 	"github.com/almerlucke/genny/markov"
 	"github.com/almerlucke/genny/repeat"
@@ -17,7 +18,7 @@ import (
 	"strings"
 
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/components/envelopes/adsr"
+
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"

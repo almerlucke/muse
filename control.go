@@ -1,5 +1,7 @@
 package muse
 
+type ControlMessage map[string]any
+
 type ControlReceiver interface {
 	ReceiveControlValue(any, int)
 }

@@ -5,29 +5,19 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/almerlucke/genny/constant"
+	adsrc "github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/genny/float/shape/shapers/emulations/pwmod"
 	"github.com/almerlucke/genny/float/shape/shapers/linear"
 	"github.com/almerlucke/genny/float/shape/shapers/lookup"
 	"github.com/almerlucke/genny/float/shape/shapers/series"
-	"log"
-
+	"github.com/almerlucke/genny/sequence"
+	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
-
-	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
-	adsrctrl "github.com/almerlucke/muse/ui/adsr"
-
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
-
-	"github.com/almerlucke/muse/ui/theme"
-
-	"github.com/almerlucke/muse/value"
-	"github.com/almerlucke/muse/value/template"
-
-	"github.com/almerlucke/muse/utils/notes"
-
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/filters/moog"
@@ -35,6 +25,10 @@ import (
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/modules/waveshaper"
+	adsrctrl "github.com/almerlucke/muse/ui/adsr"
+	"github.com/almerlucke/muse/ui/theme"
+	"github.com/almerlucke/muse/utils/notes"
+	"log"
 )
 
 type TestVoice struct {
@@ -167,26 +161,24 @@ func main() {
 	root.AddMessenger(lfo.NewLFO(0.05, []*lfo.Target{targetShaper}).MsgrNamed("lfo1"))
 	root.AddMessenger(lfo.NewLFO(0.1, []*lfo.Target{targetFilter}).MsgrNamed("lfo2"))
 
-	root.AddMessenger(banger.NewTemplateGenerator([]string{"polyphony"}, template.Template{
+	root.AddMessenger(banger.NewTemplateBang([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
-		"duration":  value.NewSequence([]any{Nums{125.0, 300.0}, Nums{125.0, 400.0}, Nums{125.0, 500.0}, Nums{250.0, 300.0}, Nums{250.0, 400.0}}),
-		"amplitude": value.NewConst[any](1.0),
+		"duration":  sequence.NewLoop(Nums{125.0, 300.0}, Nums{125.0, 400.0}, Nums{125.0, 500.0}, Nums{250.0, 300.0}, Nums{250.0, 400.0}),
+		"amplitude": constant.New(1.0),
 		"message": template.Template{
 			"osc": template.Template{
-				"frequency": value.NewSequence([]any{
+				"frequency": sequence.NewLoop(
 					notes.Mtofs(60, 48), notes.Mtofs(67, 53), notes.Mtofs(65, 60), notes.Mtofs(64, 48), notes.Mtofs(60, 48),
 					notes.Mtofs(67, 53), notes.Mtofs(62, 60), notes.Mtofs(62, 48), notes.Mtofs(64, 48), notes.Mtofs(65, 53),
 					notes.Mtofs(69, 60), notes.Mtofs(72, 48),
-				}),
+				),
 				"phase": 0.0,
 			},
 		},
 	}).MsgrNamed("template1"))
 
 	root.AddMessenger(stepper.NewStepper(
-		swing.New(40, 2, value.NewSequence([]*swing.Step{
-			{}, {}, {}, {},
-		})),
+		swing.New(40, 2, sequence.NewLoop(swing.QuickSteps(1, 1, 1, 1)...)),
 		[]string{"template1"},
 	))
 

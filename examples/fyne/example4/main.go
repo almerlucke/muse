@@ -22,7 +22,7 @@ import (
 
 	"github.com/almerlucke/muse"
 
-	adsrc "github.com/almerlucke/muse/components/envelopes/adsr"
+	adsrc "github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
@@ -134,7 +134,7 @@ func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func addDrumTrack(p muse.Patch, moduleName string, soundBuffer *sndfile.SoundFile, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps genny.Generator[*swing.Step]) muse.Module {
+func addDrumTrack(p muse.Patch, moduleName string, soundBuffer sndfile.SoundFiler, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps genny.Generator[*swing.Step]) muse.Module {
 	identifier := moduleName + "Speed"
 
 	p.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
@@ -190,8 +190,8 @@ func main() {
 
 	root.AddMessenger(banger.NewTemplateBang([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
-		"duration":  sequence.NewLoop[float64](125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0),
-		"amplitude": sequence.NewLoop[float64](0.6, 0.3, 0.6, 0.5, 0.4, 0.3, 0.4, 0.5, 0.6, 0.4, 0.2),
+		"duration":  sequence.NewLoop(125.0, 125.0, 125.0, 250.0, 125.0, 250.0, 125.0, 125.0, 125.0, 250.0, 125.0),
+		"amplitude": sequence.NewLoop(0.6, 0.3, 0.6, 0.5, 0.4, 0.3, 0.4, 0.5, 0.6, 0.4, 0.2),
 		"message": template.Template{
 			"osc": template.Template{
 				"frequency": transform.New(
@@ -205,8 +205,8 @@ func main() {
 
 	root.AddMessenger(banger.NewTemplateBang([]string{"polyphony"}, template.Template{
 		"command":   "trigger",
-		"duration":  sequence.NewLoop[float64](375.0, 500.0, 375.0, 1000.0, 375.0, 250.0),
-		"amplitude": sequence.NewLoop[float64](1.0, 1.0, 0.6, 0.6, 1.0, 1.0, 0.6, 1.0),
+		"duration":  sequence.NewLoop(375.0, 500.0, 375.0, 1000.0, 375.0, 250.0),
+		"amplitude": sequence.NewLoop(1.0, 1.0, 0.6, 0.6, 1.0, 1.0, 0.6, 1.0),
 		"message": template.Template{
 			"osc": template.Template{
 				"frequency": transform.New(
@@ -233,14 +233,14 @@ func main() {
 		[]string{"template2"},
 	))
 
-	hihatSound, _ := sndfile.NewSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav")
-	kickSound, _ := sndfile.NewSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav")
-	snareSound, _ := sndfile.NewSoundFile("resources/drums/clap/Cymatics - Humble Stars Clap.wav")
-	bassSound, _ := sndfile.NewSoundFile("resources/drums/808/Cymatics - Humble 808 5 - G.wav")
-	rideSound, _ := sndfile.NewSoundFile("resources/drums/hihat/Cymatics - Humble Open Hihat 2.wav")
-	waterSound, _ := sndfile.NewSoundFile("resources/sounds/Cymatics - Orchid Live Recording - Waves.wav")
-	swirlSound, _ := sndfile.NewSoundFile("resources/sounds/Cymatics - Orchid KEYS Swirl (C).wav")
-	vocalSound, _ := sndfile.NewSoundFile("resources/sounds/Cymatics - Blurry Vocal - 80 BPM F Min.wav")
+	hihatSound, _ := sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav", 4)
+	kickSound, _ := sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav", 4)
+	snareSound, _ := sndfile.NewMipMapSoundFile("resources/drums/clap/Cymatics - Humble Stars Clap.wav", 4)
+	bassSound, _ := sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 5 - G.wav", 4)
+	rideSound, _ := sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Humble Open Hihat 2.wav", 4)
+	waterSound, _ := sndfile.NewMipMapSoundFile("resources/sounds/Cymatics - Orchid Live Recording - Waves.wav", 4)
+	swirlSound, _ := sndfile.NewMipMapSoundFile("resources/sounds/Cymatics - Orchid KEYS Swirl (C).wav", 4)
+	vocalSound, _ := sndfile.NewMipMapSoundFile("resources/sounds/Cymatics - Blurry Vocal - 80 BPM F Min.wav", 4)
 
 	hihatPlayer := addDrumTrack(root, "hihat", hihatSound, bpm, 8, 1.875, 2.125, 0.75, sequence.NewLoop[*swing.Step]([]*swing.Step{
 		{}, {Shuffle: 0.1}, {SkipChance: 0.3, BurstChance: 1.0, NumBurst: 3}, {}, {Skip: true}, {Shuffle: 0.1}, {}, {SkipChance: 0.4}, {Skip: true}, {Skip: true},
