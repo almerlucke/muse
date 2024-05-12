@@ -10,10 +10,8 @@ func NewDrums(soundBank sndfile.SoundBank, numVoices int) *polyphony.Polyphony {
 	var initSound sndfile.SoundFiler
 
 	for _, v := range soundBank {
-		if initSound == nil {
-			initSound = v
-			break
-		}
+		initSound = v
+		break
 	}
 
 	voices := make([]polyphony.Voice, numVoices)

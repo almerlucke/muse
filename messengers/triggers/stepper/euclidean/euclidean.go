@@ -9,7 +9,7 @@ type Euclidean struct {
 	stepDurationMS float64
 }
 
-func NewEuclidian(numSteps int, numEvents int, rotation int, stepDurationMS float64) *Euclidean {
+func New(numSteps int, numEvents int, rotation int, stepDurationMS float64) *Euclidean {
 	rotation = rotation % numSteps
 	if numEvents > numSteps {
 		numEvents = numSteps
@@ -89,13 +89,3 @@ func (euclid *Euclidean) NextStep() float64 {
 
 	return -euclid.stepDurationMS
 }
-
-func (euclid *Euclidean) SetState(state map[string]any) {
-
-}
-
-func (euclid *Euclidean) GetState() map[string]any {
-	return map[string]any{}
-}
-
-// muse.Stater

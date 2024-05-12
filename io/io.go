@@ -36,7 +36,9 @@ func NewWaveTableSoundFile(filePath string, tableSize int) (*WaveTableSoundFile,
 
 	for i := 0; i < numTables; i++ {
 		wsf.Tables[i] = buf[offset : offset+tableSize]
+
 		offset += tableSize
+
 	}
 
 	return wsf, nil
