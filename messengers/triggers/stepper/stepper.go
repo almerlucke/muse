@@ -5,18 +5,14 @@ import (
 	"github.com/almerlucke/muse"
 )
 
-type StepProvider interface {
-	NextStep() float64
-}
-
 type Stepper struct {
 	*muse.BaseMessenger
 	addresses []string
 	accum     float64
-	provider  StepProvider
+	provider  genny.Generator[float64]
 }
 
-func NewStepper(provider StepProvider, addresses []string) *Stepper {
+func NewStepper(provider genny.Generator[float64], addresses []string) *Stepper {
 	s := &Stepper{
 		BaseMessenger: muse.NewBaseMessenger(),
 		addresses:     addresses,
@@ -28,7 +24,7 @@ func NewStepper(provider StepProvider, addresses []string) *Stepper {
 	return s
 }
 
-func NewControlStepper(provider StepProvider) *Stepper {
+func NewControlStepper(provider genny.Generator[float64]) *Stepper {
 	return NewStepper(provider, nil)
 }
 
@@ -41,7 +37,12 @@ func (s *Stepper) tick(timestamp int64, config *muse.Configuration) (bool, float
 			break
 		}
 
-		durationMs = s.provider.NextStep()
+		if s.provider.Done() {
+			s.SendControlValue(muse.Bang, 2)
+			s.provider.Reset()
+		}
+
+		durationMs = s.provider.Generate()
 
 		wait := durationMs * 0.001 * config.SampleRate
 		if wait > 0 {
@@ -81,24 +82,4 @@ func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.
 	}
 
 	return messages
-}
-
-type GennyStepProvider struct {
-	gen genny.Generator[float64]
-}
-
-func NewGennyStepProvider(gen genny.Generator[float64]) *GennyStepProvider {
-	return &GennyStepProvider{
-		gen: gen,
-	}
-}
-
-func (gs *GennyStepProvider) NextStep() float64 {
-	v := gs.gen.Generate()
-
-	if gs.gen.Done() {
-		gs.gen.Reset()
-	}
-
-	return v
 }
