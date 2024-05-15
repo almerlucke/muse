@@ -89,10 +89,6 @@ func New(bpm int, noteDivision int, steps genny.Generator[*Step]) *Swing {
 }
 
 func (sw *Swing) Generate() float64 {
-	if sw.steps.Done() {
-		sw.steps.Reset()
-	}
-
 	if sw.delayed {
 		sw.delayed = false
 		return sw.remainingDuration
@@ -139,13 +135,15 @@ func (sw *Swing) Generate() float64 {
 }
 
 func (sw *Swing) Done() bool {
-	return false
+	return sw.steps.Done()
 }
 
 func (sw *Swing) Reset() {
 	sw.steps.Reset()
+	sw.delayed = false
+	sw.burstMode = false
 }
 
 func (sw *Swing) Continuous() bool {
-	return true
+	return sw.steps.Continuous()
 }

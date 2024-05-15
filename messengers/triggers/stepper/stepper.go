@@ -7,16 +7,16 @@ import (
 
 type Stepper struct {
 	*muse.BaseMessenger
-	addresses []string
-	accum     float64
-	provider  genny.Generator[float64]
+	addresses   []string
+	accum       float64
+	durationGen genny.Generator[float64]
 }
 
-func NewStepper(provider genny.Generator[float64], addresses []string) *Stepper {
+func NewStepper(durationGen genny.Generator[float64], addresses []string) *Stepper {
 	s := &Stepper{
 		BaseMessenger: muse.NewBaseMessenger(),
 		addresses:     addresses,
-		provider:      provider,
+		durationGen:   durationGen,
 	}
 
 	s.SetSelf(s)
@@ -24,53 +24,40 @@ func NewStepper(provider genny.Generator[float64], addresses []string) *Stepper 
 	return s
 }
 
-func NewControlStepper(provider genny.Generator[float64]) *Stepper {
-	return NewStepper(provider, nil)
+func (s *Stepper) Tick(timestamp int64, config *muse.Configuration) {
+	_ = s.Messages(timestamp, config)
 }
 
-func (s *Stepper) tick(timestamp int64, config *muse.Configuration) (bool, float64) {
-	bang := false
-	durationMs := 0.0
+func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.Message {
+	var (
+		messages   []*muse.Message
+		bang       bool
+		durationMs float64
+	)
 
 	for {
 		if float64(timestamp) < s.accum {
 			break
 		}
 
-		if s.provider.Done() {
+		if s.durationGen.Done() {
 			s.SendControlValue(muse.Bang, 2)
-			s.provider.Reset()
+			s.durationGen.Reset()
 		}
 
-		durationMs = s.provider.Generate()
+		durationMs = s.durationGen.Generate()
 
-		wait := durationMs * 0.001 * config.SampleRate
+		wait := config.MilliToSampsf(durationMs)
 		if wait > 0 {
 			bang = true
 			s.accum += wait
 		} else {
-			s.accum += -wait
+			s.accum -= wait
 		}
 	}
 
-	return bang, durationMs
-}
-
-func (s *Stepper) Tick(timestamp int64, config *muse.Configuration) {
-	bang, duration := s.tick(timestamp, config)
-
 	if bang {
-		s.SendControlValue(duration, 1)
-		s.SendControlValue(muse.Bang, 0)
-	}
-}
-
-func (s *Stepper) Messages(timestamp int64, config *muse.Configuration) []*muse.Message {
-	var messages []*muse.Message
-	bang, duration := s.tick(timestamp, config)
-
-	if bang {
-		s.SendControlValue(duration, 1)
+		s.SendControlValue(durationMs, 1)
 		s.SendControlValue(muse.Bang, 0)
 
 		for _, address := range s.addresses {

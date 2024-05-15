@@ -24,8 +24,20 @@ func (cfg *Configuration) MilliToSamps(milli float64) int64 {
 	return duration.MilliToSamps(milli, cfg.SampleRate)
 }
 
+func (cfg *Configuration) MilliToSampsf(milli float64) float64 {
+	return duration.MilliToSampsf(milli, cfg.SampleRate)
+}
+
 func (cfg *Configuration) SecToSamps(sec float64) int64 {
 	return duration.SecToSamps(sec, cfg.SampleRate)
+}
+
+func (cfg *Configuration) SampsToSec(samps int64) float64 {
+	return float64(samps) / cfg.SampleRate
+}
+
+func (cfg *Configuration) SampsToMilli(samps int64) float64 {
+	return (float64(samps) / cfg.SampleRate) * 1000.0
 }
 
 func (cfg *Configuration) ControlRate() float64 {
