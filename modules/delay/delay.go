@@ -56,6 +56,7 @@ func (d *Delay) Synthesize() bool {
 	if !d.BaseModule.Synthesize() {
 		return false
 	}
+
 	in := d.Inputs[0].Buffer
 	out := d.Outputs[0].Buffer
 
@@ -63,7 +64,9 @@ func (d *Delay) Synthesize() bool {
 		if d.Inputs[1].IsConnected() {
 			d.SetReadLocation(d.Inputs[1].Buffer[i])
 		}
-		out[i] = d.delay.Read(d.readLocation)
+
+		out[i] = d.delay.ReadHermite(d.readLocation)
+
 		d.delay.Write(in[i])
 	}
 

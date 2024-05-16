@@ -2,7 +2,7 @@ package muse
 
 import (
 	"container/list"
-	"github.com/almerlucke/muse/utils/duration"
+	"github.com/almerlucke/muse/utils/timing"
 )
 
 var configList *list.List
@@ -21,15 +21,15 @@ type Configuration struct {
 }
 
 func (cfg *Configuration) MilliToSamps(milli float64) int64 {
-	return duration.MilliToSamps(milli, cfg.SampleRate)
+	return timing.MilliToSamps(milli, cfg.SampleRate)
 }
 
 func (cfg *Configuration) MilliToSampsf(milli float64) float64 {
-	return duration.MilliToSampsf(milli, cfg.SampleRate)
+	return timing.MilliToSampsf(milli, cfg.SampleRate)
 }
 
 func (cfg *Configuration) SecToSamps(sec float64) int64 {
-	return duration.SecToSamps(sec, cfg.SampleRate)
+	return timing.SecToSamps(sec, cfg.SampleRate)
 }
 
 func (cfg *Configuration) SampsToSec(samps int64) float64 {

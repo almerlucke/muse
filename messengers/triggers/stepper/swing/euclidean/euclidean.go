@@ -2,7 +2,7 @@ package euclidean
 
 import "github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 
-type Config struct {
+type StepConfig struct {
 	Shuffle     float64
 	ShuffleRand float64
 	SkipChance  float64
@@ -18,10 +18,10 @@ type Euclidean struct {
 	numSteps  int
 	numEvents int
 	rotation  int
-	config    Config
+	config    StepConfig
 }
 
-func New(numSteps int, numEvents int, rotation int, config *Config) *Euclidean {
+func New(numSteps int, numEvents int, rotation int, config *StepConfig) *Euclidean {
 	rotation = rotation % numSteps
 	if numEvents > numSteps {
 		numEvents = numSteps
@@ -45,6 +45,20 @@ func New(numSteps int, numEvents int, rotation int, config *Config) *Euclidean {
 	euclid.recalculate()
 
 	return euclid
+}
+
+func (euclid *Euclidean) Set(numSteps int, numEvents int, rotation int) {
+	rotation = rotation % numSteps
+	if numEvents > numSteps {
+		numEvents = numSteps
+	}
+
+	euclid.numSteps = numSteps
+	euclid.numEvents = numEvents
+	euclid.rotation = rotation
+
+	euclid.recalculate()
+	euclid.Reset()
 }
 
 func (euclid *Euclidean) recalculate() {

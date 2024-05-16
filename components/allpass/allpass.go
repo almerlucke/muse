@@ -15,7 +15,7 @@ func New(length int, feedback float64) *Allpass {
 }
 
 func (allpass *Allpass) Process(xn float64, location float64) float64 {
-	vm := allpass.Delay.Read(location)
+	vm := allpass.Delay.ReadLinear(location)
 	vn := xn - allpass.Feedback*vm
 	yn := vn*allpass.Feedback + vm
 

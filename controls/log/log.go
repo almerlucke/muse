@@ -10,7 +10,7 @@ type Log struct {
 	*muse.BaseControl
 }
 
-func NewLog() *Log {
+func New() *Log {
 	l := &Log{BaseControl: muse.NewBaseControl()}
 	l.SetSelf(l)
 	return l

@@ -14,7 +14,8 @@ type ControlMessage struct {
 type Event struct {
 	Messages        []*muse.Message   `json:"messages"`
 	ControlMessages []*ControlMessage `json:"controlMessages"`
-	When            float64           `json:"when"`
+	Functions       []func()
+	When            float64 `json:"when"`
 }
 
 type Scheduler struct {
@@ -90,11 +91,26 @@ func (s *Scheduler) ScheduleMessage(when float64, msg *muse.Message) {
 	}
 }
 
+func (s *Scheduler) ScheduleFunction(when float64, f func()) {
+	if event, ok := s.eventMap[when]; ok {
+		event.Functions = append(event.Functions, f)
+	} else {
+		newEvent := &Event{
+			Functions: []func(){f},
+			When:      when,
+		}
+		s.events = append(s.events, newEvent)
+		s.reorderEvents()
+		s.eventMap[when] = newEvent
+	}
+}
+
 func (s *Scheduler) ScheduleEvents(events []*Event) {
 	for _, event := range events {
 		if existingEvent, ok := s.eventMap[event.When]; ok {
 			existingEvent.ControlMessages = append(existingEvent.ControlMessages, event.ControlMessages...)
 			existingEvent.Messages = append(existingEvent.Messages, event.Messages...)
+			existingEvent.Functions = append(existingEvent.Functions, event.Functions...)
 		} else {
 			s.events = append(s.events, event)
 			s.eventMap[event.When] = event
@@ -119,6 +135,10 @@ func (s *Scheduler) Messages(timestamp int64, config *muse.Configuration) []*mus
 		event := s.events[s.eventIndex]
 		if event.When > when {
 			break
+		}
+
+		for _, f := range event.Functions {
+			f()
 		}
 
 		for _, controlMessage := range event.ControlMessages {
