@@ -1,6 +1,7 @@
 package pingpong
 
 import (
+	"github.com/almerlucke/genny/float/line"
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/components/delay"
 	"github.com/almerlucke/muse/utils/timing"
@@ -46,10 +47,28 @@ func (pp *PingPong) SetRead(read float64) {
 	pp.newRead = read
 }
 
+func (pp *PingPong) SetFeedback(fb float64) {
+	pp.fb = fb
+}
+
+func (pp *PingPong) SetDry(dry float64) {
+	pp.dry = dry
+}
+
+func (pp *PingPong) SetWet(wet float64) {
+	pp.wet = wet
+}
+
 func (pp *PingPong) ReceiveControlValue(value any, index int) {
 	switch index {
-	case 0: // Read Location
+	case 0: // Read Location in ms
 		pp.SetRead(value.(float64))
+	case 1:
+		pp.SetFeedback(value.(float64))
+	case 2:
+		pp.SetDry(value.(float64))
+	case 3:
+		pp.SetWet(value.(float64))
 	}
 }
 
@@ -60,24 +79,39 @@ func (pp *PingPong) ReceiveMessage(msg any) []*muse.Message {
 		pp.SetRead(readLocation.(float64))
 	}
 
+	if fb, ok := content["feedback"]; ok {
+		pp.SetFeedback(fb.(float64))
+	}
+
+	if dry, ok := content["dry"]; ok {
+		pp.SetDry(dry.(float64))
+	}
+
+	if wet, ok := content["wet"]; ok {
+		pp.SetWet(wet.(float64))
+	}
+
 	return nil
 }
 
 func (pp *PingPong) synthesizeStereo() {
 	var (
-		inLeft      = pp.Inputs[0].Buffer
-		inRight     = pp.Inputs[1].Buffer
-		outLeft     = pp.Outputs[0].Buffer
-		outRight    = pp.Outputs[1].Buffer
-		lookup      = timing.MilliToSampsf(pp.read, pp.Config.SampleRate)
-		lookupDelta = 0.0
+		inLeft        = pp.Inputs[0].Buffer
+		inRight       = pp.Inputs[1].Buffer
+		outLeft       = pp.Outputs[0].Buffer
+		outRight      = pp.Outputs[1].Buffer
+		delayTimeLine line.Line
 	)
 
+	delayTimeLine.From(timing.MilliToSampsf(pp.read, pp.Config.SampleRate))
+
 	if pp.newRead != pp.read {
-		lookupDelta = (timing.MilliToSampsf(pp.newRead, pp.Config.SampleRate) - lookup) / float64(pp.Config.BufferSize)
+		delayTimeLine.To(timing.MilliToSampsf(pp.newRead, pp.Config.SampleRate), pp.Config.BufferSize)
+		pp.read = pp.newRead
 	}
 
 	for i := 0; i < pp.Config.BufferSize; i++ {
+		lookup := delayTimeLine.Generate()
 		left := pp.left.ReadLinear(lookup)
 		right := pp.right.ReadLinear(lookup)
 
@@ -86,12 +120,6 @@ func (pp *PingPong) synthesizeStereo() {
 
 		outLeft[i] = inLeft[i]*pp.dry + left*pp.wet
 		outRight[i] = inRight[i]*pp.dry + right*pp.wet
-
-		lookup += lookupDelta
-	}
-
-	if pp.newRead != pp.read {
-		pp.read = pp.newRead
 	}
 }
 
@@ -106,18 +134,21 @@ func (pp *PingPong) Synthesize() bool {
 	}
 
 	var (
-		in          = pp.Inputs[0].Buffer
-		outLeft     = pp.Outputs[0].Buffer
-		outRight    = pp.Outputs[1].Buffer
-		lookup      = timing.MilliToSampsf(pp.read, pp.Config.SampleRate)
-		lookupDelta = 0.0
+		in            = pp.Inputs[0].Buffer
+		outLeft       = pp.Outputs[0].Buffer
+		outRight      = pp.Outputs[1].Buffer
+		delayTimeLine line.Line
 	)
 
+	delayTimeLine.From(timing.MilliToSampsf(pp.read, pp.Config.SampleRate))
+
 	if pp.newRead != pp.read {
-		lookupDelta = (timing.MilliToSampsf(pp.newRead, pp.Config.SampleRate) - lookup) / float64(pp.Config.BufferSize)
+		delayTimeLine.To(timing.MilliToSampsf(pp.newRead, pp.Config.SampleRate), pp.Config.BufferSize)
+		pp.read = pp.newRead
 	}
 
 	for i := 0; i < pp.Config.BufferSize; i++ {
+		lookup := delayTimeLine.Generate()
 		left := pp.left.ReadLinear(lookup)
 		right := pp.right.ReadLinear(lookup)
 
@@ -126,12 +157,6 @@ func (pp *PingPong) Synthesize() bool {
 
 		outLeft[i] = in[i]*pp.dry + left*pp.wet
 		outRight[i] = in[i]*pp.dry + right*pp.wet
-
-		lookup += lookupDelta
-	}
-
-	if pp.newRead != pp.read {
-		pp.read = pp.newRead
 	}
 
 	return true

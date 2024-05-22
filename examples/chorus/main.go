@@ -38,7 +38,7 @@ func main() {
 	}).MsgrNamed("sequencer2"))
 
 	root.AddMessenger(stepper.NewStepper(
-		stepper.NewGennyStepProvider(sequence.NewLoop([]float64{250, -125, 250, 250, -125, 125, -125, 250}...)),
+		sequence.NewLoop([]float64{250, -125, 250, 250, -125, 125, -125, 250}...),
 		[]string{"sequencer", "sequencer2"},
 	))
 

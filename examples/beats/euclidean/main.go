@@ -8,15 +8,18 @@ import (
 	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/messengers/banger"
+	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/scheduler"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing/euclidean"
+	"github.com/almerlucke/muse/modules/effects/flanger"
 	"github.com/almerlucke/muse/modules/effects/pingpong"
 	"github.com/almerlucke/muse/synths/drums"
 	"github.com/almerlucke/muse/utils/timing"
 	"github.com/almerlucke/sndfile"
 	"github.com/google/uuid"
+	"log"
 )
 
 func addDrumTrack(p muse.Patch, polyIdentifier string, sound genny.Generator[string], speed genny.Generator[float64], amp genny.Generator[float64], steps genny.Generator[*swing.Step], bpm int, noteDivision int) {
@@ -73,7 +76,10 @@ func main() {
 	addDrumTrack(root, "drums", constant.New("snare"), function.NewRandom(0.5, 3.5), constant.New(0.5), snareRhythm, bpm, 1)
 	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "808_1", "808_2", "808_3", "808_4"), function.NewRandom(0.75, 1.25), constant.New(0.375), bounceRhythm, bpm, 1)
 
-	pp := pingpong.New(bpmToMilli*0.75, bpmToMilli*0.75, 0.2, 0.95, 0.05, true).AddTo(root).In(drum, drum, 1)
+	flang := flanger.New(0.3, 0.5, 0.7, 0.3, true).AddTo(root).In(drum, drum, 1)
+	flangLfo := lfo.NewBasicControlLFO(0.1, 0.2, 0.4).CtrlAddTo(root)
+	flang.CtrlIn(flangLfo)
+	pp := pingpong.New(bpmToMilli*2, bpmToMilli*0.75, 0.2, 0.95, 0.05, true).AddTo(root).In(flang, flang, 1)
 
 	root.In(pp, pp, 1)
 
@@ -85,6 +91,14 @@ func main() {
 		bounceRhythm.Set(18, 5, 0)
 		hihatRhythm.Set(16, 9, 0)
 		snareRhythm.Set(17, 4, 1)
+	})
+	sched.ScheduleFunction(timing.Second*60.0, func() {
+		log.Printf("pingpong!")
+		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 1.25)
+	})
+	sched.ScheduleFunction(timing.Second*120.0, func() {
+		log.Printf("pingpong!")
+		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 0.75)
 	})
 	//sched.ScheduleFunction(timing.Minute*1.5, func() {
 	//	kickRhythm.Set(12, 7, 0)

@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/modules/delay"
-	"github.com/almerlucke/muse/modules/lfo"
+	lfo2 "github.com/almerlucke/muse/messengers/lfo"
+	"github.com/almerlucke/muse/modules/effects/flanger"
 	"github.com/almerlucke/muse/modules/player"
 	"github.com/almerlucke/sndfile"
 )
@@ -16,15 +16,15 @@ func main() {
 
 	root := muse.New(1)
 
-	congaSF, _ := sndfile.NewSoundFile("resources/sounds/elisa.wav")
+	sf, _ := sndfile.NewSoundFile("resources/sounds/elisa.wav")
 
-	pl := player.New(congaSF, 1.0, 1.0, false).AddTo(root)
-	dl := delay.New(1000.0, 500.0).AddTo(root)
-	dlfo := lfo.New(2.6, 500.0, 530.0).AddTo(root)
+	pl := player.New(sf, 1.0, 1.0, false).AddTo(root)
+	fl := flanger.New(0.3, 0.9, 0.3, 0.7, false).AddTo(root).In(pl)
+	fllfo := lfo2.NewBasicControlLFO(0.4, 0.1, 0.9).CtrlAddTo(root)
 
-	dl.In(pl, dlfo, 0, 1)
+	fl.CtrlIn(fllfo)
 
-	root.In(dl)
+	root.In(fl)
 
 	_ = root.RenderAudio()
 }

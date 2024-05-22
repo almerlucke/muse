@@ -166,10 +166,10 @@ func (c *Chorus) Synthesize() bool {
 			c.SetMix(c.Inputs[3].Buffer[i])
 		}
 
-		d1 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[0].Generate())))
-		d2 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[1].Generate())))
-		d3 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[2].Generate())))
-		d4 := c.delayLine.Read(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[3].Generate())))
+		d1 := c.delayLine.ReadLinear(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[0].Generate())))
+		d2 := c.delayLine.ReadLinear(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[1].Generate())))
+		d3 := c.delayLine.ReadLinear(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[2].Generate())))
+		d4 := c.delayLine.ReadLinear(msSamps * (c.delayCenter + c.modRange*c.modShaper.Shape(c.mods[3].Generate())))
 
 		c.delayLine.Write(in[i])
 
