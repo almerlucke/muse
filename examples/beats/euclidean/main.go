@@ -50,17 +50,16 @@ func main() {
 
 	soundBank := sndfile.SoundBank{}
 
-	soundBank["hihat1"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav", 4)
-	soundBank["hihat2"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 4.wav", 4)
-	soundBank["kick1"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Humble Theory Kick - B.wav", 4)
-	soundBank["kick2"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Humble Sit Down Kick - D.wav", 4)
-	soundBank["snare1"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Humble King Snare 1 - A.wav", 4)
-	soundBank["snare2"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Humble Friday Snare - E.wav", 4)
-	soundBank["808_1"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav", 4)
-	soundBank["808_2"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav", 4)
-	soundBank["808_3"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav", 4)
-	soundBank["808_4"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav", 4)
-	soundBank["shaker"], _ = sndfile.NewMipMapSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav", 4)
+	soundBank["hihat1"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Orchid Hihat - Flam.wav", 4)
+	soundBank["hihat2"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Orchid Ride - Mysterious.wav", 4)
+	soundBank["kick1"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Dancehall (A#).wav", 4)
+	soundBank["kick2"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Tight (G).wav", 4)
+	soundBank["snare1"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Orchid Snap - Single.wav", 4)
+	soundBank["snare2"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Orchid Snap - Cream.wav", 4)
+	soundBank["fx1"], _ = sndfile.NewMipMapSoundFile("resources/drums/percussion/Cymatics - Orchid Percussion - Wet 1 (C).wav", 4)
+	soundBank["fx2"], _ = sndfile.NewMipMapSoundFile("resources/drums/percussion/Cymatics - Orchid Percussion - Wet 2.wav", 4)
+	soundBank["fx3"], _ = sndfile.NewMipMapSoundFile("resources/drums/percussion/Cymatics - Orchid Percussion - Wet 3.wav", 4)
+	soundBank["fx4"], _ = sndfile.NewMipMapSoundFile("resources/drums/percussion/Cymatics - Orchid Percussion - Wet 4.wav", 4)
 
 	drum := drums.NewDrums(soundBank, 20).Named("drums").AddTo(root)
 
@@ -76,16 +75,15 @@ func main() {
 	bpmToMilli := timing.BPMToMilli(bpm)
 
 	hihatConst := constant.New("hihat1")
-	hihatAmp := constant.New(0.5)
 	snareConst := constant.New("snare1")
 	snareLow := 0.5
 	snareHigh := 3.5
 	snareRand := function.New(func() float64 { return rand.Float64()*(snareHigh-snareLow) + snareLow })
 
 	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Random, "kick1", "kick2"), function.NewRandom(0.5, 1.25), constant.New(0.5), kickRhythm, bpm, 1)
-	addDrumTrack(root, "drums", hihatConst, function.NewRandom(1.0, 2.0), hihatAmp, hihatRhythm, bpm, 4)
-	addDrumTrack(root, "drums", snareConst, snareRand, constant.New(0.5), snareRhythm, bpm, 1)
-	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "808_1", "808_2", "808_3", "808_4"), function.NewRandom(0.75, 1.25), constant.New(0.375), bounceRhythm, bpm, 1)
+	addDrumTrack(root, "drums", hihatConst, function.NewRandom(1.0, 2.0), constant.New(0.1), hihatRhythm, bpm, 4)
+	addDrumTrack(root, "drums", snareConst, snareRand, constant.New(1.0), snareRhythm, bpm, 1)
+	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "fx1", "fx2", "fx3", "fx4"), function.NewRandom(0.75, 1.25), constant.New(0.5), bounceRhythm, bpm, 1)
 
 	flang := flanger.New(0.3, 0.5, 0.7, 0.3, true).AddTo(root).In(drum, drum, 1)
 	flangLfo := lfo.NewBasicControlLFO(0.05, 0.2, 0.4).CtrlAddTo(root)
@@ -106,21 +104,18 @@ func main() {
 	sched.ScheduleFunction(timing.Second*30.0, func() {
 		log.Printf("pingpong1")
 		hihatConst.SetValue("hihat2")
-		hihatAmp.SetValue(0.2)
 		hihatRhythm.Set(16, 5, 0)
 		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 1.25)
 	})
 	sched.ScheduleFunction(timing.Second*60.0, func() {
 		log.Printf("pingpong2")
 		hihatConst.SetValue("hihat1")
-		hihatAmp.SetValue(0.5)
 		hihatRhythm.Set(16, 9, 0)
 		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 0.75)
 	})
 	sched.ScheduleFunction(timing.Second*90.0, func() {
 		log.Printf("pingpong3")
 		hihatConst.SetValue("hihat2")
-		hihatAmp.SetValue(0.1)
 		hihatRhythm.Set(16, 5, 0)
 		snareConst.SetValue("snare2")
 		snareLow = 0.9
@@ -130,7 +125,6 @@ func main() {
 	sched.ScheduleFunction(timing.Second*120.0, func() {
 		log.Printf("pingpong4")
 		hihatConst.SetValue("hihat1")
-		hihatAmp.SetValue(0.5)
 		hihatRhythm.Set(16, 9, 0)
 		snareConst.SetValue("snare1")
 		snareLow = 0.5
@@ -140,7 +134,6 @@ func main() {
 	sched.ScheduleFunction(timing.Second*150.0, func() {
 		log.Printf("pingpong5")
 		hihatConst.SetValue("hihat2")
-		hihatAmp.SetValue(0.2)
 		hihatRhythm.Set(16, 3, 0)
 		snareConst.SetValue("snare2")
 		snareLow = 0.9
@@ -150,7 +143,6 @@ func main() {
 	sched.ScheduleFunction(timing.Second*180.0, func() {
 		log.Printf("pingpong6")
 		hihatConst.SetValue("hihat1")
-		hihatAmp.SetValue(0.5)
 		hihatRhythm.Set(16, 9, 0)
 		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 0.75)
 	})
@@ -162,5 +154,5 @@ func main() {
 	//})
 
 	// _ = root.RenderAudio()
-	_ = root.RenderToSoundFile("/home/almer/Music/BirdsDrums", writer.AIFC, 240, 44100.0, true)
+	_ = root.RenderToSoundFile("/home/almer/Music/BirdsDrumsSlow", writer.AIFC, 240, 44100.0, true)
 }

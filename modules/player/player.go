@@ -221,7 +221,7 @@ func (p *Player) Synthesize() bool {
 
 		samps := p.sf.LookupAll(p.phase*float64(p.sf.NumFrames()), p.depth, !p.oneShot)
 		for outIndex, out := range p.Outputs {
-			out.Buffer[i] = samps[outIndex]
+			out.Buffer[i] = samps[outIndex] * p.amp
 		}
 
 		p.phase += p.inc
