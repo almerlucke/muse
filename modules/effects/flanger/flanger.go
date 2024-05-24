@@ -20,11 +20,10 @@ type Flanger struct {
 	fb         float64
 	depth      float64
 	newDepth   float64
-	dry        float64
-	wet        float64
+	mix        float64
 }
 
-func New(depth float64, feedback float64, dry float64, wet float64, stereo bool) *Flanger {
+func New(depth float64, feedback float64, mix float64, stereo bool) *Flanger {
 	numInputs := 1
 	if stereo {
 		numInputs = 2
@@ -38,8 +37,7 @@ func New(depth float64, feedback float64, dry float64, wet float64, stereo bool)
 		delayRight: delay.New(delaySize),
 		depth:      depth,
 		fb:         feedback,
-		dry:        dry,
-		wet:        wet,
+		mix:        mix,
 	}
 
 	f.SetSelf(f)
@@ -51,10 +49,22 @@ func (f *Flanger) SetDepth(depth float64) {
 	f.newDepth = depth
 }
 
+func (f *Flanger) SetFeedback(fb float64) {
+	f.fb = fb
+}
+
+func (f *Flanger) SetMix(mix float64) {
+	f.mix = mix
+}
+
 func (f *Flanger) ReceiveControlValue(value any, index int) {
 	switch index {
 	case 0:
 		f.SetDepth(value.(float64))
+	case 1:
+		f.SetFeedback(value.(float64))
+	case 2:
+		f.SetMix(value.(float64))
 	}
 }
 
@@ -63,6 +73,14 @@ func (f *Flanger) ReceiveMessage(msg any) []*muse.Message {
 
 	if depth, ok := content["depth"]; ok {
 		f.SetDepth(depth.(float64))
+	}
+
+	if fb, ok := content["feedback"]; ok {
+		f.SetFeedback(fb.(float64))
+	}
+
+	if fb, ok := content["mix"]; ok {
+		f.SetMix(fb.(float64))
 	}
 
 	return nil
@@ -83,6 +101,9 @@ func (f *Flanger) synthesizeStereo() {
 		f.depth = f.newDepth
 	}
 
+	dry := 1.0 - f.mix
+	wet := f.mix
+
 	for i := 0; i < f.Config.BufferSize; i++ {
 		inLeft := inBufLeft[i]
 		inRight := inBufRight[i]
@@ -93,8 +114,8 @@ func (f *Flanger) synthesizeStereo() {
 		f.delayRight.Write(inRight + delOutRight*f.fb)
 		flangOutLeft := inLeft + delOutLeft
 		flangOutRight := inRight + delOutRight
-		outBufLeft[i] = inLeft*f.dry + flangOutLeft*f.wet
-		outBufRight[i] = inRight*f.dry + flangOutRight*f.wet
+		outBufLeft[i] = inLeft*dry + flangOutLeft*wet
+		outBufRight[i] = inRight*dry + flangOutRight*wet
 	}
 }
 
@@ -120,13 +141,16 @@ func (f *Flanger) Synthesize() bool {
 		f.depth = f.newDepth
 	}
 
+	dry := 1.0 - f.mix
+	wet := f.mix
+
 	for i := range f.Config.BufferSize {
 		in := inBuf[i]
 		readPos := readLine.Generate()
 		delOut := f.delayLeft.ReadLinear(readPos)
 		f.delayLeft.Write(in + delOut*f.fb)
 		flangOut := in + delOut
-		outBuf[i] = in*f.dry + flangOut*f.wet
+		outBuf[i] = in*dry + flangOut*wet
 	}
 
 	return true

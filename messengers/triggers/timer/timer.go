@@ -13,7 +13,7 @@ type Timer struct {
 	sampleRate    float64
 }
 
-func NewTimer(intervalMilli float64, addresses []string) *Timer {
+func New(intervalMilli float64, addresses []string) *Timer {
 	t := &Timer{
 		BaseMessenger: muse.NewBaseMessenger(),
 		addresses:     addresses,
@@ -27,8 +27,8 @@ func NewTimer(intervalMilli float64, addresses []string) *Timer {
 	return t
 }
 
-func NewControlTimer(intervalMilli float64) *Timer {
-	return NewTimer(intervalMilli, nil)
+func NewControl(intervalMilli float64) *Timer {
+	return New(intervalMilli, nil)
 }
 
 func (t *Timer) ReceiveControlValue(value any, index int) {
@@ -56,10 +56,16 @@ func (t *Timer) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (t *Timer) tick(timestamp int64, config *muse.Configuration) (bool, float64) {
-	bang := false
+func (t *Timer) Tick(timestamp int64, config *muse.Configuration) {
+	_ = t.Messages(timestamp, config)
+}
 
-	floatTimestamp := float64(timestamp)
+func (t *Timer) Messages(timestamp int64, _ *muse.Configuration) []*muse.Message {
+	var (
+		messages       []*muse.Message
+		bang           bool
+		floatTimestamp = float64(timestamp)
+	)
 
 	if floatTimestamp > t.accum {
 		bang = true
@@ -68,24 +74,8 @@ func (t *Timer) tick(timestamp int64, config *muse.Configuration) (bool, float64
 		}
 	}
 
-	return bang, t.intervalMilli
-}
-
-func (t *Timer) Tick(timestamp int64, config *muse.Configuration) {
-	bang, duration := t.tick(timestamp, config)
-
 	if bang {
-		t.SendControlValue(duration, 1)
-		t.SendControlValue(muse.Bang, 0)
-	}
-}
-
-func (t *Timer) Messages(timestamp int64, config *muse.Configuration) []*muse.Message {
-	messages := []*muse.Message{}
-	bang, duration := t.tick(timestamp, config)
-
-	if bang {
-		t.SendControlValue(duration, 1)
+		t.SendControlValue(t.intervalMilli, 1)
 		t.SendControlValue(muse.Bang, 0)
 
 		for _, address := range t.addresses {

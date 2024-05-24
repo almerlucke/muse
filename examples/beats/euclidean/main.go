@@ -85,10 +85,10 @@ func main() {
 	addDrumTrack(root, "drums", snareConst, snareRand, constant.New(1.0), snareRhythm, bpm, 1)
 	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "fx1", "fx2", "fx3", "fx4"), function.NewRandom(0.75, 1.25), constant.New(0.5), bounceRhythm, bpm, 1)
 
-	flang := flanger.New(0.3, 0.5, 0.7, 0.3, true).AddTo(root).In(drum, drum, 1)
+	flang := flanger.New(0.3, 0.5, 0.3, true).AddTo(root).In(drum, drum, 1)
 	flangLfo := lfo.NewBasicControlLFO(0.05, 0.2, 0.4).CtrlAddTo(root)
 	flang.CtrlIn(flangLfo)
-	pp := pingpong.New(bpmToMilli*2, bpmToMilli*0.75, 0.2, 0.95, 0.05, true).AddTo(root).In(flang, flang, 1)
+	pp := pingpong.New(bpmToMilli*2, bpmToMilli*0.75, 0.2, 0.05, true).AddTo(root).In(flang, flang, 1)
 
 	root.In(pp, pp, 1)
 

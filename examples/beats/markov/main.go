@@ -2,23 +2,29 @@ package main
 
 import (
 	"github.com/almerlucke/genny"
+	"github.com/almerlucke/genny/bucket"
+	"github.com/almerlucke/genny/constant"
 	"github.com/almerlucke/genny/flatten"
-	"github.com/almerlucke/genny/markov"
-	"github.com/almerlucke/genny/sequence"
-	"github.com/almerlucke/sndfile"
-	"math/rand"
-
 	"github.com/almerlucke/genny/function"
+	"github.com/almerlucke/genny/markov"
 	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/controls/perform"
 	"github.com/almerlucke/muse/messengers/banger"
+	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
+	"github.com/almerlucke/muse/messengers/triggers/timer"
+	"github.com/almerlucke/muse/modules/effects/flanger"
+	"github.com/almerlucke/muse/modules/effects/pingpong"
 	"github.com/almerlucke/muse/synths/drums"
+	"github.com/almerlucke/muse/utils/timing"
+	"github.com/almerlucke/sndfile"
+	"github.com/google/uuid"
 )
 
-func addDrumTrack(p muse.Patch, polyName string, sounds []string, tempo int, division int, lowSpeed float64, highSpeed float64, amp float64, steps genny.Generator[*swing.Step]) {
-	identifier := sounds[0] + "Drum"
+func addDrumTrack(p muse.Patch, polyName string, sounds genny.Generator[string], tempo int, division int, speed genny.Generator[float64], amp genny.Generator[float64], steps genny.Generator[*swing.Step]) {
+	identifier := uuid.New().String()
 
 	p.AddMessenger(stepper.NewStepper(swing.New(tempo, division, steps), []string{identifier}))
 
@@ -27,8 +33,8 @@ func addDrumTrack(p muse.Patch, polyName string, sounds []string, tempo int, div
 		"duration":  0.0,
 		"amplitude": amp,
 		"message": template.Template{
-			"speed": function.New(func() float64 { return rand.Float64()*(highSpeed-lowSpeed) + lowSpeed }),
-			"sound": sequence.NewLoop(sounds...),
+			"speed": speed,
+			"sound": sounds,
 		},
 	}).MsgrNamed(identifier))
 }
@@ -111,35 +117,74 @@ func main() {
 		BufferSize: 256,
 	})
 
-	m := muse.New(2)
+	root := muse.New(2)
 
-	bpm := 80
+	bpm := 55
+	bpmToMs := timing.BPMToMilli(bpm)
 
 	soundBank := sndfile.SoundBank{}
 
-	soundBank["hihat"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav", 4)
-	soundBank["kick"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Humble Triple Kick - E.wav", 4)
-	soundBank["snare"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Humble Adequate Snare - E.wav", 4)
-	soundBank["808_1"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav", 4)
-	soundBank["808_2"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav", 4)
-	soundBank["808_3"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav", 4)
-	soundBank["808_4"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav", 4)
-	soundBank["shaker"], _ = sndfile.NewMipMapSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav", 4)
+	soundBank["hihat1"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Humble Closed Hihat 1.wav", 4)
+	soundBank["hihat2"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Odyssey Closed Hihat 1.wav", 4)
+	soundBank["hihat3"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Odyssey Closed Hihat 2.wav", 4)
+	soundBank["hihat4"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Orchid Hihat - Closed 2.wav", 4)
+	soundBank["hihat5"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Orchid Hihat - Closed 2.wav", 4)
 
-	dr := drums.NewDrums(soundBank, 20).Named("drums").AddTo(m)
+	soundBank["kick1"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Clean (F).wav", 4)
+	soundBank["kick2"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Dancehall (A#).wav", 4)
+	soundBank["kick3"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Layered (F#).wav", 4)
+	soundBank["kick4"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Tight (G).wav", 4)
 
-	addDrumTrack(m, "drums", []string{"hihat"}, bpm, 8, 0.575, 3.525, 0.6, hihatRhythm())
-	addDrumTrack(m, "drums", []string{"kick"}, bpm, 8, 0.575, 3.525, 1.0, kickRhythm())
-	addDrumTrack(m, "drums", []string{"snare"}, bpm, 8, 0.6, 3.4, 0.7, snareRhythm())
-	addDrumTrack(m, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, bpm, 2, 0.6, 4.0, 0.3, bassRhythm())
-	addDrumTrack(m, "drums", []string{"shaker"}, bpm, 2, 0.6, 4.0, 1.0, kickRhythm())
+	soundBank["snare1"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Odyssey House Snare 4 - F#.wav", 4)
+	soundBank["snare2"], _ = sndfile.NewMipMapSoundFile("resources/drums/clap/Cymatics - Odyssey Flam Clap 1.wav", 4)
+	soundBank["snare3"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Odyssey House Snare 3 - E.wav", 4)
+	soundBank["snare4"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Odyssey House Snare 1 - C#.wav", 4)
+	soundBank["snare5"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Odyssey House Snare 2 - D.wav", 4)
 
-	m.In(dr, dr, 1)
+	soundBank["fx1"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Transition FX 2 - F Min.wav", 4)
+	soundBank["fx2"], _ = sndfile.NewMipMapSoundFile("resources/drums/shots/Cymatics - Odyssey Synth One Shot 9 - E.wav", 4)
+	soundBank["fx3"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Impact 2.wav", 4)
+	soundBank["fx4"], _ = sndfile.NewMipMapSoundFile("resources/drums/shots/Cymatics - Odyssey Synth One Shot 24 - A#.wav", 4)
+	soundBank["fx5"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 7 - A.wav", 4)
+	soundBank["fx6"], _ = sndfile.NewMipMapSoundFile("resources/drums/shots/Cymatics - Odyssey Synth One Shot 17 - F#.wav", 4)
+	soundBank["fx7"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 4 - F.wav", 4)
+
+	soundBank["sh1"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Orchid Shaker - Drew.wav", 4)
+	soundBank["sh2"], _ = sndfile.NewMipMapSoundFile("resources/drums/percussion/Cymatics - Orchid Percussion - Dry 6.wav", 4)
+	soundBank["sh3"], _ = sndfile.NewMipMapSoundFile("resources/drums/percussion/Cymatics - Orchid Percussion - Wet 2.wav", 4)
+	soundBank["sh4"], _ = sndfile.NewMipMapSoundFile("resources/drums/percussion/Cymatics - Orchid Percussion - Wet 3.wav", 4)
+	soundBank["sh5"], _ = sndfile.NewMipMapSoundFile("resources/drums/percussion/Cymatics - Orchid Percussion - Wet 4.wav", 4)
+
+	dr := drums.NewDrums(soundBank, 20).Named("drums").AddTo(root)
+
+	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "hihat1", "hihat2", "hihat3", "hihat4", "hihat5"), bpm, 8, function.NewRandom(0.5, 4.525), constant.New(0.6), hihatRhythm())
+	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "kick1", "kick2", "kick3", "kick4"), bpm, 8, function.NewRandom(0.75, 2.525), constant.New(0.7), kickRhythm())
+	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "snare1", "snare2", "snare3", "snare4", "snare5"), bpm, 8, function.NewRandom(0.7, 3.25), constant.New(0.7), snareRhythm())
+	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "fx1", "fx2", "fx3", "fx4", "fx5", "fx6", "fx7"), bpm, 2, function.NewRandom(0.3, 7.0), constant.New(0.7), bassRhythm())
+	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "sh1", "sh2", "sh3", "sh4", "sh5"), bpm, 2, function.NewRandom(0.3, 3.0), constant.New(0.5), kickRhythm())
+
+	fl := flanger.New(0.3, 0.5, 0.2, true).AddTo(root).In(dr, dr, 1)
+	flDepth := lfo.NewBasicControlLFO(0.05, 0.1, 0.9).CtrlAddTo(root)
+	flFb := lfo.NewBasicControlLFO(0.0375, 0.1, 0.8).CtrlAddTo(root)
+	flMix := lfo.NewBasicControlLFO(0.0425, 0.05, 0.4).CtrlAddTo(root)
+	fl.CtrlIn(flDepth, flFb, 0, 1, flMix, 0, 2)
+
+	pp := pingpong.New(bpmToMs*2.0, bpmToMs*0.375, 0.1, 0.1, true).AddTo(root).In(fl, fl, 1)
+	ppReadGen := bucket.NewLoop(bucket.Indexed, 0.375, 1.5, 0.75, 1.875)
+	ppMixGen := bucket.NewLoop(bucket.Indexed, 0.1, 0.05, 0.075, 0.125, 0.025)
+
+	perform.New(func() {
+		readPos := ppReadGen.Generate()
+		pp.(*pingpong.PingPong).SetRead(bpmToMs * readPos)
+		pp.(*pingpong.PingPong).SetMix(ppMixGen.Generate())
+	}).CtrlIn(timer.NewControl(bpmToMs * 16).CtrlAddTo(root))
+
+	root.In(pp, pp, 1)
 
 	//err := m.RenderToSoundFile("/home/almer/Documents/drums", writer.AIFC, 240, 44100.0, true)
 	//if err != nil {
 	//	log.Printf("error rendering drums! %v", err)
 	//}
 
-	_ = m.RenderAudio()
+	_ = root.RenderAudio()
 }

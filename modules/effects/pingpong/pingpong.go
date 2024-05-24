@@ -14,12 +14,11 @@ type PingPong struct {
 	right   *delay.Delay
 	read    float64
 	newRead float64
-	dry     float64
-	wet     float64
+	mix     float64
 	fb      float64
 }
 
-func New(delayLength float64, read float64, feedback float64, dry float64, wet float64, stereo bool) *PingPong {
+func New(delayLength float64, read float64, feedback float64, mix float64, stereo bool) *PingPong {
 	numInputs := 1
 	if stereo {
 		numInputs = 2
@@ -33,8 +32,7 @@ func New(delayLength float64, read float64, feedback float64, dry float64, wet f
 		right:      delay.New(delayLengthSamps),
 		read:       read,
 		newRead:    read,
-		dry:        dry,
-		wet:        wet,
+		mix:        mix,
 		fb:         feedback,
 	}
 
@@ -51,12 +49,8 @@ func (pp *PingPong) SetFeedback(fb float64) {
 	pp.fb = fb
 }
 
-func (pp *PingPong) SetDry(dry float64) {
-	pp.dry = dry
-}
-
-func (pp *PingPong) SetWet(wet float64) {
-	pp.wet = wet
+func (pp *PingPong) SetMix(mix float64) {
+	pp.mix = mix
 }
 
 func (pp *PingPong) ReceiveControlValue(value any, index int) {
@@ -66,9 +60,7 @@ func (pp *PingPong) ReceiveControlValue(value any, index int) {
 	case 1:
 		pp.SetFeedback(value.(float64))
 	case 2:
-		pp.SetDry(value.(float64))
-	case 3:
-		pp.SetWet(value.(float64))
+		pp.SetMix(value.(float64))
 	}
 }
 
@@ -83,12 +75,8 @@ func (pp *PingPong) ReceiveMessage(msg any) []*muse.Message {
 		pp.SetFeedback(fb.(float64))
 	}
 
-	if dry, ok := content["dry"]; ok {
-		pp.SetDry(dry.(float64))
-	}
-
-	if wet, ok := content["wet"]; ok {
-		pp.SetWet(wet.(float64))
+	if dry, ok := content["mix"]; ok {
+		pp.SetMix(dry.(float64))
 	}
 
 	return nil
@@ -110,6 +98,9 @@ func (pp *PingPong) synthesizeStereo() {
 		pp.read = pp.newRead
 	}
 
+	dry := 1.0 - pp.mix
+	wet := pp.mix
+
 	for i := 0; i < pp.Config.BufferSize; i++ {
 		lookup := delayTimeLine.Generate()
 		left := pp.left.ReadLinear(lookup)
@@ -118,8 +109,8 @@ func (pp *PingPong) synthesizeStereo() {
 		pp.left.Write(inLeft[i] + right*pp.fb)
 		pp.right.Write(inRight[i] + left)
 
-		outLeft[i] = inLeft[i]*pp.dry + left*pp.wet
-		outRight[i] = inRight[i]*pp.dry + right*pp.wet
+		outLeft[i] = inLeft[i]*dry + left*wet
+		outRight[i] = inRight[i]*dry + right*wet
 	}
 }
 
@@ -147,6 +138,9 @@ func (pp *PingPong) Synthesize() bool {
 		pp.read = pp.newRead
 	}
 
+	dry := 1.0 - pp.mix
+	wet := pp.mix
+
 	for i := 0; i < pp.Config.BufferSize; i++ {
 		lookup := delayTimeLine.Generate()
 		left := pp.left.ReadLinear(lookup)
@@ -155,8 +149,8 @@ func (pp *PingPong) Synthesize() bool {
 		pp.left.Write(in[i] + right*pp.fb)
 		pp.right.Write(left)
 
-		outLeft[i] = in[i]*pp.dry + left*pp.wet
-		outRight[i] = in[i]*pp.dry + right*pp.wet
+		outLeft[i] = in[i]*dry + left*wet
+		outRight[i] = in[i]*dry + right*wet
 	}
 
 	return true
