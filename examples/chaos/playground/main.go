@@ -101,12 +101,12 @@ func (v *ChaosVoice) Note(duration float64, amplitude float64, msg any, config *
 		v.interpol.SetDelta(1.0 / (numCycles.(float64)))
 	}
 
-	if chaos, ok := content["chaos"]; ok {
-		v.verhulst.A = chaos.(float64)
+	if ch, ok := content["chaos"]; ok {
+		v.verhulst.A = ch.(float64)
 	}
 
-	if pan, ok := content["pan"]; ok {
-		v.panner.SetPan(pan.(float64))
+	if p, ok := content["pan"]; ok {
+		v.panner.SetPan(p.(float64))
 	}
 
 	v.iter.SetValues([]float64{rand.Float64()})
@@ -138,7 +138,7 @@ func main() {
 	}
 
 	poly := polyphony.New(2, voices).Named("chaosSynth").AddTo(root)
-	tim := timer.NewControlTimer(500.0).CtrlAddTo(root)
+	tim := timer.NewControl(500.0).CtrlAddTo(root)
 	randomizeTimer := gen.New[float64](function.New(func() float64 {
 		return randMinMax(100, 5500.0)
 	}), false)

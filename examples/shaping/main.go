@@ -42,7 +42,7 @@ func main() {
 	root.AddMessenger(banger.NewGenBang(seq).MsgrNamed("sequencer1"))
 
 	root.AddMessenger(stepper.NewStepper(
-		stepper.NewGennyStepProvider(sequence.New[float64](250, -125, 250, 250, -125, 125, -125, 250)),
+		sequence.NewLoop(250.0, -125.0, 250.0, 250.0, -125.0, 125.0, -125.0, 250.0),
 		[]string{"sequencer1", "adsr1"},
 	))
 
@@ -56,7 +56,7 @@ func main() {
 	filterParam := root.AddModule(functor.NewScale(2200.0, 40.0))
 	osc1 := root.AddModule(phasor.New(140.0, 0.0).Named("osc1"))
 	shaper1 := root.AddModule(waveshaper.New(supersaw.New(1.5, 0.25, 0.88), 1, paramMapper, nil))
-	allpass := root.AddModule(allpass.New(375.0, 375.0, 0.3))
+	allp := root.AddModule(allpass.New(375.0, 375.0, 0.3))
 	allpassAmp := root.AddModule(functor.NewAmp(0.5))
 	// filter := env.AddModule(butterworth.NewButterworth(300.0, 0.4, env.Config, "filter"))
 	// filter := env.AddModule(rbj.NewRBJFilter(rbjc.Lowpass, 300.0, 10.0, env.Config, "filter"))
@@ -77,8 +77,8 @@ func main() {
 	adsrEnv1.Connect(0, mult1, 1)
 	mult1.Connect(0, filter, 0)
 	filterParam.Connect(0, filter, 1)
-	filter.Connect(0, allpass, 0)
-	allpass.Connect(0, allpassAmp, 0)
+	filter.Connect(0, allp, 0)
+	allp.Connect(0, allpassAmp, 0)
 	filter.Connect(0, reverb, 0)
 	allpassAmp.Connect(0, reverb, 1)
 	reverb.Connect(0, root, 0)

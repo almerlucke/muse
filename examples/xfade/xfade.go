@@ -40,5 +40,5 @@ func main() {
 
 	// env.PlotModule(fader3, 0, 10, 1000, 300, "/Users/almerlucke/Desktop/fader.png")
 
-	root.RenderAudio()
+	_ = root.RenderAudio()
 }

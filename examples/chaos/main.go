@@ -24,14 +24,14 @@ import (
 
 func genPlot() {
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
-	iter := iter.New([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.978, f))
+	it := iter.New([]float64{0.4, 0.4}, chaos.NewAronsonWithFunc(1.978, f))
 
 	pts := make(plotter.XYs, 20000)
 	vecX := make([]float64, 20000)
 	vecY := make([]float64, 20000)
 
 	for i := 0; i < 20000; i++ {
-		v := iter.Generate()
+		v := it.Generate()
 		pts[i].X = v[0]
 		pts[i].Y = v[1]
 		vecX[i] = v[0]

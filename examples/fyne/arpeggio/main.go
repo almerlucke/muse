@@ -51,10 +51,10 @@ func NewTestVoice(ampEnvSetting *adsrc.Setting) *TestVoice {
 	ampEnv := testVoice.AddModule(adsr.New(ampEnvSetting, adsrc.Duration, 1.0))
 	multiplier := testVoice.AddModule(functor.NewMult(2))
 	osc := testVoice.AddModule(phasor.New(140.0, 0.0))
-	shape := testVoice.AddModule(waveshaper.New(testVoice.shaper, 0, nil, nil))
+	shaper := testVoice.AddModule(waveshaper.New(testVoice.shaper, 0, nil, nil))
 
-	osc.Connect(0, shape, 0)
-	shape.Connect(0, multiplier, 0)
+	osc.Connect(0, shaper, 0)
+	shaper.Connect(0, multiplier, 0)
 	ampEnv.Connect(0, multiplier, 1)
 	multiplier.Connect(0, testVoice, 0)
 
@@ -202,10 +202,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					root.StartAudio()
+					_ = root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					root.StopAudio()
+					_ = root.StopAudio()
 				}),
 			),
 			container.NewHBox(

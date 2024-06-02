@@ -2,16 +2,18 @@ package classic
 
 import (
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/modules/filters"
+	"github.com/almerlucke/muse/modules/polyphony"
+	"github.com/almerlucke/muse/utils"
+
 	// shaping "github.com/almerlucke/muse/components/waveshaping"
 	adsrc "github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/muse/modules/adsr"
-	"github.com/almerlucke/muse/modules/filters/korg35"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/mixer"
 	"github.com/almerlucke/muse/modules/noise"
 	"github.com/almerlucke/muse/modules/osc"
 	"github.com/almerlucke/muse/modules/pan"
-	"github.com/almerlucke/muse/modules/polyphony"
 )
 
 type Voice struct {
@@ -22,7 +24,7 @@ type Voice struct {
 	Osc2             *osc.Osc
 	noiseGen         *noise.Noise
 	SourceMixer      *mixer.Mixer
-	filter           *korg35.LPF
+	filter           filters.Filter
 	panner           *pan.Pan
 	ampEnvSetting    *adsrc.Setting
 	filterEnvSetting *adsrc.Setting
@@ -31,7 +33,7 @@ type Voice struct {
 	filterFcMax      float64
 }
 
-func NewVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *Voice {
+func NewVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting, filter filters.Filter) *Voice {
 	osc1Mix := 0.6
 	osc2Mix := 0.35
 	noiseMix := 0.05
@@ -44,7 +46,7 @@ func NewVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *Vo
 		Osc2:             osc.New(100.0, 0.5),
 		noiseGen:         noise.New(1),
 		SourceMixer:      mixer.New(3),
-		filter:           korg35.New(1500.0, 0.7, 2.0),
+		filter:           filter,
 		panner:           pan.New(0.5),
 		ampEnvSetting:    ampEnvSetting,
 		filterEnvSetting: filterEnvSetting,
@@ -67,14 +69,14 @@ func NewVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *Vo
 	voice.AddModule(voice.panner)
 
 	filterScaler := voice.AddModule(functor.New(1, func(v []float64) float64 {
-		min := voice.filterFcMin
-		max := voice.filterFcMax
-		if min > max {
-			tmp := max
-			max = min
-			min = tmp
+		minFc := voice.filterFcMin
+		maxFc := voice.filterFcMax
+		if minFc > maxFc {
+			tmp := maxFc
+			maxFc = minFc
+			minFc = tmp
 		}
-		return v[0]*(max-min) + min
+		return v[0]*(maxFc-minFc) + minFc
 	}))
 
 	ampVCA := voice.AddModule(functor.NewMult(2))
@@ -92,16 +94,6 @@ func NewVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *Vo
 	voice.panner.Connect(1, voice, 1)
 
 	return voice
-}
-
-func New(numVoices int, ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *polyphony.Polyphony {
-	voices := make([]polyphony.Voice, numVoices)
-
-	for i := 0; i < numVoices; i++ {
-		voices[i] = NewVoice(ampEnvSetting, filterEnvSetting)
-	}
-
-	return polyphony.New(2, voices)
 }
 
 func (v *Voice) IsActive() bool {
@@ -299,4 +291,197 @@ func (v *Voice) handleMessage(content map[string]any) {
 func (v *Voice) ReceiveMessage(msg any) []*muse.Message {
 	v.handleMessage(msg.(map[string]any))
 	return nil
+}
+
+type Synth struct {
+	*polyphony.Polyphony
+}
+
+type Setting struct {
+	Osc1Mix         float64
+	Osc2Mix         float64
+	NoiseMix        float64
+	Osc1PulseWidth  float64
+	Osc2PulseWidth  float64
+	FilterResonance float64
+	Osc1SineMix     float64
+	Osc1TriMix      float64
+	Osc1SawMix      float64
+	Osc1PulseMix    float64
+	Osc2SineMix     float64
+	Osc2TriMix      float64
+	Osc2SawMix      float64
+	Osc2PulseMix    float64
+	Osc2Tuning      float64
+	Pan             float64
+	FilterFcMin     float64
+	FilterFcMax     float64
+}
+
+func DefaultSetting() Setting {
+	return Setting{
+		Osc1Mix:         0.5,
+		Osc2Mix:         0.5,
+		NoiseMix:        0.0,
+		Osc1PulseWidth:  0.4,
+		Osc2PulseWidth:  0.3,
+		FilterResonance: 0.6,
+		Osc1SineMix:     0.0,
+		Osc1TriMix:      0.0,
+		Osc1PulseMix:    1.0,
+		Osc1SawMix:      0.0,
+		Osc2SineMix:     0.0,
+		Osc2TriMix:      0.0,
+		Osc2PulseMix:    1.0,
+		Osc2SawMix:      0.0,
+		Osc2Tuning:      2.05,
+		Pan:             0.5,
+		FilterFcMin:     50.0,
+		FilterFcMax:     8000.0,
+	}
+}
+
+func New(numVoices int, ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting, filterFactory utils.Factory[filters.Filter], filterConfig *filters.FilterConfig) *Synth {
+	voices := make([]polyphony.Voice, numVoices)
+
+	for i := 0; i < numVoices; i++ {
+		voices[i] = NewVoice(ampEnvSetting, filterEnvSetting, filterFactory.New(filterConfig))
+	}
+
+	s := &Synth{
+		Polyphony: polyphony.New(2, voices),
+	}
+
+	s.SetSelf(s)
+
+	return s
+}
+
+func (s *Synth) Set(setting Setting) {
+	s.SetOsc1Mix(setting.Osc1Mix)
+	s.SetOsc2Mix(setting.Osc2Mix)
+	s.SetNoiseMix(setting.NoiseMix)
+	s.SetOsc1PulseWidth(setting.Osc1PulseWidth)
+	s.SetOsc2PulseWidth(setting.Osc2PulseWidth)
+	s.SetFilterResonance(setting.FilterResonance)
+	s.SetOsc1SineMix(setting.Osc1SineMix)
+	s.SetOsc1SawMix(setting.Osc1SawMix)
+	s.SetOsc1TriMix(setting.Osc1TriMix)
+	s.SetOsc1PulseMix(setting.Osc1PulseMix)
+	s.SetOsc2SineMix(setting.Osc2SineMix)
+	s.SetOsc2SawMix(setting.Osc2SawMix)
+	s.SetOsc2TriMix(setting.Osc2TriMix)
+	s.SetOsc2PulseMix(setting.Osc2PulseMix)
+	s.SetOsc2Tuning(setting.Osc2Tuning)
+	s.SetPan(setting.Pan)
+	s.SetFilterFcMin(setting.FilterFcMin)
+	s.SetFilterFcMax(setting.FilterFcMax)
+}
+
+func (s *Synth) SetOsc1Mix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc1Mix(mix)
+	})
+}
+
+func (s *Synth) SetOsc2Mix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc2Mix(mix)
+	})
+}
+
+func (s *Synth) SetNoiseMix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetNoiseMix(mix)
+	})
+}
+
+func (s *Synth) SetOsc1PulseWidth(pw float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc1PulseWidth(pw)
+	})
+}
+
+func (s *Synth) SetOsc2PulseWidth(pw float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc2PulseWidth(pw)
+	})
+}
+
+func (s *Synth) SetFilterResonance(res float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetFilterResonance(res)
+	})
+}
+
+func (s *Synth) SetOsc1SineMix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc1SineMix(mix)
+	})
+}
+
+func (s *Synth) SetOsc1SawMix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc1SawMix(mix)
+	})
+}
+
+func (s *Synth) SetOsc1PulseMix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc1PulseMix(mix)
+	})
+}
+
+func (s *Synth) SetOsc1TriMix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc1TriMix(mix)
+	})
+}
+
+func (s *Synth) SetOsc2SineMix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc2SineMix(mix)
+	})
+}
+
+func (s *Synth) SetOsc2SawMix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc2SawMix(mix)
+	})
+}
+
+func (s *Synth) SetOsc2PulseMix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc2PulseMix(mix)
+	})
+}
+
+func (s *Synth) SetOsc2TriMix(mix float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc2TriMix(mix)
+	})
+}
+
+func (s *Synth) SetOsc2Tuning(tuning float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetOsc2Tuning(tuning)
+	})
+}
+
+func (s *Synth) SetPan(pan float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetPan(pan)
+	})
+}
+
+func (s *Synth) SetFilterFcMin(min float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetFilterFcMin(min)
+	})
+}
+
+func (s *Synth) SetFilterFcMax(max float64) {
+	s.CallVoices(func(v polyphony.Voice) {
+		v.(*Voice).SetFilterFcMin(max)
+	})
 }

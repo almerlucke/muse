@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/almerlucke/muse/modules/filters/moog"
 	"log"
 	"strconv"
 	"strings"
@@ -15,7 +16,6 @@ import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/functor"
-	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/synths/classic"
 	"github.com/almerlucke/muse/ui/controls"
 	"github.com/almerlucke/muse/ui/theme"
@@ -33,7 +33,7 @@ type ClassicSynth struct {
 	controls         *controls.Group
 	ampEnvSetting    *adsr.Setting
 	filterEnvSetting *adsr.Setting
-	Poly             *polyphony.Polyphony
+	Synth            *classic.Synth
 	chorus1          *chorus.Chorus
 	chorus2          *chorus.Chorus
 }
@@ -55,19 +55,19 @@ func NewClassicSynth(bpm float64) *ClassicSynth {
 
 	synth.ampEnvSetting = ampEnvSetting
 	synth.filterEnvSetting = filterEnvSetting
-	synth.Poly = classic.New(20, ampEnvSetting, ampEnvSetting).Named("poly").(*polyphony.Polyphony)
+	synth.Synth = classic.New(20, ampEnvSetting, ampEnvSetting, &moog.Factory{}, moog.DefaultConfig()).Named("poly").(*classic.Synth)
 	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil)
 	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil)
 
-	synth.AddModule(synth.Poly)
+	synth.AddModule(synth.Synth)
 	synth.AddModule(synth.chorus1)
 	synth.AddModule(synth.chorus2)
 
 	synthAmp1 := synth.AddModule(functor.NewAmp(0.85))
 	synthAmp2 := synth.AddModule(functor.NewAmp(0.85))
 
-	synth.Poly.Connect(0, synthAmp1, 0)
-	synth.Poly.Connect(1, synthAmp2, 0)
+	synth.Synth.Connect(0, synthAmp1, 0)
+	synth.Synth.Connect(1, synthAmp2, 0)
 	synthAmp1.Connect(0, synth.chorus1, 0)
 	synthAmp2.Connect(0, synth.chorus2, 0)
 	synth.chorus1.Connect(0, synth, 0)
@@ -142,7 +142,7 @@ func (cs *ClassicSynth) ControlChanged(ctrl controls.Control, oldValue any, newV
 
 	if route == "voice" {
 		// If voice control send through to polyphony module (which will pass message to voices)
-		cs.Poly.ReceiveMessage(map[string]any{
+		cs.Synth.ReceiveMessage(map[string]any{
 			"command":     "voice",
 			components[1]: newValue,
 		})
@@ -270,14 +270,14 @@ func main() {
 		switch v := msg.(type) {
 		case NoteOn:
 			if v.Velocity() == 0 {
-				synth.Poly.ReceiveMessage(map[string]any{
+				synth.Synth.ReceiveMessage(map[string]any{
 					"command": "trigger",
 					"noteOff": fmt.Sprintf("%d", v.Key()),
 				})
 			} else {
 				velocity := float64(v.Velocity()) / 127.0
 				log.Printf("velocity %v", velocity)
-				synth.Poly.ReceiveMessage(map[string]any{
+				synth.Synth.ReceiveMessage(map[string]any{
 					"command":   "trigger",
 					"noteOn":    fmt.Sprintf("%d", v.Key()),
 					"amplitude": velocity,
@@ -287,7 +287,7 @@ func main() {
 				})
 			}
 		case NoteOff:
-			synth.Poly.ReceiveMessage(map[string]any{
+			synth.Synth.ReceiveMessage(map[string]any{
 				"command": "trigger",
 				"noteOff": fmt.Sprintf("%d", v.Key()),
 			})
@@ -323,10 +323,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					root.StartAudio()
+					_ = root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					root.StopAudio()
+					_ = root.StopAudio()
 				}),
 			),
 			container.NewHScroll(synth.controls.UI()),

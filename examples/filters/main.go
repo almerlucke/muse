@@ -11,14 +11,14 @@ import (
 func main() {
 	root := muse.New(1)
 
-	noise := root.AddModule(noise.New(0))
+	noiz := root.AddModule(noise.New(0))
 	filter := root.AddModule(rbj.New(rbjc.Lowpass, 400.0, 1.8))
 
-	lfo := root.AddControl(lfo.NewBasicControlLFO(0.1, 50.0, 4000.0))
+	lf := root.AddControl(lfo.NewBasicControlLFO(0.1, 50.0, 4000.0))
 
-	lfo.CtrlConnect(0, filter, 0)
-	noise.CtrlConnect(0, filter, 0)
+	lf.CtrlConnect(0, filter, 0)
+	noiz.CtrlConnect(0, filter, 0)
 	filter.CtrlConnect(0, root, 0)
 
-	root.RenderAudio()
+	_ = root.RenderAudio()
 }

@@ -171,7 +171,7 @@ func main() {
 	// milliPerBeat := 60000.0 / bpm
 
 	poly := root.AddModule(polyphony.New(1, voices).Named("polyphony"))
-	allpass := root.AddModule(allpass.New(50, 50, 0.3))
+	allp := root.AddModule(allpass.New(50, 50, 0.3))
 
 	sineTable := lookup.NewNormalizedSineTable(512)
 
@@ -288,11 +288,11 @@ func main() {
 	vocalPlayer.Connect(0, mult, 0)
 
 	poly.Connect(0, chor1, 0)
-	chor1.Connect(0, allpass, 0)
+	chor1.Connect(0, allp, 0)
 	chor1.Connect(0, root, 0)
 	mult.Connect(0, root, 0)
 	mult.Connect(0, root, 1)
-	allpass.Connect(0, root, 1)
+	allp.Connect(0, root, 1)
 
 	err := root.StartRecording("/home/almer/Documents/thisisfyne", writer.AIFC, 44100.0, true)
 	if err != nil {
@@ -322,10 +322,10 @@ func main() {
 			container.NewHBox(
 				widget.NewButton("Start", func() {
 					// env.SynthesizeToFile("/Users/almerlucke/Desktop/waterFlow.aiff", 240.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
-					root.StartAudio()
+					_ = root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					root.StopAudio()
+					_ = root.StopAudio()
 				}),
 				// widget.NewButton("Notes Off", func() {
 				// 	poly.(*polyphony.Polyphony).AllNotesOff()

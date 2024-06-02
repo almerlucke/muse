@@ -12,6 +12,7 @@ import (
 	"github.com/almerlucke/genny/repeat"
 	"github.com/almerlucke/genny/sequence"
 	"github.com/almerlucke/genny/template"
+	"github.com/almerlucke/muse/modules/filters/rbj"
 	"github.com/almerlucke/sndfile"
 
 	"math/rand"
@@ -27,7 +28,6 @@ import (
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/functor"
-	"github.com/almerlucke/muse/modules/polyphony"
 	"github.com/almerlucke/muse/synths/classic"
 	"github.com/almerlucke/muse/synths/drums"
 	"github.com/almerlucke/muse/ui/controls"
@@ -39,7 +39,7 @@ type ClassicSynth struct {
 	controls         *controls.Group
 	ampEnvSetting    *adsr.Setting
 	filterEnvSetting *adsr.Setting
-	poly             *polyphony.Polyphony
+	synth            *classic.Synth
 	chorus1          *chorus.Chorus
 	chorus2          *chorus.Chorus
 }
@@ -61,9 +61,9 @@ func NewClassicSynth(bpm float64) *ClassicSynth {
 
 	synth.ampEnvSetting = ampEnvSetting
 	synth.filterEnvSetting = filterEnvSetting
-	synth.poly = classic.New(20, ampEnvSetting, filterEnvSetting).Named("poly").AddTo(synth).(*polyphony.Polyphony)
-	synthAmp1 := functor.NewAmp(0.85).AddTo(synth).In(synth.poly)
-	synthAmp2 := functor.NewAmp(0.85).AddTo(synth).In(synth.poly, 1)
+	synth.synth = classic.New(20, ampEnvSetting, filterEnvSetting, &rbj.Factory{}, rbj.DefaultConfig()).Named("poly").AddTo(synth).(*classic.Synth)
+	synthAmp1 := functor.NewAmp(0.85).AddTo(synth).In(synth.synth)
+	synthAmp2 := functor.NewAmp(0.85).AddTo(synth).In(synth.synth, 1)
 	allpass1 := allpass.New(2500.0, 60000/bpm*1.666, 0.5).AddTo(synth).In(synthAmp1)
 	allpass2 := allpass.New(2500.0, 60000/bpm*1.75, 0.4).AddTo(synth).In(synthAmp2)
 	allpassAmp1 := functor.NewAmp(0.5).AddTo(synth).In(allpass1)
@@ -129,7 +129,7 @@ func (cs *ClassicSynth) ControlChanged(ctrl controls.Control, oldValue any, newV
 
 	if components[0] == "voice" {
 		// If voice control send through to polyphony module (which will pass message to voices)
-		cs.poly.ReceiveMessage(map[string]any{
+		cs.synth.ReceiveMessage(map[string]any{
 			"command":     "voice",
 			components[1]: newValue,
 		})
@@ -324,7 +324,7 @@ func main() {
 	soundBank["808_2"], _ = sndfile.NewMipMapSoundFile("resources/drums/808/Cymatics - Humble 808 3 - F.wav", 4)
 	soundBank["808_3"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Impact FX 2.wav", 4)
 	soundBank["808_4"], _ = sndfile.NewMipMapSoundFile("resources/drums/fx/Cymatics - Orchid Reverse Crash 2.wav", 4)
-	soundBank["shaker"], _ = sndfile.NewMipMapSoundFile("resources/drums/shots/Cymatics - Orchid Shaker - Drew.wav", 4)
+	soundBank["shaker"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Orchid Shaker - Drew.wav", 4)
 
 	drumMachine := drums.NewDrums(soundBank, 20).Named("drums").AddTo(root)
 
@@ -332,7 +332,7 @@ func main() {
 	addDrumTrack(root, "drums", []string{"kick"}, int(bpm), 8, 0.875, 1.125, 1.0, kickRhythm())
 	addDrumTrack(root, "drums", []string{"snare"}, int(bpm), 8, 1.0, 1.0, 0.7, snareRhythm())
 	addDrumTrack(root, "drums", []string{"808_1", "808_2", "808_3", "808_4"}, int(bpm), 2, 1.0, 1.0, 0.3, bassRhythm())
-	addDrumTrack(root, "drums", []string{"shaker"}, int(bpm), 2, 1.0, 1.0, 1.0, kickRhythm())
+	//addDrumTrack(root, "drums", []string{"shaker"}, int(bpm), 2, 1.0, 1.0, 1.0, kickRhythm())
 
 	synth := NewClassicSynth(bpm).AddTo(root).(*ClassicSynth)
 
@@ -375,7 +375,7 @@ func main() {
 		"voice.osc2PulseWidth": template.NewParameter("val", nil),
 	}))
 
-	synth.AddMessenger(lfo.NewBasicLFO(0.085, 0.8, 0.25, []string{"synth"}, "val", template.Template{
+	synth.AddMessenger(lfo.NewBasicLFO(0.085, 0.9, 0.15, []string{"synth"}, "val", template.Template{
 		"voice.filterResonance": template.NewParameter("val", nil),
 	}))
 

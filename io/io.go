@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/almerlucke/muse/buffer"
 	"github.com/almerlucke/sndfile"
+	"os"
+	"path/filepath"
 )
 
 type WaveTableSoundFile struct {
@@ -42,4 +44,41 @@ func NewWaveTableSoundFile(filePath string, tableSize int) (*WaveTableSoundFile,
 	}
 
 	return wsf, nil
+}
+
+func LoadSoundBankFromDirectory(root string, bank sndfile.SoundBank) error {
+	var parentCnt = map[string]int{}
+
+	err := filepath.Walk(root, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			dir := filepath.Dir(filePath)
+			parentDir := filepath.Base(dir)
+			cnt, ok := parentCnt[parentDir]
+			if ok {
+				cnt = cnt + 1
+				parentCnt[parentDir] = cnt
+			} else {
+				cnt = 1
+				parentCnt[parentDir] = 1
+			}
+			sf, err := sndfile.NewMipMapSoundFile(filePath, 4)
+			if err != nil {
+				return err
+			}
+
+			bank[fmt.Sprintf("%s%d", parentDir, cnt)] = sf
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

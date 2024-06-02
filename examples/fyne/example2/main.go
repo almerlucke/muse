@@ -135,7 +135,7 @@ func main() {
 	}
 
 	poly := polyphony.New(1, voices).Named("polyphony").AddTo(root)
-	allpass := root.AddModule(allpass.New(50, 50, 0.3))
+	allp := root.AddModule(allpass.New(50, 50, 0.3))
 
 	sineTable := lookup.NewNormalizedSineTable(512)
 
@@ -152,9 +152,9 @@ func main() {
 	root.AddMessenger(lfo.NewLFO(0.23, []*lfo.Target{targetSuperSaw}).MsgrNamed("lfo1"))
 	root.AddMessenger(lfo.NewLFO(0.13, []*lfo.Target{targetFilter}).MsgrNamed("lfo2"))
 
-	poly.Connect(0, allpass, 0)
+	poly.Connect(0, allp, 0)
 	poly.Connect(0, root, 0)
-	allpass.Connect(0, root, 1)
+	allp.Connect(0, root, 1)
 
 	err := root.InitializeAudio()
 	if err != nil {
@@ -259,10 +259,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					root.StartAudio()
+					_ = root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					root.StopAudio()
+					_ = root.StopAudio()
 				}),
 				widget.NewButton("Notes Off", func() {
 					poly.(*polyphony.Polyphony).AllNotesOff()

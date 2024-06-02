@@ -82,13 +82,13 @@ type SFSource struct {
 func NewSource(sr float64) *SFSource {
 	f := func(x float64) float64 { return x * x } // Aronson adjusted
 	aron := chaos.NewAronsonWithFunc(1.698, f)
-	iter := iter.New([]float64{0.4, 0.4}, aron)
-	mirror := mirror.New(-1.0, 1.0)
+	it := iter.New([]float64{0.4, 0.4}, aron)
+	mir := mirror.New(-1.0, 1.0)
 	uni := linear.NewUnipolar()
 	scale := linear.New(1400.0, 50.0)
-	series := series.New(mirror, uni, scale)
+	ser := series.New(mir, uni, scale)
 	wrapper := interp.New(
-		shape.New(iter, series),
+		shape.New(it, ser),
 		interp.Linear,
 		1.0/250.0,
 	)

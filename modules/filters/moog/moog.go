@@ -1,6 +1,7 @@
 package moog
 
 import (
+	"github.com/almerlucke/muse/modules/filters"
 	"math"
 
 	"github.com/almerlucke/muse"
@@ -30,6 +31,17 @@ type Moog struct {
 	x     float64
 	g     float64
 	drive float64
+}
+
+type Factory struct{}
+
+func (f *Factory) New(cfg any) filters.Filter {
+	fCfg := cfg.(*filters.FilterConfig)
+	return New(fCfg.Frequency, fCfg.Resonance, fCfg.Drive)
+}
+
+func DefaultConfig() *filters.FilterConfig {
+	return filters.NewFilterConfig(1500.0, 0.3, 1.0, 0)
 }
 
 func New(fc float64, res float64, drive float64) *Moog {
@@ -71,6 +83,10 @@ func (m *Moog) Drive() float64 {
 func (m *Moog) SetDrive(drive float64) {
 	m.drive = drive
 }
+
+func (m *Moog) Type() int { return 0 }
+
+func (m *Moog) SetType(_ int) {}
 
 func (m *Moog) ReceiveControlValue(value any, index int) {
 	switch index {

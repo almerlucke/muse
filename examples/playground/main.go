@@ -19,7 +19,7 @@ func main() {
 	sf, _ := sndfile.NewSoundFile("resources/sounds/elisa.wav")
 
 	pl := player.New(sf, 1.0, 1.0, false).AddTo(root)
-	fl := flanger.New(0.3, 0.9, 0.3, 0.7, false).AddTo(root).In(pl)
+	fl := flanger.New(0.3, 0.9, 0.7, false).AddTo(root).In(pl)
 	fllfo := lfo2.NewBasicControlLFO(0.4, 0.1, 0.9).CtrlAddTo(root)
 
 	fl.CtrlIn(fllfo)

@@ -121,12 +121,12 @@ func (lfo *LFO) ReceiveControlValue(value any, index int) {
 			lfo.SetSpeed(speed)
 		}
 	case 1: // min
-		if min, ok := value.(float64); ok {
-			lfo.SetMin(min)
+		if mi, ok := value.(float64); ok {
+			lfo.SetMin(mi)
 		}
 	case 2: // max
-		if max, ok := value.(float64); ok {
-			lfo.SetMax(max)
+		if ma, ok := value.(float64); ok {
+			lfo.SetMax(ma)
 		}
 	case 3: // shape index
 		lfo.SetShapeIndex(value)
@@ -140,12 +140,12 @@ func (lfo *LFO) ReceiveMessage(msg any) []*muse.Message {
 		lfo.SetSpeed(speed.(float64))
 	}
 
-	if min, ok := content["min"]; ok {
-		lfo.SetMin(min.(float64))
+	if mi, ok := content["min"]; ok {
+		lfo.SetMin(mi.(float64))
 	}
 
-	if max, ok := content["max"]; ok {
-		lfo.SetMax(max.(float64))
+	if ma, ok := content["max"]; ok {
+		lfo.SetMax(ma.(float64))
 	}
 
 	if shapeIndex, ok := content["shapeIndex"]; ok {

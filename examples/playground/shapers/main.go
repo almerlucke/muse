@@ -114,7 +114,7 @@ func main() {
 
 	root.In(osa, osa, 1)
 
-	root.RenderToSoundFile("/home/almer/Documents/shapers", writer.AIFC, 40, 44100.0, true)
+	_ = root.RenderToSoundFile("/home/almer/Documents/shapers", writer.AIFC, 40, 44100.0, true)
 
 	// root.RenderToSoundFile("/Users/almerlucke/Desktop/wave_interpol.aifc", 40.0, root.Config.SampleRate, true)
 	// _ = root.RenderAudio()

@@ -3,6 +3,7 @@ package rbj
 import (
 	"github.com/almerlucke/muse"
 	rbjc "github.com/almerlucke/muse/components/filters/rbj"
+	"github.com/almerlucke/muse/modules/filters"
 )
 
 type Filter struct {
@@ -10,6 +11,17 @@ type Filter struct {
 	filter *rbjc.Filter
 	fc     float64
 	q      float64
+}
+
+type Factory struct{}
+
+func (f *Factory) New(cfg any) filters.Filter {
+	fCfg := cfg.(*filters.FilterConfig)
+	return New(rbjc.FilterType(fCfg.Type), fCfg.Frequency, fCfg.Resonance)
+}
+
+func DefaultConfig() *filters.FilterConfig {
+	return filters.NewFilterConfig(1500.0, 0.4, 0.0, 0)
 }
 
 func New(filterType rbjc.FilterType, fc float64, q float64) *Filter {
@@ -43,13 +55,17 @@ func (r *Filter) SetFrequency(fc float64) {
 	r.filter.Update(r.Config.SampleRate)
 }
 
-func (r *Filter) FilterType() rbjc.FilterType {
-	return r.filter.FilterType
+func (r *Filter) Drive() float64 { return 0 }
+
+func (r *Filter) SetDrive(_ float64) {}
+
+func (r *Filter) SetType(t int) {
+	r.filter.FilterType = rbjc.FilterType(t)
+	r.filter.Update(r.Config.SampleRate)
 }
 
-func (r *Filter) SetFilterType(t rbjc.FilterType) {
-	r.filter.FilterType = t
-	r.filter.Update(r.Config.SampleRate)
+func (r *Filter) Type() int {
+	return int(r.filter.FilterType)
 }
 
 func (r *Filter) ReceiveControlValue(value any, index int) {
@@ -60,9 +76,9 @@ func (r *Filter) ReceiveControlValue(value any, index int) {
 		r.SetResonance(value.(float64))
 	case 2: // Filter Mode
 		if fltVal, ok := value.(float64); ok {
-			r.SetFilterType(rbjc.FilterType(fltVal))
+			r.SetType(int(fltVal))
 		} else if intVal, ok := value.(int); ok {
-			r.SetFilterType(rbjc.FilterType(intVal))
+			r.SetType(intVal)
 		}
 	}
 }
@@ -78,11 +94,11 @@ func (r *Filter) ReceiveMessage(msg any) []*muse.Message {
 		r.SetResonance(res.(float64))
 	}
 
-	if t, ok := content["filterType"]; ok {
+	if t, ok := content["type"]; ok {
 		if fltVal, ok := t.(float64); ok {
-			r.SetFilterType(rbjc.FilterType(fltVal))
+			r.SetType(int(fltVal))
 		} else if intVal, ok := t.(int); ok {
-			r.SetFilterType(rbjc.FilterType(intVal))
+			r.SetType(intVal)
 		}
 	}
 

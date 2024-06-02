@@ -3,6 +3,7 @@ package butterworth
 import (
 	"github.com/almerlucke/muse"
 	butterworthc "github.com/almerlucke/muse/components/filters/butterworth"
+	"github.com/almerlucke/muse/modules/filters"
 )
 
 type Butterworth struct {
@@ -10,6 +11,17 @@ type Butterworth struct {
 	filter butterworthc.Butterworth
 	fc     float64
 	q      float64
+}
+
+type Factory struct{}
+
+func (f *Factory) New(cfg any) filters.Filter {
+	fCfg := cfg.(*filters.FilterConfig)
+	return New(fCfg.Frequency, fCfg.Resonance)
+}
+
+func DefaultConfig() *filters.FilterConfig {
+	return filters.NewFilterConfig(1500.0, 0.7, 0.0, 0)
 }
 
 func New(fc float64, q float64) *Butterworth {
@@ -43,6 +55,14 @@ func (b *Butterworth) SetResonance(q float64) {
 	b.q = q
 	b.filter.Set(b.fc, b.q, b.Config.SampleRate)
 }
+
+func (b *Butterworth) Drive() float64 { return 0.0 }
+
+func (b *Butterworth) SetDrive(_ float64) {}
+
+func (b *Butterworth) Type() int { return 0 }
+
+func (b *Butterworth) SetType(_ int) {}
 
 func (b *Butterworth) ReceiveControlValue(value any, index int) {
 	switch index {

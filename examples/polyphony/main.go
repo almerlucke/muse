@@ -44,15 +44,15 @@ func NewTestVoice() *TestVoice {
 
 	adsrEnv := adsr.New(setting, adsrc.Duration, 1.0).AddTo(testVoice)
 	osc := phasor.New(140.0, 0.0).AddTo(testVoice)
-	shape := waveshaper.New(supersaw.New(1.5, 0.25, 0.88), 1, paramMapper, nil).
+	shaper := waveshaper.New(supersaw.New(1.5, 0.25, 0.88), 1, paramMapper, nil).
 		AddTo(testVoice).In(osc)
-	mult := modules.Mult(shape, adsrEnv).AddTo(testVoice)
+	mult := modules.Mult(shaper, adsrEnv).AddTo(testVoice)
 	filter := moog.New(1700.0, 0.48, 1.0).AddTo(testVoice).In(mult)
 
 	testVoice.In(filter)
 
 	testVoice.adsrEnv = adsrEnv.(*adsr.ADSR)
-	testVoice.Shaper = shape.(*waveshaper.WaveShaper)
+	testVoice.Shaper = shaper.(*waveshaper.WaveShaper)
 	testVoice.Filter = filter.(*moog.Moog)
 	testVoice.phasor = osc.(*phasor.Phasor)
 
@@ -119,8 +119,8 @@ func main() {
 	// connect external voice inputs to voice player so the external modules
 	// are always synthesized even if no voice is active at the moment
 	poly := polyphony.New(1, voices).Named("polyphony").AddTo(root).In(superSawDrive, filterCutOff, 0, 0)
-	allpass := allpass.New(milliPerBeat*3, milliPerBeat*3, 0.4).AddTo(root).In(poly)
-	allpassAmp := modules.Scale(allpass, 0, 0.5, 0.0).AddTo(root)
+	allp := allpass.New(milliPerBeat*3, milliPerBeat*3, 0.4).AddTo(root).In(poly)
+	allpassAmp := modules.Scale(allp, 0, 0.5, 0.0).AddTo(root)
 	reverb := freeverb.New().AddTo(root).In(poly, allpassAmp).(*freeverb.FreeVerb)
 
 	reverb.SetDamp(0.1)

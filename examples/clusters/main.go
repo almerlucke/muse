@@ -176,5 +176,5 @@ func main() {
 
 	// sort.Sort(sort.Float64Slice(v))
 
-	plot.Points(points, 500, 300, "/Users/almerlucke/Desktop/exponential.png")
+	_ = plot.Points(points, 500, 300, "/Users/almerlucke/Desktop/exponential.png")
 }

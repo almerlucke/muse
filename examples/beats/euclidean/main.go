@@ -15,10 +15,10 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing/euclidean"
 	"github.com/almerlucke/muse/modules/effects/flanger"
 	"github.com/almerlucke/muse/modules/effects/pingpong"
+	"github.com/almerlucke/muse/modules/freeverb"
 	"github.com/almerlucke/muse/synths/drums"
 	"github.com/almerlucke/muse/utils/timing"
 	"github.com/almerlucke/sndfile"
-	"github.com/almerlucke/sndfile/writer"
 	"github.com/google/uuid"
 	"log"
 	"math/rand"
@@ -52,8 +52,8 @@ func main() {
 
 	soundBank["hihat1"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Orchid Hihat - Flam.wav", 4)
 	soundBank["hihat2"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Orchid Ride - Mysterious.wav", 4)
-	soundBank["kick1"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Dancehall (A#).wav", 4)
-	soundBank["kick2"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Tight (G).wav", 4)
+	soundBank["kick1"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/BD_Job_1_SP.wav", 4)
+	soundBank["kick2"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Kick_13_479.wav", 4)
 	soundBank["snare1"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Orchid Snap - Single.wav", 4)
 	soundBank["snare2"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Orchid Snap - Cream.wav", 4)
 	soundBank["fx1"], _ = sndfile.NewMipMapSoundFile("resources/drums/percussion/Cymatics - Orchid Percussion - Wet 1 (C).wav", 4)
@@ -89,8 +89,14 @@ func main() {
 	flangLfo := lfo.NewBasicControlLFO(0.05, 0.2, 0.4).CtrlAddTo(root)
 	flang.CtrlIn(flangLfo)
 	pp := pingpong.New(bpmToMilli*2, bpmToMilli*0.75, 0.2, 0.05, true).AddTo(root).In(flang, flang, 1)
+	fv := freeverb.New().AddTo(root).In(pp, pp, 1).(*freeverb.FreeVerb)
 
-	root.In(pp, pp, 1)
+	fv.SetDamp(0.7)
+	fv.SetRoomSize(0.9)
+	fv.SetWet(0.02)
+	fv.SetDry(0.3)
+
+	root.In(fv, fv, 1)
 
 	sched := scheduler.New()
 	sched.CtrlAddTo(root)
@@ -153,6 +159,6 @@ func main() {
 	//	snareRhythm.Set(17, 7, 1)
 	//})
 
-	// _ = root.RenderAudio()
-	_ = root.RenderToSoundFile("/home/almer/Music/BirdsDrumsSlow", writer.AIFC, 240, 44100.0, true)
+	_ = root.RenderAudio()
+	// _ = root.RenderToSoundFile("/home/almer/Music/BirdsDrumsSlow", writer.AIFC, 240, 44100.0, true)
 }

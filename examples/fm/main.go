@@ -115,7 +115,7 @@ func main() {
 		"level":    1.0,
 	}).MsgrNamed("notes"))
 
-	root.AddMessenger(timer.NewTimer(250.0, []string{"notes"}))
+	root.AddMessenger(timer.New(250.0, []string{"notes"}))
 
 	err := root.InitializeAudio()
 	if err != nil {
@@ -140,10 +140,10 @@ func main() {
 			container.NewHBox(
 				widget.NewButton("Start", func() {
 					// env.SynthesizeToFile("/Users/almerlucke/Desktop/waterFlow.aiff", 240.0, env.Config.SampleRate, sndfile.SF_FORMAT_AIFF)
-					root.StartAudio()
+					_ = root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					root.StopAudio()
+					_ = root.StopAudio()
 				}),
 				// widget.NewButton("Notes Off", func() {
 				// 	poly.(*polyphony.Polyphony).AllNotesOff()

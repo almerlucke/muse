@@ -59,25 +59,25 @@ func (sc *Slider) AddListener(listener Listener) {
 
 func (sc *Slider) UI() fyne.CanvasObject {
 	floatValueLabelBinding := binding.NewString()
-	floatValueLabelBinding.Set(fmt.Sprintf("%.2f", sc.value))
+	_ = floatValueLabelBinding.Set(fmt.Sprintf("%.2f", sc.value))
 
 	floatValueLabel := widget.NewLabelWithData(floatValueLabelBinding)
 	floatValueLabel.Alignment = fyne.TextAlignTrailing
 
 	valueBinding := binding.NewFloat()
-	valueBinding.Set(sc.value)
+	_ = valueBinding.Set(sc.value)
 
 	valueBinding.AddListener(binding.NewDataListener(func() {
 		v, err := valueBinding.Get()
 		if err == nil {
-			floatValueLabelBinding.Set(fmt.Sprintf("%.2f", v))
+			_ = floatValueLabelBinding.Set(fmt.Sprintf("%.2f", v))
 			sc.Set(v, valueBinding)
 		}
 	}))
 
 	sc.AddListener(NewChangeCallback(func(ctrl Control, oldValue any, newValue any, setter any) {
 		if setter != valueBinding {
-			valueBinding.Set(newValue.(float64))
+			_ = valueBinding.Set(newValue.(float64))
 		}
 	}))
 

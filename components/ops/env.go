@@ -188,16 +188,16 @@ func (env *Envelope) Tick() float64 {
 }
 
 func rateToSeconds(rate float64, direction envelopeDirection, curve float64) float64 {
-	var min float64
-	var max float64
+	var mi float64
+	var ma float64
 
 	if direction == cEnvelopeRising {
-		min = cRateRisingDurationMin
-		max = cRateRisingDurationMax
+		mi = cRateRisingDurationMin
+		ma = cRateRisingDurationMax
 	} else {
-		min = cRateFallingDurationMin
-		max = cRateFallingDurationMax
+		mi = cRateFallingDurationMin
+		ma = cRateFallingDurationMax
 	}
 
-	return min + (max-min)*math.Pow(1.0-rate, curve)
+	return mi + (ma-mi)*math.Pow(1.0-rate, curve)
 }

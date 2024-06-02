@@ -109,6 +109,42 @@ func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
+func (p *Polyphony) CallVoices(f func(Voice)) {
+	// Active voices first
+	elem := p.activePool.First()
+	end := p.activePool.End()
+	for elem != end {
+		f(elem.Value)
+		elem = elem.Next
+	}
+
+	// Free voices as well
+	elem = p.freePool.First()
+	end = p.freePool.End()
+	for elem != end {
+		f(elem.Value)
+		elem = elem.Next
+	}
+}
+
+func (p *Polyphony) CallActiveVoices(f func(Voice)) {
+	elem := p.activePool.First()
+	end := p.activePool.End()
+	for elem != end {
+		f(elem.Value)
+		elem = elem.Next
+	}
+}
+
+func (p *Polyphony) CallInactiveVoices(f func(Voice)) {
+	elem := p.freePool.First()
+	end := p.freePool.End()
+	for elem != end {
+		f(elem.Value)
+		elem = elem.Next
+	}
+}
+
 func (p *Polyphony) Synthesize() bool {
 	if !p.BaseModule.Synthesize() {
 		return false

@@ -45,13 +45,13 @@ type ChaosVoice struct {
 
 func NewChaosVoice(ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Setting) *ChaosVoice {
 	verhulst := chaos.NewVerhulstWithFunc(3.6951, chaos.Iter1a)
-	iter := iter.New([]float64{0.1231}, verhulst)
-	interpol := interp.New(iter, interp.Cubic, 1.0/120.0)
+	it := iter.New([]float64{0.1231}, verhulst)
+	interpol := interp.New(it, interp.Cubic, 1.0/120.0)
 
 	voice := &ChaosVoice{
 		BasePatch:        muse.NewPatch(0, 2),
 		verhulst:         verhulst,
-		iter:             iter,
+		iter:             it,
 		interpol:         interpol,
 		ampEnvSetting:    ampEnvSetting,
 		filterEnvSetting: filterEnvSetting,
@@ -140,7 +140,7 @@ func main() {
 	}
 
 	poly := polyphony.New(2, voices).Named("chaosSynth").AddTo(root)
-	tim := root.AddControl(timer.NewControlTimer(500.0))
+	tim := root.AddControl(timer.NewControl(500.0))
 	randomizeTimer := gen.New[float64](function.New(func() float64 {
 		return randMinMax(100, 2500.0)
 	}), false)

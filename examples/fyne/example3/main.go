@@ -144,7 +144,7 @@ func main() {
 	milliPerBeat := 60000.0 / float64(bpm)
 
 	poly := root.AddModule(polyphony.New(1, voices).Named("polyphony"))
-	allpass := root.AddModule(allpass.New(milliPerBeat*1.5, milliPerBeat*1.5, 0.3))
+	allp := root.AddModule(allpass.New(milliPerBeat*1.5, milliPerBeat*1.5, 0.3))
 
 	sineTable := lookup.NewNormalizedSineTable(512)
 
@@ -182,9 +182,9 @@ func main() {
 		[]string{"template1"},
 	))
 
-	poly.Connect(0, allpass, 0)
+	poly.Connect(0, allp, 0)
 	poly.Connect(0, root, 0)
-	allpass.Connect(0, root, 1)
+	allp.Connect(0, root, 1)
 
 	err := root.InitializeAudio()
 	if err != nil {
@@ -289,10 +289,10 @@ func main() {
 		container.NewVBox(
 			container.NewHBox(
 				widget.NewButton("Start", func() {
-					root.StartAudio()
+					_ = root.StartAudio()
 				}),
 				widget.NewButton("Stop", func() {
-					root.StopAudio()
+					_ = root.StopAudio()
 				}),
 				// widget.NewButton("Notes Off", func() {
 				// 	poly.(*polyphony.Polyphony).AllNotesOff()

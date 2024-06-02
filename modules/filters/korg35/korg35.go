@@ -1,6 +1,7 @@
 package korg35
 
 import (
+	"github.com/almerlucke/muse/modules/filters"
 	"math"
 
 	"github.com/almerlucke/muse"
@@ -93,6 +94,17 @@ type LPF struct {
 	nlp  bool
 }
 
+type Factory struct{}
+
+func (f *Factory) New(cfg any) filters.Filter {
+	fCfg := cfg.(*filters.FilterConfig)
+	return New(fCfg.Frequency, fCfg.Resonance, fCfg.Drive)
+}
+
+func DefaultConfig() *filters.FilterConfig {
+	return filters.NewFilterConfig(1500.0, 0.7, 2.0, 0)
+}
+
 func New(fc float64, res float64, sat float64) *LPF {
 	sr := muse.SampleRate()
 	korg := &LPF{
@@ -150,13 +162,17 @@ func (klpf *LPF) SetResonance(res float64) {
 	klpf.update()
 }
 
-func (klpf *LPF) Saturation() float64 {
+func (klpf *LPF) Drive() float64 {
 	return klpf.sat
 }
 
-func (klpf *LPF) SetSaturation(sat float64) {
-	klpf.sat = sat
+func (klpf *LPF) SetDrive(drive float64) {
+	klpf.sat = drive
 }
+
+func (klpf *LPF) Type() int { return 0 }
+
+func (klpf *LPF) SetType(_ int) {}
 
 func (klpf *LPF) ReceiveControlValue(value any, index int) {
 	switch index {
@@ -165,7 +181,7 @@ func (klpf *LPF) ReceiveControlValue(value any, index int) {
 	case 1: // Resonance (0.01 - 2.0)
 		klpf.SetResonance(value.(float64))
 	case 2: // Saturation
-		klpf.SetSaturation(value.(float64))
+		klpf.SetDrive(value.(float64))
 	}
 }
 
@@ -180,8 +196,8 @@ func (klpf *LPF) ReceiveMessage(msg any) []*muse.Message {
 		klpf.SetResonance(res.(float64))
 	}
 
-	if sat, ok := content["saturation"]; ok {
-		klpf.SetSaturation(sat.(float64))
+	if sat, ok := content["drive"]; ok {
+		klpf.SetDrive(sat.(float64))
 	}
 
 	return nil
@@ -205,7 +221,7 @@ func (klpf *LPF) Synthesize() bool {
 		}
 
 		if klpf.Inputs[3].IsConnected() {
-			klpf.SetSaturation(klpf.Inputs[3].Buffer[i])
+			klpf.SetDrive(klpf.Inputs[3].Buffer[i])
 		}
 
 		y1 := klpf.lpf1.lpTick(in[i])
