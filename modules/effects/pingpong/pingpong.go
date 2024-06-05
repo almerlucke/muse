@@ -18,20 +18,15 @@ type PingPong struct {
 	fb      float64
 }
 
-func New(delayLength float64, read float64, feedback float64, mix float64, stereo bool) *PingPong {
-	numInputs := 1
-	if stereo {
-		numInputs = 2
-	}
-
-	delayLengthSamps := int(math.Ceil(timing.MilliToSampsf(delayLength, muse.CurrentConfiguration().SampleRate)))
+func New(delayLengthMs float64, readLocMs float64, feedback float64, mix float64) *PingPong {
+	delayLengthSamps := int(math.Ceil(timing.MilliToSampsf(delayLengthMs, muse.CurrentConfiguration().SampleRate)))
 
 	pp := &PingPong{
-		BaseModule: muse.NewBaseModule(numInputs, 2),
+		BaseModule: muse.NewBaseModule(2, 2),
 		left:       delay.New(delayLengthSamps),
 		right:      delay.New(delayLengthSamps),
-		read:       read,
-		newRead:    read,
+		read:       readLocMs,
+		newRead:    readLocMs,
 		mix:        mix,
 		fb:         feedback,
 	}
@@ -119,7 +114,7 @@ func (pp *PingPong) Synthesize() bool {
 		return false
 	}
 
-	if len(pp.Inputs) == 2 {
+	if pp.Inputs[1].IsConnected() {
 		pp.synthesizeStereo()
 		return true
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/messengers/triggers/timer"
 	"github.com/almerlucke/muse/modules/effects/flanger"
+	"github.com/almerlucke/muse/modules/effects/freeverb"
 	"github.com/almerlucke/muse/modules/effects/pingpong"
 	"github.com/almerlucke/muse/synths/drums"
 	"github.com/almerlucke/muse/utils/timing"
@@ -131,9 +132,9 @@ func main() {
 	soundBank["hihat5"], _ = sndfile.NewMipMapSoundFile("resources/drums/hihat/Cymatics - Orchid Hihat - Closed 2.wav", 4)
 
 	soundBank["kick1"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/long-boomy-real-acoustic-kick-one-shot_120bpm_C_major.wav", 4)
-	soundBank["kick2"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Dancehall (A#).wav", 4)
-	soundBank["kick3"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Layered (F#).wav", 4)
-	soundBank["kick4"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Tight (G).wav", 4)
+	//soundBank["kick2"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Dancehall (A#).wav", 4)
+	//soundBank["kick3"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Layered (F#).wav", 4)
+	//soundBank["kick4"], _ = sndfile.NewMipMapSoundFile("resources/drums/kick/Cymatics - Orchid Kick - Tight (G).wav", 4)
 
 	soundBank["snare1"], _ = sndfile.NewMipMapSoundFile("resources/drums/snare/Cymatics - Odyssey House Snare 4 - F#.wav", 4)
 	soundBank["snare2"], _ = sndfile.NewMipMapSoundFile("resources/drums/clap/Cymatics - Odyssey Flam Clap 1.wav", 4)
@@ -163,15 +164,22 @@ func main() {
 	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "fx1", "fx2", "fx3", "fx4", "fx5", "fx6", "fx7"), bpm, 4, function.NewRandom(0.1, 7.0), constant.New(0.7), bassRhythm())
 	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "sh1", "sh2", "sh3", "sh4", "sh5"), bpm, 2, function.NewRandom(0.3, 7.0), constant.New(0.6), kickRhythm())
 
-	fl := flanger.New(0.3, 0.5, 0.2, true).AddTo(root).In(dr, dr, 1)
+	fl := flanger.New(0.3, 0.5, 0.2).AddTo(root).In(dr, dr, 1)
 	flDepth := lfo.NewBasicControlLFO(0.05, 0.1, 0.9).CtrlAddTo(root)
 	flFb := lfo.NewBasicControlLFO(0.0375, 0.1, 0.8).CtrlAddTo(root)
 	flMix := lfo.NewBasicControlLFO(0.0425, 0.05, 0.4).CtrlAddTo(root)
 	fl.CtrlIn(flDepth, flFb, 0, 1, flMix, 0, 2)
 
-	pp := pingpong.New(bpmToMs*2.0, bpmToMs*0.375, 0.1, 0.1, true).AddTo(root).In(fl, fl, 1)
+	pp := pingpong.New(bpmToMs*2.0, bpmToMs*0.375, 0.1, 0.1).AddTo(root).In(fl, fl, 1)
 	ppReadGen := bucket.NewLoop(bucket.Indexed, 1.5, 0.75, 1.75)
 	ppMixGen := bucket.NewLoop(bucket.Indexed, 0.1, 0.05, 0.075, 0.125, 0.025)
+
+	fv := freeverb.New().AddTo(root).In(pp, pp, 1).(*freeverb.FreeVerb)
+
+	fv.SetDamp(0.7)
+	fv.SetRoomSize(0.9)
+	fv.SetWet(0.01)
+	fv.SetDry(0.4)
 
 	perform.New(func() {
 		readPos := ppReadGen.Generate()
@@ -179,7 +187,7 @@ func main() {
 		pp.(*pingpong.PingPong).SetMix(ppMixGen.Generate())
 	}).CtrlIn(timer.NewControl(bpmToMs * 48).CtrlAddTo(root))
 
-	root.In(pp, pp, 1)
+	root.In(fv, fv, 1)
 
 	//err := m.RenderToSoundFile("/home/almer/Documents/drums", writer.AIFC, 240, 44100.0, true)
 	//if err != nil {

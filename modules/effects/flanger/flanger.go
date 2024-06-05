@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	FlangeMinPos = 2.0
+	FlangeMinPos = 1.0
 	FlangeMaxPos = 20.0
 )
 
@@ -23,16 +23,11 @@ type Flanger struct {
 	mix        float64
 }
 
-func New(depth float64, feedback float64, mix float64, stereo bool) *Flanger {
-	numInputs := 1
-	if stereo {
-		numInputs = 2
-	}
-
+func New(depth float64, feedback float64, mix float64) *Flanger {
 	delaySize := int(math.Ceil(timing.MilliToSampsf(FlangeMaxPos, muse.CurrentConfiguration().SampleRate)))
 
 	f := &Flanger{
-		BaseModule: muse.NewBaseModule(numInputs, numInputs),
+		BaseModule: muse.NewBaseModule(2, 2),
 		delayLeft:  delay.New(delaySize),
 		delayRight: delay.New(delaySize),
 		depth:      depth,
@@ -124,15 +119,16 @@ func (f *Flanger) Synthesize() bool {
 		return false
 	}
 
-	if len(f.Inputs) == 2 {
+	if f.Inputs[1].IsConnected() {
 		f.synthesizeStereo()
 		return true
 	}
 
 	var (
-		inBuf    = f.Inputs[0].Buffer
-		outBuf   = f.Outputs[0].Buffer
-		readLine line.Line
+		inBuf       = f.Inputs[0].Buffer
+		outBufLeft  = f.Outputs[0].Buffer
+		outBufRight = f.Outputs[1].Buffer
+		readLine    line.Line
 	)
 
 	readLine.From(timing.MilliToSampsf(f.depth*(FlangeMaxPos-FlangeMinPos)+FlangeMinPos, f.Config.SampleRate))
@@ -150,7 +146,8 @@ func (f *Flanger) Synthesize() bool {
 		delOut := f.delayLeft.ReadLinear(readPos)
 		f.delayLeft.Write(in + delOut*f.fb)
 		flangOut := in + delOut
-		outBuf[i] = in*dry + flangOut*wet
+		outBufLeft[i] = in*dry + flangOut*wet
+		outBufRight[i] = outBufLeft[i]
 	}
 
 	return true

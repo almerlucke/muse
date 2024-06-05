@@ -19,7 +19,7 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/modules/adsr"
-	"github.com/almerlucke/muse/modules/chorus"
+	"github.com/almerlucke/muse/modules/effects/chorus"
 	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
@@ -110,7 +110,7 @@ func main() {
 	// milliPerBeat := 60000.0 / bpm
 
 	poly1 := polyphony.New(1, voices1).Named("polyphony1").AddTo(root)
-	chor := chorus.New(true, 15, 10, 0.2, 3.42, 0.5, nil).AddTo(root)
+	chor := chorus.New(0.24, 0.4, 0.45, 0.2, 1.0, 0.5, nil).AddTo(root)
 
 	octave := notes.O4
 

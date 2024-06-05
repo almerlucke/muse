@@ -2,6 +2,7 @@ package freeverb
 
 import (
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/utils/float"
 )
 
 /*
@@ -9,7 +10,6 @@ import (
 */
 
 const (
-	denormGuard     = 1e-15
 	numcombs        = 8
 	numallpasses    = 4
 	muted           = 0
@@ -74,7 +74,7 @@ func (allpass *fvAllpass) mute() {
 }
 
 func (allpass *fvAllpass) process(input float64) float64 {
-	bufout := allpass.buffer[allpass.bufidx] + denormGuard
+	bufout := allpass.buffer[allpass.bufidx] + float.DenormGuard
 
 	output := -input + bufout
 
@@ -123,7 +123,7 @@ func (c *fvComb) mute() {
 }
 
 func (c *fvComb) process(input float64) float64 {
-	output := c.buffer[c.bufidx] + denormGuard
+	output := c.buffer[c.bufidx] + float.DenormGuard
 	c.filterstore = output*c.damp2 + c.filterstore*c.damp1
 	c.buffer[c.bufidx] = input + c.filterstore*c.feedback
 	c.bufidx++

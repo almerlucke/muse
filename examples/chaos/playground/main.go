@@ -10,6 +10,7 @@ import (
 	"github.com/almerlucke/genny/float/shape/shapers/series"
 	"github.com/almerlucke/genny/function"
 	"github.com/almerlucke/genny/template"
+	"github.com/almerlucke/muse/modules/effects/chorus"
 
 	"math/rand"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/triggers/timer"
 	"github.com/almerlucke/muse/modules/adsr"
-	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/filters/korg35"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/generator"
@@ -170,8 +170,8 @@ func main() {
 	tim.CtrlConnect(0, trigger, 0)
 	trigger.CtrlConnect(0, poly, 0)
 
-	chorus1 := root.AddModule(chorus.New(false, 30.0, 20.0, 0.4, 1.21, 0.4, nil))
-	chorus2 := root.AddModule(chorus.New(false, 31.0, 21.0, 0.31, 1.31, 0.5, nil))
+	chorus1 := root.AddModule(chorus.New(0.34, 0.5, 0.6, 0.2, 1.0, 0.5, nil))
+	chorus2 := root.AddModule(chorus.New(0.35, 0.56, 0.612, 0.21, 1.0, 0.5, nil))
 
 	poly.Connect(0, chorus1, 0)
 	poly.Connect(1, chorus2, 0)

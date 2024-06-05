@@ -10,6 +10,7 @@ import (
 	"github.com/almerlucke/genny/sequence"
 	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/genny/transform"
+	"github.com/almerlucke/muse/modules/effects/chorus"
 	"github.com/almerlucke/sndfile"
 	"github.com/almerlucke/sndfile/writer"
 	"log"
@@ -33,7 +34,6 @@ import (
 
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
-	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/filters/moog"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
@@ -276,7 +276,7 @@ func main() {
 
 	mult := root.AddModule(functor.NewAmp(0.5))
 
-	chor1 := root.AddModule(chorus.New(false, 15, 10, 0.9, 1.3, 0.3, lookup.NewSineTable(512)))
+	chor1 := root.AddModule(chorus.New(0.23, 0.4, 0.56, 0.2, 1.0, 0.5, lookup.NewSineTable(512)))
 
 	kickPlayer.Connect(0, mult, 0)
 	hihatPlayer.Connect(0, mult, 0)

@@ -5,6 +5,7 @@ import (
 	"github.com/almerlucke/genny/float/shape/shapers/emulations/supersaw"
 	"github.com/almerlucke/genny/sequence"
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/modules/effects/freeverb"
 
 	adsrc "github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/muse/messengers/banger"
@@ -12,7 +13,6 @@ import (
 	"github.com/almerlucke/muse/modules/adsr"
 	"github.com/almerlucke/muse/modules/allpass"
 	"github.com/almerlucke/muse/modules/filters/moog"
-	"github.com/almerlucke/muse/modules/freeverb"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/modules/phasor"
 	"github.com/almerlucke/muse/modules/vartri"

@@ -14,8 +14,8 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing/euclidean"
 	"github.com/almerlucke/muse/modules/effects/flanger"
+	"github.com/almerlucke/muse/modules/effects/freeverb"
 	"github.com/almerlucke/muse/modules/effects/pingpong"
-	"github.com/almerlucke/muse/modules/freeverb"
 	"github.com/almerlucke/muse/synths/drums"
 	"github.com/almerlucke/muse/utils/timing"
 	"github.com/almerlucke/sndfile"
@@ -85,10 +85,10 @@ func main() {
 	addDrumTrack(root, "drums", snareConst, snareRand, constant.New(1.0), snareRhythm, bpm, 1)
 	addDrumTrack(root, "drums", bucket.NewLoop(bucket.Indexed, "fx1", "fx2", "fx3", "fx4"), function.NewRandom(0.75, 1.25), constant.New(0.5), bounceRhythm, bpm, 1)
 
-	flang := flanger.New(0.3, 0.5, 0.3, true).AddTo(root).In(drum, drum, 1)
+	flang := flanger.New(0.3, 0.5, 0.3).AddTo(root).In(drum, drum, 1)
 	flangLfo := lfo.NewBasicControlLFO(0.05, 0.2, 0.4).CtrlAddTo(root)
 	flang.CtrlIn(flangLfo)
-	pp := pingpong.New(bpmToMilli*2, bpmToMilli*0.75, 0.2, 0.05, true).AddTo(root).In(flang, flang, 1)
+	pp := pingpong.New(bpmToMilli*2, bpmToMilli*0.75, 0.2, 0.05).AddTo(root).In(flang, flang, 1)
 	fv := freeverb.New().AddTo(root).In(pp, pp, 1).(*freeverb.FreeVerb)
 
 	fv.SetDamp(0.7)
@@ -150,14 +150,11 @@ func main() {
 		log.Printf("pingpong6")
 		hihatConst.SetValue("hihat1")
 		hihatRhythm.Set(16, 9, 0)
+		snareConst.SetValue("snare1")
+		snareLow = 0.5
+		snareHigh = 3.5
 		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 0.75)
 	})
-	//sched.ScheduleFunction(timing.Minute*1.5, func() {
-	//	kickRhythm.Set(12, 7, 0)
-	//	bounceRhythm.Set(18, 6, 0)
-	//	hihatRhythm.Set(16, 11, 0)
-	//	snareRhythm.Set(17, 7, 1)
-	//})
 
 	_ = root.RenderAudio()
 	// _ = root.RenderToSoundFile("/home/almer/Music/BirdsDrumsSlow", writer.AIFC, 240, 44100.0, true)

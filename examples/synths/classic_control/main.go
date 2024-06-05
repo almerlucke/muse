@@ -12,6 +12,7 @@ import (
 	"github.com/almerlucke/genny/repeat"
 	"github.com/almerlucke/genny/sequence"
 	"github.com/almerlucke/genny/template"
+	"github.com/almerlucke/muse/modules/effects/chorus"
 	"github.com/almerlucke/muse/modules/filters/rbj"
 	"github.com/almerlucke/sndfile"
 
@@ -26,7 +27,6 @@ import (
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/modules"
 	"github.com/almerlucke/muse/modules/allpass"
-	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/synths/classic"
 	"github.com/almerlucke/muse/synths/drums"
@@ -68,8 +68,8 @@ func NewClassicSynth(bpm float64) *ClassicSynth {
 	allpass2 := allpass.New(2500.0, 60000/bpm*1.75, 0.4).AddTo(synth).In(synthAmp2)
 	allpassAmp1 := functor.NewAmp(0.5).AddTo(synth).In(allpass1)
 	allpassAmp2 := functor.NewAmp(0.5).AddTo(synth).In(allpass2)
-	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil).AddTo(synth).In(synthAmp1, allpassAmp1, 0, 0).(*chorus.Chorus)
-	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil).AddTo(synth).In(synthAmp2, allpassAmp2, 0, 0).(*chorus.Chorus)
+	synth.chorus1 = chorus.New(0.36, 0.22, 0.5, 0.2, 1.0, 0.5, nil).AddTo(synth).In(synthAmp1, allpassAmp1, 0, 0).(*chorus.Chorus)
+	synth.chorus2 = chorus.New(0.37, 0.21, 0.51, 0.2, 1.0, 0.51, nil).AddTo(synth).In(synthAmp2, allpassAmp2, 0, 0).(*chorus.Chorus)
 
 	synth.In(synth.chorus1, synth.chorus2)
 	synth.SetupControls()

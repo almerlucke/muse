@@ -2,6 +2,8 @@ package float
 
 import "math"
 
+var DenormGuard = 1e-15
+
 var SampleEpsilon = 1.0e-10
 
 func Equal(x1 float64, x2 float64) bool {

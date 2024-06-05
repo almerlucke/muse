@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/almerlucke/muse/modules/effects/chorus"
 	"github.com/almerlucke/muse/modules/filters/moog"
 	"log"
 	"strconv"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/modules/chorus"
 	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/synths/classic"
 	"github.com/almerlucke/muse/ui/controls"
@@ -56,8 +56,8 @@ func NewClassicSynth(bpm float64) *ClassicSynth {
 	synth.ampEnvSetting = ampEnvSetting
 	synth.filterEnvSetting = filterEnvSetting
 	synth.Synth = classic.New(20, ampEnvSetting, ampEnvSetting, &moog.Factory{}, moog.DefaultConfig()).Named("poly").(*classic.Synth)
-	synth.chorus1 = chorus.New(false, 15, 10, 0.3, 1.42, 0.5, nil)
-	synth.chorus2 = chorus.New(false, 15, 10, 0.31, 1.43, 0.55, nil)
+	synth.chorus1 = chorus.New(0.34, 0.23, 0.56, 0.2, 1.0, 0.5, nil)
+	synth.chorus2 = chorus.New(0.35, 0.24, 0.57, 0.21, 1.0, 0.55, nil)
 
 	synth.AddModule(synth.Synth)
 	synth.AddModule(synth.chorus1)
