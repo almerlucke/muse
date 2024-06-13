@@ -173,7 +173,7 @@ func main() {
 	trigger.CtrlConnect(0, poly, 0)
 
 	chorus1 := root.AddModule(chorus.New(0.34, 0.4, 0.4, 0.2, 1.0, 0.5, nil))
-	chorus2 := root.AddModule(chorus.New(0.23, 0.41, 0.41, 0.21, 1.0, 0.5, nil))
+	chorus2 := root.AddModule(chorus.New(0.43, 0.4, 0.41, 0.21, 1.0, 0.5, nil))
 
 	poly.Connect(0, chorus1, 0)
 	poly.Connect(1, chorus2, 0)

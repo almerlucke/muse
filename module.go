@@ -22,6 +22,7 @@ type Module interface {
 	IConns([]*IConn) Module
 	Connect(int, Module, int)
 	Disconnect()
+	Exec(func(any)) Module
 }
 
 type BaseModule struct {
@@ -222,4 +223,9 @@ func (m *BaseModule) MustSynthesize() bool {
 func (m *BaseModule) ReceiveMessage(msg any) []*Message {
 	// STUB
 	return nil
+}
+
+func (m *BaseModule) Exec(f func(any)) Module {
+	f(m.Self())
+	return m.Self().(Module)
 }

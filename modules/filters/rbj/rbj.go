@@ -21,7 +21,7 @@ func (f *Factory) New(cfg any) filters.Filter {
 }
 
 func DefaultConfig() *filters.FilterConfig {
-	return filters.NewFilterConfig(1500.0, 0.4, 0.0, 0)
+	return filters.NewFilterConfig(1500.0, 1.0, 0.6, 0)
 }
 
 func New(filterType rbjc.FilterType, fc float64, q float64) *Filter {

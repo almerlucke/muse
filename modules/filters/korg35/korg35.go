@@ -102,7 +102,7 @@ func (f *Factory) New(cfg any) filters.Filter {
 }
 
 func DefaultConfig() *filters.FilterConfig {
-	return filters.NewFilterConfig(1500.0, 0.7, 2.0, 0)
+	return filters.NewFilterConfig(1500.0, 0.9, 2.0, 0)
 }
 
 func New(fc float64, res float64, sat float64) *LPF {

@@ -1,7 +1,9 @@
 package timer
 
 import (
+	"github.com/almerlucke/genny"
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/utils/timing"
 )
 
 type Timer struct {
@@ -9,26 +11,33 @@ type Timer struct {
 	addresses     []string
 	interval      float64
 	intervalMilli float64
+	gen           genny.Generator[float64]
 	accum         float64
 	sampleRate    float64
 }
 
-func New(intervalMilli float64, addresses []string) *Timer {
+func New(intervalMilli float64, addresses []string, gen genny.Generator[float64]) *Timer {
+	if gen != nil {
+		intervalMilli = gen.Generate()
+	}
+
 	t := &Timer{
 		BaseMessenger: muse.NewBaseMessenger(),
 		addresses:     addresses,
-		interval:      intervalMilli * 0.001 * muse.SampleRate(),
+		interval:      timing.MilliToSampsf(intervalMilli, muse.SampleRate()),
 		intervalMilli: intervalMilli,
+		gen:           gen,
 		sampleRate:    muse.SampleRate(),
 	}
 
+	t.accum = t.interval
 	t.SetSelf(t)
 
 	return t
 }
 
-func NewControl(intervalMilli float64) *Timer {
-	return New(intervalMilli, nil)
+func NewControl(intervalMilli float64, gen genny.Generator[float64]) *Timer {
+	return New(intervalMilli, nil, gen)
 }
 
 func (t *Timer) ReceiveControlValue(value any, index int) {
@@ -36,7 +45,7 @@ func (t *Timer) ReceiveControlValue(value any, index int) {
 		if intervalMilli, ok := value.(float64); ok {
 			if intervalMilli > 0 {
 				t.intervalMilli = intervalMilli
-				t.interval = intervalMilli * 0.001 * t.sampleRate
+				t.interval = timing.MilliToSampsf(intervalMilli, t.sampleRate)
 			}
 		}
 	}
@@ -49,7 +58,7 @@ func (t *Timer) ReceiveMessage(msg any) []*muse.Message {
 		intervalMilli := interval.(float64)
 		if intervalMilli > 0 {
 			t.intervalMilli = intervalMilli
-			t.interval = intervalMilli * 0.001 * t.sampleRate
+			t.interval = timing.MilliToSampsf(intervalMilli, t.sampleRate)
 		}
 	}
 
@@ -70,6 +79,13 @@ func (t *Timer) Messages(timestamp int64, _ *muse.Configuration) []*muse.Message
 	if floatTimestamp > t.accum {
 		bang = true
 		for t.accum <= floatTimestamp {
+			if t.gen != nil {
+				if t.gen.Done() {
+					t.gen.Reset()
+				}
+				t.intervalMilli = t.gen.Generate()
+				t.interval = timing.MilliToSampsf(t.intervalMilli, t.sampleRate)
+			}
 			t.accum += t.interval
 		}
 	}

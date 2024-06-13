@@ -174,12 +174,13 @@ func main() {
 	ppReadGen := bucket.NewLoop(bucket.Indexed, 1.5, 0.75, 1.75)
 	ppMixGen := bucket.NewLoop(bucket.Indexed, 0.1, 0.05, 0.075, 0.125, 0.025)
 
-	fv := freeverb.New().AddTo(root).In(pp, pp, 1).(*freeverb.FreeVerb)
-
-	fv.SetDamp(0.7)
-	fv.SetRoomSize(0.9)
-	fv.SetWet(0.01)
-	fv.SetDry(0.4)
+	fv := freeverb.New().AddTo(root).In(pp, pp, 1).Exec(func(m any) {
+		fv := m.(*freeverb.FreeVerb)
+		fv.SetDamp(0.7)
+		fv.SetRoomSize(0.9)
+		fv.SetWet(0.01)
+		fv.SetDry(0.4)
+	})
 
 	perform.New(func() {
 		readPos := ppReadGen.Generate()

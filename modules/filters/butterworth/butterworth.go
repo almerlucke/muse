@@ -21,7 +21,7 @@ func (f *Factory) New(cfg any) filters.Filter {
 }
 
 func DefaultConfig() *filters.FilterConfig {
-	return filters.NewFilterConfig(1500.0, 0.7, 0.0, 0)
+	return filters.NewFilterConfig(1500.0, 0.06, 0.0, 0)
 }
 
 func New(fc float64, q float64) *Butterworth {
