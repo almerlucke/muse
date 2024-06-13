@@ -2,9 +2,13 @@ package main
 
 import (
 	"github.com/almerlucke/genny"
+	"github.com/almerlucke/genny/and"
+	"github.com/almerlucke/genny/bucket"
 	"github.com/almerlucke/genny/float"
 	"github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/genny/float/interp"
+	"github.com/almerlucke/genny/float/shape"
+	"github.com/almerlucke/genny/float/shape/shapers/quantize"
 	"github.com/almerlucke/genny/function"
 	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
@@ -19,6 +23,7 @@ import (
 	"github.com/almerlucke/muse/modules/filters/rbj"
 	"github.com/almerlucke/muse/modules/wtscan"
 	"github.com/almerlucke/muse/synths/basic"
+	"github.com/almerlucke/muse/utils/notes"
 	"log"
 )
 
@@ -87,7 +92,7 @@ func (s *Source) New(initValues any) basic.Source {
 func main() {
 	root := muse.New(2)
 
-	sf, err := io.NewWaveTableSoundFile("resources/wavetables2048/Melda CustumWave3 IcarusBell.wav", 2048)
+	sf, err := io.NewWaveTableSoundFile("resources/wavetables2048/FMAdditive1.wav", 2048)
 	if err != nil {
 		log.Fatalf("err loading sound file: %v", err)
 	}
@@ -107,21 +112,26 @@ func main() {
 		"duration":  82.0,
 		"amplitude": function.NewRandom(0.1, 0.8),
 		"message": template.Template{
-			"frequency":       function.NewRandom(25.0, 600.0),
+			"frequency": and.NewLoop[float64](
+				bucket.New(bucket.Indexed, notes.PhrygianDominant.Freq(notes.C3)...),
+				bucket.New(bucket.Indexed, notes.PhrygianDominant.Freq(notes.C5)...),
+				bucket.New(bucket.Indexed, notes.PhrygianDominant.Freq(notes.C2)...),
+				bucket.New(bucket.Indexed, notes.PhrygianDominant.Freq(notes.C4)...),
+			),
 			"attackDuration":  function.NewRandom(4.0, 50.0),
 			"releaseDuration": function.NewRandom(3000.0, 7000.0),
 			"pan":             function.NewRandom(0.0, 1.0),
 			"filterFcMin":     function.NewRandom(30.0, 400.0),
 			"filterFcMax":     function.NewRandom(2330.0, 12000.0),
-			"filterResonance": function.NewRandom(0.1, 0.9),
-			"detune":          function.NewRandom(1.001, 1.075),
-			"scanSpeed":       function.NewRandom(0.0023, 0.075),
+			"filterResonance": function.NewRandom(0.1, 1.3),
+			"detune":          function.NewRandom(1.001, 1.015),
+			"scanSpeed":       function.NewRandom(0.0075, 0.075),
 		},
 	}).MsgrNamed("synthDriver"))
 
-	timer.New(0.0, []string{"synthDriver"}, function.NewRandom(125.0, 4000.0)).MsgrAddTo(root)
+	timer.New(0.0, []string{"synthDriver"}, float.FromFrame(shape.New(float.ToFrame(function.NewRandom(250.0, 4000.0)), quantize.New(250.0)), 0)).MsgrAddTo(root)
 
-	ch := chorus.New(0.3, 0.6, 0.7, 0.2, 1.0, 0.3, nil).AddTo(root).In(synth, synth, 1)
+	ch := chorus.New(0.3, 0.6, 0.7, 0.2, 1.0, 0.2, nil).AddTo(root).In(synth, synth, 1)
 
 	pp := pingpong.New(2500.0, 1750.0, 0.4, 0.1).AddTo(root).In(ch, ch, 1)
 
@@ -131,7 +141,7 @@ func main() {
 		rvb.SetDamp(0.4)
 		rvb.SetRoomSize(0.9)
 		rvb.SetDry(0.4)
-		rvb.SetWet(0.2)
+		rvb.SetWet(0.1)
 	})
 
 	root.In(rvb, rvb, 1)

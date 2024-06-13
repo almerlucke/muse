@@ -229,6 +229,16 @@ func (s Scale) Chord(root Note, index int) Chord {
 	return Chord{root + Note(s[index]%len(s)), root + Note(s[(index+2)%len(s)]), root + Note(s[(index+4)%len(s)])}
 }
 
+func (s Scale) Freq(root Note) []float64 {
+	f := make([]float64, len(s))
+
+	for i, n := range s {
+		f[i] = Mtof(n + int(root))
+	}
+
+	return f
+}
+
 func (c Chord) Freq(transpose Note) []float64 {
 	f := make([]float64, len(c))
 	for i, n := range c {
