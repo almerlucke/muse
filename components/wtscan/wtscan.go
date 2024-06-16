@@ -78,6 +78,14 @@ func (sc *Scanner) SetScanIndex(index float64) {
 	sc.newScanIndex = mmath.Limit(index, 0, 0.999)
 }
 
+func (sc *Scanner) SetSoundFile(sf *io.WaveTableSoundFile) {
+	sc.sf = sf
+}
+
+func (sc *Scanner) SoundFile() *io.WaveTableSoundFile {
+	return sc.sf
+}
+
 func (sc *Scanner) Generate() float64 {
 	tl := len(sc.sf.Tables)
 	tf := sc.scanIndex * float64(tl)

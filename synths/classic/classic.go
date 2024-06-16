@@ -323,21 +323,21 @@ func DefaultSetting() Setting {
 		Osc1Mix:         0.5,
 		Osc2Mix:         0.5,
 		NoiseMix:        0.0,
-		Osc1PulseWidth:  0.4,
-		Osc2PulseWidth:  0.3,
-		FilterResonance: 0.6,
-		Osc1SineMix:     0.0,
+		Osc1PulseWidth:  0.5,
+		Osc2PulseWidth:  0.5,
+		FilterResonance: 0.5,
+		Osc1SineMix:     1.0,
 		Osc1TriMix:      0.0,
-		Osc1PulseMix:    1.0,
+		Osc1PulseMix:    0.0,
 		Osc1SawMix:      0.0,
-		Osc2SineMix:     0.0,
+		Osc2SineMix:     1.0,
 		Osc2TriMix:      0.0,
-		Osc2PulseMix:    1.0,
+		Osc2PulseMix:    0.0,
 		Osc2SawMix:      0.0,
-		Osc2Tuning:      2.05,
+		Osc2Tuning:      2.01,
 		Pan:             0.5,
 		FilterFcMin:     50.0,
-		FilterFcMax:     8000.0,
+		FilterFcMax:     14000.0,
 	}
 }
 
@@ -353,6 +353,8 @@ func New(numVoices int, ampEnvSetting *adsrc.Setting, filterEnvSetting *adsrc.Se
 	}
 
 	s.SetSelf(s)
+
+	s.Set(DefaultSetting())
 
 	return s
 }

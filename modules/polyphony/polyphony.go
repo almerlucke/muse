@@ -3,7 +3,12 @@ package polyphony
 import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/utils/pool"
+	"log"
 )
+
+/*
+TODO: add age and steal voices if needed
+*/
 
 type Voice interface {
 	muse.Module
@@ -37,23 +42,29 @@ func New(numChannels int, voices []Voice) *Polyphony {
 }
 
 func (p *Polyphony) noteOff(identifier string) {
-	elem := p.activePool.First()
-	end := p.activePool.End()
-	for elem != end {
-		if elem.Value.Identifier() == identifier {
-			elem.Value.NoteOff()
+	p.CallActiveVoices(func(v Voice) bool {
+		if v.Identifier() == identifier {
+			v.NoteOff()
+			v.SetIdentifier("")
+			return false
 		}
-		elem = elem.Next
-	}
+
+		return true
+	})
+}
+
+func (p *Polyphony) DebugActive() {
+	p.CallActiveVoices(func(v Voice) bool {
+		log.Printf("active voice identifier: %s", v.Identifier())
+		return true
+	})
 }
 
 func (p *Polyphony) AllNotesOff() {
-	elem := p.activePool.First()
-	end := p.activePool.End()
-	for elem != end {
-		elem.Value.NoteOff()
-		elem = elem.Next
-	}
+	p.CallActiveVoices(func(v Voice) bool {
+		v.NoteOff()
+		return true
+	})
 }
 
 func (p *Polyphony) ReceiveControlValue(value any, index int) {
@@ -69,78 +80,75 @@ func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 	command := content["command"].(string)
 	if command == "trigger" {
 		// Trigger a voice
-		elem := p.freePool.Pop()
-		if elem != nil {
-			if noteOffIdentifier, ok := content["noteOff"]; ok {
-				p.noteOff(noteOffIdentifier.(string))
-			} else if noteOnIdentifier, ok := content["noteOn"]; ok {
+		if noteOffIdentifier, ok := content["noteOff"]; ok {
+			p.noteOff(noteOffIdentifier.(string))
+		} else if noteOnIdentifier, ok := content["noteOn"]; ok {
+			v := p.GetFreeVoice()
+			if v != nil {
 				amplitude := content["amplitude"].(float64)
 				voiceMsg := content["message"]
-				elem.Value.SetIdentifier(noteOnIdentifier.(string))
-				elem.Value.NoteOn(amplitude, voiceMsg, p.Config)
-			} else if duration, ok := content["duration"]; ok {
-				amplitude := content["amplitude"].(float64)
-				voiceMsg := content["message"]
-				elem.Value.Note(duration.(float64), amplitude, voiceMsg, p.Config)
+				v.SetIdentifier(noteOnIdentifier.(string))
+				v.NoteOn(amplitude, voiceMsg, p.Config)
 			}
-
-			p.activePool.Push(elem)
+		} else if duration, ok := content["duration"]; ok {
+			v := p.GetFreeVoice()
+			if v != nil {
+				amplitude := content["amplitude"].(float64)
+				voiceMsg := content["message"]
+				v.Note(duration.(float64), amplitude, voiceMsg, p.Config)
+			}
 		}
 	} else if command == "voice" {
 		// Pass message to all voices
+		p.CallVoices(func(v Voice) {
+			v.ReceiveMessage(msg)
+		})
+	}
 
-		// Active voices first
-		elem := p.activePool.First()
-		end := p.activePool.End()
-		for elem != end {
-			elem.Value.ReceiveMessage(msg)
-			elem = elem.Next
-		}
+	return nil
+}
 
-		// Free voices as well
-		elem = p.freePool.First()
-		end = p.freePool.End()
-		for elem != end {
-			elem.Value.ReceiveMessage(msg)
-			elem = elem.Next
-		}
+func (p *Polyphony) GetFreeVoice() Voice {
+	elem := p.freePool.Pop()
+	if elem != nil {
+		p.activePool.Push(elem)
+		return elem.Value
 	}
 
 	return nil
 }
 
 func (p *Polyphony) CallVoices(f func(Voice)) {
-	// Active voices first
+	p.CallActiveVoices(func(v Voice) bool {
+		f(v)
+		return true
+	})
+	p.CallInactiveVoices(func(v Voice) bool {
+		f(v)
+		return true
+	})
+}
+
+func (p *Polyphony) CallActiveVoices(f func(Voice) bool) {
 	elem := p.activePool.First()
 	end := p.activePool.End()
 	for elem != end {
-		f(elem.Value)
-		elem = elem.Next
-	}
-
-	// Free voices as well
-	elem = p.freePool.First()
-	end = p.freePool.End()
-	for elem != end {
-		f(elem.Value)
+		ok := f(elem.Value)
+		if !ok {
+			break
+		}
 		elem = elem.Next
 	}
 }
 
-func (p *Polyphony) CallActiveVoices(f func(Voice)) {
-	elem := p.activePool.First()
-	end := p.activePool.End()
-	for elem != end {
-		f(elem.Value)
-		elem = elem.Next
-	}
-}
-
-func (p *Polyphony) CallInactiveVoices(f func(Voice)) {
+func (p *Polyphony) CallInactiveVoices(f func(Voice) bool) {
 	elem := p.freePool.First()
 	end := p.freePool.End()
 	for elem != end {
-		f(elem.Value)
+		ok := f(elem.Value)
+		if !ok {
+			break
+		}
 		elem = elem.Next
 	}
 }
@@ -156,15 +164,14 @@ func (p *Polyphony) Synthesize() bool {
 	}
 
 	// First prepare all voices for synthesis
-	elem := p.activePool.First()
-	end := p.activePool.End()
-	for elem != end {
-		elem.Value.PrepareSynthesis()
-		elem = elem.Next
-	}
+	p.CallActiveVoices(func(v Voice) bool {
+		v.PrepareSynthesis()
+		return true
+	})
 
 	// Run active voices
-	elem = p.activePool.First()
+	end := p.activePool.End()
+	elem := p.activePool.First()
 	for elem != end {
 		prev := elem
 		elem = elem.Next

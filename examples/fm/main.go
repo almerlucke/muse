@@ -115,7 +115,7 @@ func main() {
 		"level":    1.0,
 	}).MsgrNamed("notes"))
 
-	root.AddMessenger(timer.New(250.0, []string{"notes"}))
+	root.AddMessenger(timer.New(250.0, []string{"notes"}, nil))
 
 	err := root.InitializeAudio()
 	if err != nil {

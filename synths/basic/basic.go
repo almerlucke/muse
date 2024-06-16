@@ -134,6 +134,7 @@ func (v *Voice) SetValues(values map[string]any) {
 
 func (v *Voice) ReceiveMessage(msg any) []*muse.Message {
 	if values, ok := msg.(map[string]any); ok {
+
 		v.source.SetValues(values)
 	}
 

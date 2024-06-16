@@ -140,7 +140,7 @@ func main() {
 	}
 
 	poly := polyphony.New(2, voices).Named("chaosSynth").AddTo(root)
-	tim := root.AddControl(timer.NewControl(500.0))
+	tim := root.AddControl(timer.NewControl(500.0, nil))
 	randomizeTimer := gen.New[float64](function.New(func() float64 {
 		return randMinMax(100, 2500.0)
 	}), false)
@@ -148,7 +148,7 @@ func main() {
 	tim.CtrlConnect(0, randomizeTimer, 0)
 	randomizeTimer.CtrlConnect(0, tim, 0)
 
-	trigger := banger.NewControlTemplateGenerator(template.Template{
+	trigger := banger.NewControlTemplate(template.Template{
 		"command": "trigger",
 		"duration": function.New(func() float64 {
 			return randMinMax(1600, 5000.0)

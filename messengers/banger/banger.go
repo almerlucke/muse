@@ -123,7 +123,7 @@ func NewTemplateBang(addresses []string, template template.Template) *Bang {
 	return NewBang(newTemplateDestination(addresses, template))
 }
 
-func NewControlTemplateGenerator(template template.Template) *Bang {
+func NewControlTemplate(template template.Template) *Bang {
 	return NewBang(newTemplateDestination(nil, template))
 }
 

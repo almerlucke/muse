@@ -37,17 +37,22 @@ type Source struct {
 }
 
 func (s *Source) Activate(values map[string]any) {
+	if detune, ok := values["detune"].(float64); ok {
+		s.detune = detune
+	}
+
 	if freq, ok := values["frequency"].(float64); ok {
 		s.osc1.SetFrequency(freq)
 		s.osc2.SetFrequency(freq * s.detune)
 	}
 
-	if detune, ok := values["detune"].(float64); ok {
-		s.detune = detune
-	}
-
 	if scanSpeed, ok := values["scanSpeed"].(float64); ok {
 		s.ip.SetDelta(scanSpeed)
+	}
+
+	if sf, ok := values["sf"].(*io.WaveTableSoundFile); ok {
+		s.osc1.SetSoundFile(sf)
+		s.osc2.SetSoundFile(sf)
 	}
 }
 
@@ -92,13 +97,33 @@ func (s *Source) New(initValues any) basic.Source {
 func main() {
 	root := muse.New(2)
 
-	sf, err := io.NewWaveTableSoundFile("resources/wavetables2048/FMAdditive1.wav", 2048)
+	sf1, err := io.NewWaveTableSoundFile("resources/wavetables2048/FMAdditive1.wav", 2048)
+	if err != nil {
+		log.Fatalf("err loading sound file: %v", err)
+	}
+
+	sf2, err := io.NewWaveTableSoundFile("resources/wavetables2048/Add Bell.wav", 2048)
+	if err != nil {
+		log.Fatalf("err loading sound file: %v", err)
+	}
+
+	sf3, err := io.NewWaveTableSoundFile("resources/wavetables2048/MS 20 Pulse2 PS1.wav", 2048)
+	if err != nil {
+		log.Fatalf("err loading sound file: %v", err)
+	}
+
+	sf4, err := io.NewWaveTableSoundFile("resources/wavetables2048/VS Morph3.wav", 2048)
+	if err != nil {
+		log.Fatalf("err loading sound file: %v", err)
+	}
+
+	sf5, err := io.NewWaveTableSoundFile("resources/wavetables2048/Melda CustumWave3 IcarusBell.wav", 2048)
 	if err != nil {
 		log.Fatalf("err loading sound file: %v", err)
 	}
 
 	cfg := map[string]any{
-		"sf":        sf,
+		"sf":        sf1,
 		"frequency": 100.0,
 	}
 
@@ -107,7 +132,7 @@ func main() {
 
 	synth := basic.New(20, &Source{}, cfg, ampEnvSetting, filterEnvSetting, &rbj.Factory{}, rbj.DefaultConfig()).Named("synth").AddTo(root)
 
-	root.AddMessenger(banger.NewTemplateBang([]string{"synth"}, template.Template{
+	synthDriver := banger.NewControlTemplate(template.Template{
 		"command":   "trigger",
 		"duration":  82.0,
 		"amplitude": function.NewRandom(0.1, 0.8),
@@ -126,10 +151,11 @@ func main() {
 			"filterResonance": function.NewRandom(0.1, 1.3),
 			"detune":          function.NewRandom(1.001, 1.015),
 			"scanSpeed":       function.NewRandom(0.0075, 0.075),
+			"sf":              bucket.NewLoop(bucket.Indexed, sf1, sf2, sf3, sf4, sf5),
 		},
-	}).MsgrNamed("synthDriver"))
+	}).CtrlIn(timer.NewControl(0.0, shape.NewSingle(function.NewRandom(250.0, 3000.0), quantize.New(250.0))).CtrlAddTo(root))
 
-	timer.New(0.0, []string{"synthDriver"}, float.FromFrame(shape.New(float.ToFrame(function.NewRandom(250.0, 4000.0)), quantize.New(250.0)), 0)).MsgrAddTo(root)
+	synth.CtrlIn(synthDriver)
 
 	ch := chorus.New(0.3, 0.6, 0.7, 0.2, 1.0, 0.2, nil).AddTo(root).In(synth, synth, 1)
 
@@ -147,4 +173,6 @@ func main() {
 	root.In(rvb, rvb, 1)
 
 	_ = root.RenderAudio()
+
+	// _ = root.RenderToSoundFile("/home/almer/Music/MyMusic/family", writer.WAV, 360, root.Config.SampleRate, true)
 }

@@ -115,7 +115,7 @@ func hihatRhythm() genny.Generator[*swing.Step] {
 func main() {
 	muse.PushConfiguration(&muse.Configuration{
 		SampleRate: 44100.0,
-		BufferSize: 128,
+		BufferSize: 256,
 	})
 
 	root := muse.New(2)
@@ -186,7 +186,7 @@ func main() {
 		readPos := ppReadGen.Generate()
 		pp.(*pingpong.PingPong).SetRead(bpmToMs * readPos)
 		pp.(*pingpong.PingPong).SetMix(ppMixGen.Generate())
-	}).CtrlIn(timer.NewControl(bpmToMs * 48).CtrlAddTo(root))
+	}).CtrlIn(timer.NewControl(bpmToMs*48, nil).CtrlAddTo(root))
 
 	root.In(fv, fv, 1)
 

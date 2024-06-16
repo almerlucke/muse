@@ -27,6 +27,8 @@ func NewListener(port int, callbacks ...func(*reader.Reader)) (*Listener, error)
 		return nil, err
 	}
 
+	log.Printf("ins %v", ins)
+
 	in := ins[port]
 
 	log.Printf("in %v", in)

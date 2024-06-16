@@ -9,16 +9,10 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
-
 	"github.com/almerlucke/genny/float/envelopes/adsr"
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/modules/functor"
 	"github.com/almerlucke/muse/synths/classic"
 	"github.com/almerlucke/muse/ui/controls"
-	"github.com/almerlucke/muse/ui/theme"
 	"github.com/almerlucke/muse/utils/notes"
 
 	museMidi "github.com/almerlucke/muse/midi"
@@ -50,28 +44,14 @@ func NewClassicSynth(bpm float64) *ClassicSynth {
 	// Add self as receiver
 	synth.AddMessageReceiver(synth, "synth")
 
-	ampEnvSetting := adsr.NewSetting(1.0, 25.0, 0.3, 80.0, 0.0, 2000.0)
-	filterEnvSetting := adsr.NewSetting(0.9, 25.0, 0.5, 80.0, 0.0, 2000.0)
+	ampEnvSetting := adsr.NewSetting(1.0, 5.0, 0.3, 5.0, 0.0, 2000.0)
+	filterEnvSetting := adsr.NewSetting(1.0, 3.0, 0.3, 5.0, 0.0, 2000.0)
 
 	synth.ampEnvSetting = ampEnvSetting
 	synth.filterEnvSetting = filterEnvSetting
-	synth.Synth = classic.New(20, ampEnvSetting, ampEnvSetting, &moog.Factory{}, moog.DefaultConfig()).Named("poly").(*classic.Synth)
-	synth.chorus1 = chorus.New(0.34, 0.23, 0.56, 0.2, 1.0, 0.5, nil)
-	synth.chorus2 = chorus.New(0.35, 0.24, 0.57, 0.21, 1.0, 0.55, nil)
-
-	synth.AddModule(synth.Synth)
-	synth.AddModule(synth.chorus1)
-	synth.AddModule(synth.chorus2)
-
-	synthAmp1 := synth.AddModule(functor.NewAmp(0.85))
-	synthAmp2 := synth.AddModule(functor.NewAmp(0.85))
-
-	synth.Synth.Connect(0, synthAmp1, 0)
-	synth.Synth.Connect(1, synthAmp2, 0)
-	synthAmp1.Connect(0, synth.chorus1, 0)
-	synthAmp2.Connect(0, synth.chorus2, 0)
-	synth.chorus1.Connect(0, synth, 0)
-	synth.chorus2.Connect(0, synth, 1)
+	synth.Synth = classic.New(40, ampEnvSetting, ampEnvSetting, &moog.Factory{}, moog.DefaultConfig()).Named("poly").AddTo(synth).(*classic.Synth)
+	synth.chorus1 = chorus.New(0.24, 0.83, 0.76, 0.2, 1.0, 0.75, nil).AddTo(synth).In(synth.Synth, synth.Synth, 1).(*chorus.Chorus)
+	synth.In(synth.chorus1, synth.chorus1, 1)
 
 	return synth
 }
@@ -262,7 +242,7 @@ func main() {
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
-	listener, err := museMidi.NewListener(1, reader.Each(func(pos *reader.Position, msg midi.Message) {
+	listener, err := museMidi.NewListener(0, reader.Each(func(pos *reader.Position, msg midi.Message) {
 
 		// inspect
 		log.Println(msg)
@@ -270,6 +250,7 @@ func main() {
 		switch v := msg.(type) {
 		case NoteOn:
 			if v.Velocity() == 0 {
+				log.Printf("velocity 0")
 				synth.Synth.ReceiveMessage(map[string]any{
 					"command": "trigger",
 					"noteOff": fmt.Sprintf("%d", v.Key()),
@@ -286,11 +267,15 @@ func main() {
 					},
 				})
 			}
+			synth.Synth.DebugActive()
 		case NoteOff:
+			synth.Synth.DebugActive()
 			synth.Synth.ReceiveMessage(map[string]any{
 				"command": "trigger",
 				"noteOff": fmt.Sprintf("%d", v.Key()),
 			})
+			log.Printf("note off")
+			synth.Synth.DebugActive()
 		}
 	}))
 	if err != nil {
@@ -299,39 +284,41 @@ func main() {
 
 	defer listener.Close()
 
-	err = root.InitializeAudio()
-	if err != nil {
-		log.Fatalf("error opening audio stream, %v", err)
-	}
+	_ = root.RenderAudio()
 
-	defer root.TerminateAudio()
-
-	a := app.New()
-
-	a.Settings().SetTheme(&theme.Theme{})
-
-	w := a.NewWindow("Muse")
-
-	synth.SetupControls(w)
-
-	w.Resize(fyne.Size{
-		Width:  1200,
-		Height: 400,
-	})
-
-	w.SetContent(
-		container.NewVBox(
-			container.NewHBox(
-				widget.NewButton("Start", func() {
-					_ = root.StartAudio()
-				}),
-				widget.NewButton("Stop", func() {
-					_ = root.StopAudio()
-				}),
-			),
-			container.NewHScroll(synth.controls.UI()),
-		),
-	)
-
-	w.ShowAndRun()
+	//err = root.InitializeAudio()
+	//if err != nil {
+	//	log.Fatalf("error opening audio stream, %v", err)
+	//}
+	//
+	//defer root.TerminateAudio()
+	//
+	//a := app.New()
+	//
+	//a.Settings().SetTheme(&theme.Theme{})
+	//
+	//w := a.NewWindow("Muse")
+	//
+	//synth.SetupControls(w)
+	//
+	//w.Resize(fyne.Size{
+	//	Width:  1200,
+	//	Height: 400,
+	//})
+	//
+	//w.SetContent(
+	//	container.NewVBox(
+	//		container.NewHBox(
+	//			widget.NewButton("Start", func() {
+	//				_ = root.StartAudio()
+	//			}),
+	//			widget.NewButton("Stop", func() {
+	//				_ = root.StopAudio()
+	//			}),
+	//		),
+	//		container.NewHScroll(synth.controls.UI()),
+	//	),
+	//)
+	//
+	//w.ShowAndRun()
 }
