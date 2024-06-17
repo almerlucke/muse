@@ -168,6 +168,8 @@ func (p *Player) Note(duration float64, amplitude float64, message any, config *
 
 func (p *Player) NoteOff() {}
 
+func (p *Player) Clear() {}
+
 func (p *Player) activate(amplitude float64, message any, config *muse.Configuration) {
 	content := message.(map[string]any)
 

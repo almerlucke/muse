@@ -78,6 +78,10 @@ func (tv *TestVoice) NoteOff() {
 	// STUB
 }
 
+func (tv *TestVoice) Clear() {
+	tv.adsrEnv.Clear()
+}
+
 func main() {
 	root := muse.New(2)
 

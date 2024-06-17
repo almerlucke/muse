@@ -15,11 +15,8 @@ import (
 	"github.com/almerlucke/muse/ui/controls"
 	"github.com/almerlucke/muse/utils/notes"
 
-	museMidi "github.com/almerlucke/muse/midi"
-
-	"gitlab.com/gomidi/midi"
-	. "gitlab.com/gomidi/midi/midimessage/channel" // (Channel Messages)
-	"gitlab.com/gomidi/midi/reader"
+	"gitlab.com/gomidi/midi/v2"
+	_ "gitlab.com/gomidi/midi/v2/drivers/rtmididrv"
 )
 
 type ClassicSynth struct {
@@ -49,7 +46,7 @@ func NewClassicSynth(bpm float64) *ClassicSynth {
 
 	synth.ampEnvSetting = ampEnvSetting
 	synth.filterEnvSetting = filterEnvSetting
-	synth.Synth = classic.New(40, ampEnvSetting, ampEnvSetting, &moog.Factory{}, moog.DefaultConfig()).Named("poly").AddTo(synth).(*classic.Synth)
+	synth.Synth = classic.New(20, ampEnvSetting, ampEnvSetting, &moog.Factory{}, moog.DefaultConfig()).Named("poly").AddTo(synth).(*classic.Synth)
 	synth.chorus1 = chorus.New(0.24, 0.83, 0.76, 0.2, 1.0, 0.75, nil).AddTo(synth).In(synth.Synth, synth.Synth, 1).(*chorus.Chorus)
 	synth.In(synth.chorus1, synth.chorus1, 1)
 
@@ -172,6 +169,8 @@ func (cs *ClassicSynth) ReceiveMessage(msg any) []*muse.Message {
 }
 
 func main() {
+	defer midi.CloseDriver()
+
 	root := muse.New(2)
 
 	bpm := 100.0
@@ -242,49 +241,46 @@ func main() {
 
 	// env.SynthesizeToFile("/Users/almerlucke/Desktop/classic_synth.aiff", 360.0, env.Config.SampleRate, true, sndfile.SF_FORMAT_AIFF)
 
-	listener, err := museMidi.NewListener(0, reader.Each(func(pos *reader.Position, msg midi.Message) {
-
-		// inspect
-		log.Println(msg)
-
-		switch v := msg.(type) {
-		case NoteOn:
-			if v.Velocity() == 0 {
-				log.Printf("velocity 0")
-				synth.Synth.ReceiveMessage(map[string]any{
-					"command": "trigger",
-					"noteOff": fmt.Sprintf("%d", v.Key()),
-				})
-			} else {
-				velocity := float64(v.Velocity()) / 127.0
-				log.Printf("velocity %v", velocity)
-				synth.Synth.ReceiveMessage(map[string]any{
-					"command":   "trigger",
-					"noteOn":    fmt.Sprintf("%d", v.Key()),
-					"amplitude": velocity,
-					"message": map[string]any{
-						"frequency": notes.Mtof(int(v.Key())),
-					},
-				})
-			}
-			synth.Synth.DebugActive()
-		case NoteOff:
-			synth.Synth.DebugActive()
-			synth.Synth.ReceiveMessage(map[string]any{
-				"command": "trigger",
-				"noteOff": fmt.Sprintf("%d", v.Key()),
-			})
-			log.Printf("note off")
-			synth.Synth.DebugActive()
-		}
-	}))
+	in, err := midi.FindInPort("VMPK")
 	if err != nil {
-		log.Fatalf("error opening midi listener, %v", err)
+		log.Fatal(err)
 	}
 
-	defer listener.Close()
+	midiStop, err := midi.ListenTo(in, func(msg midi.Message, timestamp int32) {
+		var ch, key, vel uint8
+		switch {
+		case msg.GetNoteStart(&ch, &key, &vel):
+			velocity := float64(vel) / 127.0
+			log.Printf("velocity %v", velocity)
+			synth.Synth.ReceiveMessage(map[string]any{
+				"command":   "trigger",
+				"noteOn":    fmt.Sprintf("%d", key),
+				"amplitude": velocity,
+				"message": map[string]any{
+					"frequency": notes.Mtof(int(key)),
+				},
+			})
+
+			fmt.Printf("starting note %s on channel %v with velocity %v\n", midi.Note(key), ch, vel)
+		case msg.GetNoteEnd(&ch, &key):
+			synth.Synth.ReceiveMessage(map[string]any{
+				"command": "trigger",
+				"noteOff": fmt.Sprintf("%d", key),
+			})
+			fmt.Printf("ending note %s on channel %v\n", midi.Note(key), ch)
+		default:
+			// ignore
+		}
+
+	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	_ = root.RenderAudio()
+
+	midiStop()
 
 	//err = root.InitializeAudio()
 	//if err != nil {

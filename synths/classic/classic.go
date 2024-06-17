@@ -100,6 +100,11 @@ func (v *Voice) IsActive() bool {
 	return v.ampEnv.IsActive()
 }
 
+func (v *Voice) Clear() {
+	v.ampEnv.Clear()
+	v.filterEnv.Clear()
+}
+
 func (v *Voice) Note(duration float64, amplitude float64, msg any, config *muse.Configuration) {
 	content := msg.(map[string]any)
 

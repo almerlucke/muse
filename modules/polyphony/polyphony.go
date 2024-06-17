@@ -3,7 +3,6 @@ package polyphony
 import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/utils/pool"
-	"log"
 )
 
 /*
@@ -15,13 +14,22 @@ type Voice interface {
 	NoteOn(amplitude float64, message any, config *muse.Configuration)
 	NoteOff()
 	Note(duration float64, amplitude float64, message any, config *muse.Configuration)
+	Clear()
 	IsActive() bool
+}
+
+type voiceInfo struct {
+	age            int64
+	isStolen       bool
+	nextMsg        map[string]any
+	nextIdentifier string
+	voice          Voice
 }
 
 type Polyphony struct {
 	*muse.BaseModule
-	freePool   *pool.Pool[Voice]
-	activePool *pool.Pool[Voice]
+	freePool   *pool.Pool[*voiceInfo]
+	activePool *pool.Pool[*voiceInfo]
 }
 
 func New(numChannels int, voices []Voice) *Polyphony {
@@ -29,11 +37,13 @@ func New(numChannels int, voices []Voice) *Polyphony {
 		BaseModule: muse.NewBaseModule(1, numChannels),
 	}
 
-	poly.freePool = pool.NewPool[Voice]()
-	poly.activePool = pool.NewPool[Voice]()
+	poly.freePool = pool.NewPool[*voiceInfo]()
+	poly.activePool = pool.NewPool[*voiceInfo]()
 
 	for _, voice := range voices {
-		poly.freePool.Push(&pool.Element[Voice]{Value: voice})
+		poly.freePool.Push(&pool.Element[*voiceInfo]{Value: &voiceInfo{
+			voice: voice,
+		}})
 	}
 
 	poly.SetSelf(poly)
@@ -42,10 +52,14 @@ func New(numChannels int, voices []Voice) *Polyphony {
 }
 
 func (p *Polyphony) noteOff(identifier string) {
-	p.CallActiveVoices(func(v Voice) bool {
-		if v.Identifier() == identifier {
-			v.NoteOff()
-			v.SetIdentifier("")
+	p.CallActiveVoiceInfo(func(info *voiceInfo) bool {
+		if info.isStolen && info.nextIdentifier == identifier {
+			info.isStolen = false
+			info.nextMsg = nil
+			info.nextIdentifier = ""
+		} else if info.voice.Identifier() == identifier {
+			info.voice.NoteOff()
+			info.voice.SetIdentifier("")
 			return false
 		}
 
@@ -53,16 +67,10 @@ func (p *Polyphony) noteOff(identifier string) {
 	})
 }
 
-func (p *Polyphony) DebugActive() {
-	p.CallActiveVoices(func(v Voice) bool {
-		log.Printf("active voice identifier: %s", v.Identifier())
-		return true
-	})
-}
-
 func (p *Polyphony) AllNotesOff() {
 	p.CallActiveVoices(func(v Voice) bool {
 		v.NoteOff()
+		v.SetIdentifier("")
 		return true
 	})
 }
@@ -70,6 +78,45 @@ func (p *Polyphony) AllNotesOff() {
 func (p *Polyphony) ReceiveControlValue(value any, index int) {
 	if index == 0 {
 		p.ReceiveMessage(value)
+	}
+}
+
+func (p *Polyphony) handleTriggerMessage(msg map[string]any, identifier string, duration float64, isNoteOn bool) {
+	v := p.getFreeVoice()
+	if v != nil {
+		if isNoteOn {
+			v.SetIdentifier(identifier)
+			v.NoteOn(msg["amplitude"].(float64), msg["message"], p.Config)
+		} else {
+			v.Note(duration, msg["amplitude"].(float64), msg["message"], p.Config)
+		}
+	} else {
+		// Steal oldest active voice
+		info := p.getOldestActiveVoiceInfo()
+		if info != nil {
+			info.isStolen = true
+			info.nextMsg = msg
+			info.nextIdentifier = identifier
+		}
+	}
+}
+
+func (p *Polyphony) activateStolenVoiceInfo(info *voiceInfo) {
+	if noteOnIdentifier, ok := info.nextMsg["noteOn"]; ok {
+		info.voice.Clear()
+		info.voice.SetIdentifier(noteOnIdentifier.(string))
+		info.voice.NoteOn(info.nextMsg["amplitude"].(float64), info.nextMsg["message"], p.Config)
+		info.isStolen = false
+		info.nextMsg = nil
+		info.age = 0
+		info.nextIdentifier = ""
+	} else if duration, ok := info.nextMsg["duration"]; ok {
+		info.voice.Clear()
+		info.voice.Note(duration.(float64), info.nextMsg["amplitude"].(float64), info.nextMsg["message"], p.Config)
+		info.isStolen = false
+		info.nextMsg = nil
+		info.age = 0
+		info.nextIdentifier = ""
 	}
 }
 
@@ -83,20 +130,9 @@ func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 		if noteOffIdentifier, ok := content["noteOff"]; ok {
 			p.noteOff(noteOffIdentifier.(string))
 		} else if noteOnIdentifier, ok := content["noteOn"]; ok {
-			v := p.GetFreeVoice()
-			if v != nil {
-				amplitude := content["amplitude"].(float64)
-				voiceMsg := content["message"]
-				v.SetIdentifier(noteOnIdentifier.(string))
-				v.NoteOn(amplitude, voiceMsg, p.Config)
-			}
+			p.handleTriggerMessage(content, noteOnIdentifier.(string), 0, true)
 		} else if duration, ok := content["duration"]; ok {
-			v := p.GetFreeVoice()
-			if v != nil {
-				amplitude := content["amplitude"].(float64)
-				voiceMsg := content["message"]
-				v.Note(duration.(float64), amplitude, voiceMsg, p.Config)
-			}
+			p.handleTriggerMessage(content, "", duration.(float64), false)
 		}
 	} else if command == "voice" {
 		// Pass message to all voices
@@ -108,11 +144,28 @@ func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 	return nil
 }
 
-func (p *Polyphony) GetFreeVoice() Voice {
+func (p *Polyphony) getOldestActiveVoiceInfo() *voiceInfo {
+	elem := p.activePool.First()
+	end := p.activePool.End()
+
+	var oldest *voiceInfo
+
+	for elem != end {
+		if !elem.Value.isStolen && (oldest == nil || elem.Value.age > oldest.age) {
+			oldest = elem.Value
+		}
+		elem = elem.Next
+	}
+
+	return oldest
+}
+
+func (p *Polyphony) getFreeVoice() Voice {
 	elem := p.freePool.Pop()
 	if elem != nil {
 		p.activePool.Push(elem)
-		return elem.Value
+		elem.Value.age = 0
+		return elem.Value.voice
 	}
 
 	return nil
@@ -129,7 +182,7 @@ func (p *Polyphony) CallVoices(f func(Voice)) {
 	})
 }
 
-func (p *Polyphony) CallActiveVoices(f func(Voice) bool) {
+func (p *Polyphony) CallActiveVoiceInfo(f func(*voiceInfo) bool) {
 	elem := p.activePool.First()
 	end := p.activePool.End()
 	for elem != end {
@@ -141,11 +194,17 @@ func (p *Polyphony) CallActiveVoices(f func(Voice) bool) {
 	}
 }
 
+func (p *Polyphony) CallActiveVoices(f func(Voice) bool) {
+	p.CallActiveVoiceInfo(func(info *voiceInfo) bool {
+		return f(info.voice)
+	})
+}
+
 func (p *Polyphony) CallInactiveVoices(f func(Voice) bool) {
 	elem := p.freePool.First()
 	end := p.freePool.End()
 	for elem != end {
-		ok := f(elem.Value)
+		ok := f(elem.Value.voice)
 		if !ok {
 			break
 		}
@@ -175,17 +234,33 @@ func (p *Polyphony) Synthesize() bool {
 	for elem != end {
 		prev := elem
 		elem = elem.Next
+		info := prev.Value
+		voice := prev.Value.voice
 
-		if prev.Value.IsActive() {
+		if voice.IsActive() {
 			// Add voice output to buffer
-			prev.Value.Synthesize()
+			voice.Synthesize()
 
-			for outputIndex := 0; outputIndex < len(p.Outputs); outputIndex++ {
-				socket := prev.Value.OutputAtIndex(outputIndex)
-				for sampIndex := 0; sampIndex < p.Config.BufferSize; sampIndex++ {
-					p.Outputs[outputIndex].Buffer[sampIndex] += socket.Buffer[sampIndex]
+			if info.isStolen {
+				// Fade out voice over 1 buffer cycle
+				x := 1.0 / float64(p.Config.BufferSize)
+				for outputIndex := 0; outputIndex < len(p.Outputs); outputIndex++ {
+					socket := voice.OutputAtIndex(outputIndex)
+					for sampIndex := 0; sampIndex < p.Config.BufferSize; sampIndex++ {
+						p.Outputs[outputIndex].Buffer[sampIndex] += socket.Buffer[sampIndex] * (1.0 - x*float64(sampIndex))
+					}
+				}
+				p.activateStolenVoiceInfo(info)
+			} else {
+				for outputIndex := 0; outputIndex < len(p.Outputs); outputIndex++ {
+					socket := voice.OutputAtIndex(outputIndex)
+					for sampIndex := 0; sampIndex < p.Config.BufferSize; sampIndex++ {
+						p.Outputs[outputIndex].Buffer[sampIndex] += socket.Buffer[sampIndex]
+					}
 				}
 			}
+		} else if info.isStolen {
+			p.activateStolenVoiceInfo(info)
 		} else {
 			prev.Unlink()
 			p.freePool.Push(prev)

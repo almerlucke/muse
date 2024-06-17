@@ -120,6 +120,11 @@ func (v *ChaosVoice) NoteOn(amplitude float64, msg any, config *muse.Configurati
 func (v *ChaosVoice) NoteOff() {
 }
 
+func (v *ChaosVoice) Clear() {
+	v.ampEnv.Clear()
+	v.filterEnv.Clear()
+}
+
 func randMinMax(min float64, max float64) float64 {
 	return rand.Float64()*(max-min) + min
 }

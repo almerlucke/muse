@@ -85,6 +85,11 @@ func (tv *TestVoice) NoteOff() {
 	tv.filterEnv.Release()
 }
 
+func (tv *TestVoice) Clear() {
+	tv.ampEnv.Clear()
+	tv.filterEnv.Clear()
+}
+
 func (tv *TestVoice) ReceiveMessage(msg any) []*muse.Message {
 	// content := msg.(map[string]any)
 	return nil
