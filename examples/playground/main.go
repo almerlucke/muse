@@ -1,30 +1,39 @@
 package main
 
 import (
+	"fmt"
+	"github.com/almerlucke/genny/and"
+	"github.com/almerlucke/genny/bucket"
+	"github.com/almerlucke/genny/function"
 	"github.com/almerlucke/muse"
-	lfo2 "github.com/almerlucke/muse/messengers/lfo"
-	"github.com/almerlucke/muse/modules/effects/flanger"
-	"github.com/almerlucke/muse/modules/player"
-	"github.com/almerlucke/sndfile"
+	"github.com/almerlucke/muse/controls/midi/notegen"
+	"github.com/almerlucke/muse/messengers/triggers/timer"
+	"github.com/almerlucke/muse/utils/notes"
+	"gitlab.com/gomidi/midi/v2"
+	_ "gitlab.com/gomidi/midi/v2/drivers/rtmididrv"
 )
 
 func main() {
-	muse.PushConfiguration(&muse.Configuration{
-		SampleRate: 44100.0,
-		BufferSize: 1024,
-	})
+	root := muse.New(0)
 
-	root := muse.New(1)
+	fmt.Println(midi.GetInPorts())
 
-	sf, _ := sndfile.NewSoundFile("resources/sounds/elisa.wav")
+	var out, _ = midi.OutPort(1)
+	// takes the first out port, for real, consider
+	// var out = OutByName("my synth")
 
-	pl := player.New(sf, 1.0, 1.0, false).AddTo(root)
-	fl := flanger.New(0.3, 0.3, 0.6).AddTo(root).In(pl)
-	fllfo := lfo2.NewBasicControlLFO(0.4, 0.1, 0.9).CtrlAddTo(root)
+	send, _ := midi.SendTo(out)
 
-	fl.CtrlIn(fllfo)
+	durationGen := function.NewRandom(250.0, 3000.0)
+	velocityGen := function.NewRandom(0.7, 1.0)
+	noteGen := and.NewLoop[notes.Note](
+		bucket.NewLoop(bucket.Indexed, notes.HungarianMinor.Root(notes.A3)...),
+		bucket.NewLoop(bucket.Indexed, notes.HungarianMinor.Root(notes.A4)...),
+		bucket.NewLoop(bucket.Indexed, notes.HungarianMinor.Root(notes.A5)...),
+		bucket.NewLoop(bucket.Indexed, notes.HungarianMinor.Root(notes.A4)...),
+	)
 
-	root.In(fl)
+	notegen.New(noteGen, velocityGen, durationGen, send).CtrlAddTo(root).CtrlIn(timer.NewControl(500, nil).CtrlAddTo(root))
 
 	_ = root.RenderAudio()
 }

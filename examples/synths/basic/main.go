@@ -82,8 +82,8 @@ func (s *Source) New(initValues any) basic.Source {
 
 	newSource.SetSelf(newSource)
 
-	newSource.AddModule(newSource.osc1)
-	newSource.AddModule(newSource.osc2)
+	newSource.osc1.AddTo(newSource)
+	newSource.osc2.AddTo(newSource)
 
 	newSource.In(modules.Amp(newSource.osc1, 0, 0.75).AddTo(newSource))
 	newSource.In(modules.Amp(newSource.osc2, 0, 0.75).AddTo(newSource))

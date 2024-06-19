@@ -48,11 +48,11 @@ func NewVoice(source Source, ampEnvSetting *adsrc.Setting, filterEnvSetting *ads
 
 	voice.SetSelf(voice)
 
-	voice.AddModule(voice.ampEnv)
-	voice.AddModule(voice.filterEnv)
-	voice.AddModule(voice.filter)
-	voice.AddModule(voice.source)
-	voice.AddModule(voice.panner)
+	voice.ampEnv.AddTo(voice)
+	voice.filterEnv.AddTo(voice)
+	voice.filter.AddTo(voice)
+	voice.source.AddTo(voice)
+	voice.panner.AddTo(voice)
 
 	filterScaler := functor.New(1, func(v []float64) float64 {
 		minFc := voice.filterFcMin
@@ -65,15 +65,9 @@ func NewVoice(source Source, ampEnvSetting *adsrc.Setting, filterEnvSetting *ads
 		return v[0]*(maxFc-minFc) + minFc
 	}).AddTo(voice)
 
-	ampVCA := functor.NewMult(2).AddTo(voice)
-
-	voice.source.Connect(0, voice.filter, 0)
-	voice.filterEnv.Connect(0, filterScaler, 0)
-	filterScaler.Connect(0, voice.filter, 1)
-	voice.filter.Connect(0, ampVCA, 0)
-	voice.ampEnv.Connect(0, ampVCA, 1)
-	ampVCA.Connect(0, voice.panner, 0)
-
+	filterScaler.In(voice.filterEnv)
+	voice.filter.In(voice.source, filterScaler)
+	voice.panner.In(functor.NewMult(2).AddTo(voice).In(voice.filter, voice.ampEnv))
 	voice.In(voice.panner, voice.panner, 1)
 
 	return voice

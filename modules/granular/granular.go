@@ -81,8 +81,8 @@ func New(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], g
 
 	gl := &Granulator{
 		BaseModule:   muse.NewBaseModule(0, numOutputs),
-		freeGrains:   pool.NewPool[*grain](),
-		activeGrains: pool.NewPool[*grain](),
+		freeGrains:   pool.New[*grain](),
+		activeGrains: pool.New[*grain](),
 		paramGen:     paramGen,
 		sourceBufs:   make([][]float64, numOutputs), // synthesize buffer for grain source
 		outBufs:      make([][]float64, numOutputs), // output buffers

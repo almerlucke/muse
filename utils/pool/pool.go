@@ -29,25 +29,46 @@ func (it *Iterator[T]) Reset() {
 	it.cur = it.sentinel.Next
 }
 
-func (it *Iterator[T]) Next() (T, bool) {
-	var null T
-
+func (it *Iterator[T]) Value() (v T, ok bool) {
 	e := it.cur
 
+	if e != it.sentinel {
+		v = it.cur.Value
+		ok = true
+	}
+
+	return
+}
+
+func (it *Iterator[T]) Remove() {
+	var e = it.cur
+
 	if e == it.sentinel {
-		return null, false
+		return
 	}
 
 	it.cur = it.cur.Next
 
-	return e.Value, true
+	e.Unlink()
+}
+
+func (it *Iterator[T]) Next() (v T, ok bool) {
+	var e = it.cur
+
+	if e != it.sentinel {
+		v = e.Value
+		ok = true
+		it.cur = it.cur.Next
+	}
+
+	return
 }
 
 type Pool[T any] struct {
 	sentinel *Element[T]
 }
 
-func NewPool[T any]() *Pool[T] {
+func New[T any]() *Pool[T] {
 	p := &Pool[T]{}
 	sentinel := &Element[T]{}
 	sentinel.Next = sentinel
@@ -88,4 +109,19 @@ func (p *Pool[T]) Push(e *Element[T]) {
 	e.Prev = p.sentinel
 	p.sentinel.Next.Prev = e
 	p.sentinel.Next = e
+}
+
+func (p *Pool[T]) PushValue(v T) {
+	p.Push(&Element[T]{Value: v})
+}
+
+func (p *Pool[T]) PopValue() T {
+	var v T
+
+	e := p.Pop()
+	if e != nil {
+		v = e.Value
+	}
+
+	return v
 }

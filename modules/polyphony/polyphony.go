@@ -37,8 +37,8 @@ func New(numChannels int, voices []Voice) *Polyphony {
 		BaseModule: muse.NewBaseModule(1, numChannels),
 	}
 
-	poly.freePool = pool.NewPool[*voiceInfo]()
-	poly.activePool = pool.NewPool[*voiceInfo]()
+	poly.freePool = pool.New[*voiceInfo]()
+	poly.activePool = pool.New[*voiceInfo]()
 
 	for _, voice := range voices {
 		poly.freePool.Push(&pool.Element[*voiceInfo]{Value: &voiceInfo{

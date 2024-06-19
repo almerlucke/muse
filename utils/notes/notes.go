@@ -239,6 +239,14 @@ func (s Scale) Freq(root Note) []float64 {
 	return f
 }
 
+func (s Scale) Root(root Note) []Note {
+	t := make([]Note, len(s))
+	for i, n := range s {
+		t[i] = Note(n) + root
+	}
+	return t
+}
+
 func (c Chord) Freq(transpose Note) []float64 {
 	f := make([]float64, len(c))
 	for i, n := range c {
@@ -257,6 +265,10 @@ func (c Chord) FreqAny(transpose Note) []any {
 
 func (n Note) Freq() float64 {
 	return Mtof(int(n))
+}
+
+func Ftom(freq float64) int {
+	return int(12.0*math.Log2(freq/440.0)) + 69
 }
 
 func Mtof(midiNote int) float64 {
