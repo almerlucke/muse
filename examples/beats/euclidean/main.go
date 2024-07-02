@@ -19,7 +19,10 @@ import (
 	"github.com/almerlucke/muse/synths/drums"
 	"github.com/almerlucke/muse/utils/timing"
 	"github.com/almerlucke/sndfile"
+	"github.com/almerlucke/sndfile/writer"
 	"github.com/google/uuid"
+	"gitlab.com/gomidi/midi/v2"
+	_ "gitlab.com/gomidi/midi/v2/drivers/rtmididrv"
 	"log"
 	"math/rand"
 )
@@ -41,6 +44,8 @@ func addDrumTrack(p muse.Patch, polyIdentifier string, sound genny.Generator[str
 }
 
 func main() {
+	defer midi.CloseDriver()
+
 	muse.PushConfiguration(&muse.Configuration{
 		SampleRate: 44100.0,
 		BufferSize: 256,
@@ -89,12 +94,13 @@ func main() {
 	flangLfo := lfo.NewBasicControlLFO(0.05, 0.2, 0.4).CtrlAddTo(root)
 	flang.CtrlIn(flangLfo)
 	pp := pingpong.New(bpmToMilli*2, bpmToMilli*0.75, 0.2, 0.05).AddTo(root).In(flang, flang, 1)
-	fv := freeverb.New().AddTo(root).In(pp, pp, 1).(*freeverb.FreeVerb)
-
-	fv.SetDamp(0.7)
-	fv.SetRoomSize(0.9)
-	fv.SetWet(0.02)
-	fv.SetDry(0.3)
+	fv := freeverb.New().AddTo(root).In(pp, pp, 1).Exec(func(obj any) {
+		fv := obj.(*freeverb.FreeVerb)
+		fv.SetDamp(0.7)
+		fv.SetRoomSize(0.9)
+		fv.SetWet(0.02)
+		fv.SetDry(0.3)
+	})
 
 	root.In(fv, fv, 1)
 
@@ -113,13 +119,13 @@ func main() {
 		hihatRhythm.Set(16, 5, 0)
 		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 1.25)
 	})
-	sched.ScheduleFunction(timing.Second*60.0, func() {
+	sched.ScheduleFunction(timing.Second*75.0, func() {
 		log.Printf("pingpong2")
 		hihatConst.SetValue("hihat1")
 		hihatRhythm.Set(16, 9, 0)
 		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 0.75)
 	})
-	sched.ScheduleFunction(timing.Second*90.0, func() {
+	sched.ScheduleFunction(timing.Second*120.0, func() {
 		log.Printf("pingpong3")
 		hihatConst.SetValue("hihat2")
 		hihatRhythm.Set(16, 5, 0)
@@ -128,7 +134,7 @@ func main() {
 		snareHigh = 1.1
 		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 1.75)
 	})
-	sched.ScheduleFunction(timing.Second*120.0, func() {
+	sched.ScheduleFunction(timing.Second*165.0, func() {
 		log.Printf("pingpong4")
 		hihatConst.SetValue("hihat1")
 		hihatRhythm.Set(16, 9, 0)
@@ -137,7 +143,7 @@ func main() {
 		snareHigh = 3.5
 		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 0.75)
 	})
-	sched.ScheduleFunction(timing.Second*150.0, func() {
+	sched.ScheduleFunction(timing.Second*210.0, func() {
 		log.Printf("pingpong5")
 		hihatConst.SetValue("hihat2")
 		hihatRhythm.Set(16, 3, 0)
@@ -146,7 +152,7 @@ func main() {
 		snareHigh = 1.1
 		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 1.25)
 	})
-	sched.ScheduleFunction(timing.Second*180.0, func() {
+	sched.ScheduleFunction(timing.Second*255.0, func() {
 		log.Printf("pingpong6")
 		hihatConst.SetValue("hihat1")
 		hihatRhythm.Set(16, 9, 0)
@@ -156,6 +162,50 @@ func main() {
 		pp.(*pingpong.PingPong).SetRead(bpmToMilli * 0.75)
 	})
 
-	_ = root.RenderAudio()
-	// _ = root.RenderToSoundFile("/home/almer/Music/BirdsDrumsSlow", writer.AIFC, 240, 44100.0, true)
+	//////////////
+	//// MIDI ////
+	//////////////
+
+	//fmt.Println(midi.GetInPorts())
+	//
+	//var out, _ = midi.OutPort(1)
+	//// takes the first out port, for real, consider
+	//// var out = OutByName("my synth")
+	//
+	//send, _ := midi.SendTo(out)
+	//
+	//root.AddMidiClock(bpm, send)
+	//
+	//ng := notegen.New(0,
+	//	and.NewLoop[notes.Note](
+	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A3)...),
+	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
+	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A5)...),
+	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
+	//	),
+	//	function.NewRandom(0.7, 1.0),
+	//	function.NewRandom(250.0, 3000.0),
+	//	send).CtrlAddTo(root).CtrlIn(timer.NewControl(timing.BPMToMilli(bpm), nil).CtrlAddTo(root)).(*notegen.NoteGen)
+	//
+	//ng2 := notegen.New(1,
+	//	and.NewLoop[notes.Note](
+	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A2)...),
+	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A3)...),
+	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A2)...),
+	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
+	//	),
+	//	function.NewRandom(0.7, 1.0),
+	//	function.NewRandom(250.0, 3000.0),
+	//	send).CtrlAddTo(root).CtrlIn(timer.NewControl(timing.BPMToMilli(int(float64(bpm)*0.5)), nil).CtrlAddTo(root)).(*notegen.NoteGen)
+	//
+	//defer func() {
+	//	ng.NotesOff()
+	//	ng2.NotesOff()
+	//	root.MidiStop()
+	//}()
+	//
+	//root.MidiStart()
+
+	//_ = root.RenderAudio()
+	_ = root.RenderToSoundFile("/home/almer/Music/JoyInTheLordDrumsSlow", writer.AIFC, 300, 44100.0, true)
 }

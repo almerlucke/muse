@@ -10,7 +10,6 @@ import (
 )
 
 type noteInfo struct {
-	channel      uint8
 	key          uint8
 	offTimestamp int64
 }
@@ -24,9 +23,10 @@ type NoteGen struct {
 	noteGen       genny.Generator[notes.Note]
 	velocityGen   genny.Generator[float64]
 	durationGen   genny.Generator[float64]
+	channel       uint8
 }
 
-func New(noteGen genny.Generator[notes.Note], velocityGen genny.Generator[float64], durationGen genny.Generator[float64], send func(msg midi.Message) error) *NoteGen {
+func New(channel uint8, noteGen genny.Generator[notes.Note], velocityGen genny.Generator[float64], durationGen genny.Generator[float64], send func(msg midi.Message) error) *NoteGen {
 	ng := &NoteGen{
 		BaseControl: muse.NewBaseControl(),
 		activeNotes: pool.New[*noteInfo](),
@@ -35,6 +35,7 @@ func New(noteGen genny.Generator[notes.Note], velocityGen genny.Generator[float6
 		noteGen:     noteGen,
 		velocityGen: velocityGen,
 		durationGen: durationGen,
+		channel:     channel,
 	}
 
 	ng.SetSelf(ng)
@@ -72,11 +73,10 @@ func (ng *NoteGen) ReceiveControlValue(value any, index int) {
 
 		if !ng.hasActiveNote(key) {
 			ng.activeNotes.PushValue(&noteInfo{
-				channel:      0,
 				key:          key,
 				offTimestamp: ng.lastTimestamp + timing.MilliToSamps(durationMs, ng.sampleRate),
 			})
-			_ = ng.send(midi.NoteOn(0, key, velocity))
+			_ = ng.send(midi.NoteOn(ng.channel, key, velocity))
 		}
 	}
 }
@@ -87,13 +87,20 @@ func (ng *NoteGen) Tick(timestamp int64, _ *muse.Configuration) {
 	it := ng.activeNotes.Iterator()
 	for {
 		if v, ok := it.Value(); ok {
-			if v.offTimestamp < timestamp {
-				_ = ng.send(midi.NoteOff(v.channel, v.key))
+			if v.offTimestamp <= timestamp {
+				_ = ng.send(midi.NoteOff(ng.channel, v.key))
 				it.Remove()
 			}
 			it.Next()
 		} else {
 			break
 		}
+	}
+}
+
+func (ng *NoteGen) NotesOff() {
+	it := ng.activeNotes.Iterator()
+	for v, ok := it.Next(); ok; v, ok = it.Next() {
+		_ = ng.send(midi.NoteOff(ng.channel, v.key))
 	}
 }

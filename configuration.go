@@ -32,6 +32,10 @@ func (cfg *Configuration) SecToSamps(sec float64) int64 {
 	return timing.SecToSamps(sec, cfg.SampleRate)
 }
 
+func (cfg *Configuration) SecToSampsf(sec float64) float64 {
+	return timing.SecToSampsf(sec, cfg.SampleRate)
+}
+
 func (cfg *Configuration) SampsToSec(samps int64) float64 {
 	return float64(samps) / cfg.SampleRate
 }

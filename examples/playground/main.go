@@ -14,6 +14,13 @@ import (
 )
 
 func main() {
+	defer midi.CloseDriver()
+
+	muse.PushConfiguration(&muse.Configuration{
+		SampleRate: 96000.0,
+		BufferSize: 512,
+	})
+
 	root := muse.New(0)
 
 	fmt.Println(midi.GetInPorts())
@@ -24,6 +31,8 @@ func main() {
 
 	send, _ := midi.SendTo(out)
 
+	root.AddMidiClock(120.0, send)
+
 	durationGen := function.NewRandom(250.0, 3000.0)
 	velocityGen := function.NewRandom(0.7, 1.0)
 	noteGen := and.NewLoop[notes.Note](
@@ -33,7 +42,14 @@ func main() {
 		bucket.NewLoop(bucket.Indexed, notes.HungarianMinor.Root(notes.A4)...),
 	)
 
-	notegen.New(noteGen, velocityGen, durationGen, send).CtrlAddTo(root).CtrlIn(timer.NewControl(500, nil).CtrlAddTo(root))
+	ng := notegen.New(0, noteGen, velocityGen, durationGen, send).CtrlAddTo(root).CtrlIn(timer.NewControl(500, nil).CtrlAddTo(root)).(*notegen.NoteGen)
+
+	defer func() {
+		ng.NotesOff()
+		root.MidiStop()
+	}()
+
+	root.MidiStart()
 
 	_ = root.RenderAudio()
 }
