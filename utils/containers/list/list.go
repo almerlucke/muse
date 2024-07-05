@@ -6,17 +6,10 @@ type Element[T any] struct {
 	Next  *Element[T]
 }
 
-func NewElement[T any](t T) *Element[T] {
-	return &Element[T]{
-		Value: t,
-		Prev:  nil,
-		Next:  nil,
-	}
-}
-
-func (e *Element[T]) Unlink() {
+func (e *Element[T]) Unlink() *Element[T] {
 	e.Prev.Next = e.Next
 	e.Next.Prev = e.Prev
+	return e
 }
 
 type Iterator[T any] struct {
@@ -110,6 +103,24 @@ func New[T any]() *List[T] {
 	return l
 }
 
+func (l *List[T]) Length() int {
+	var (
+		n  int
+		it = l.Iterator(true)
+	)
+
+	for _, ok := it.Next(); ok; _, ok = it.Next() {
+		n++
+	}
+
+	return n
+}
+
+func (l *List[T]) Clear() {
+	l.root.Next = l.root
+	l.root.Prev = l.root
+}
+
 func (l *List[T]) Iterator(fromStart bool) *Iterator[T] {
 	if fromStart {
 		return &Iterator[T]{
@@ -125,16 +136,69 @@ func (l *List[T]) Iterator(fromStart bool) *Iterator[T] {
 	}
 }
 
-func (l *List[T]) End() *Element[T] {
+func (l *List[T]) Until(f func(T, int) bool) {
+	for e, i := l.root.Next, 0; e != l.root; e = e.Next {
+		if !f(e.Value, i) {
+			return
+		}
+		i++
+	}
+}
+
+func (l *List[T]) ForEach(f func(T, int)) {
+	l.Until(func(t T, index int) bool {
+		f(t, index)
+		return true
+	})
+}
+
+func (l *List[T]) ForEachElement(f func(*Element[T], int)) {
+	for e, i := l.root.Next, 0; e != l.root; {
+		prev := e
+		e = e.Next
+		f(prev, i) // call f on prev so f can unlink element safely if needed
+		i++
+	}
+}
+
+func (l *List[T]) Map(f func(T) T) *List[T] {
+	cpy := New[T]()
+
+	l.ForEach(func(t T, _ int) {
+		cpy.PushBack(f(t))
+	})
+
+	return cpy
+}
+
+func (l *List[T]) Reduce(initValue T, f func(T, T) T) T {
+	var accum = initValue
+
+	l.ForEach(func(t T, _ int) {
+		accum = f(accum, t)
+	})
+
+	return accum
+}
+
+func (l *List[T]) EndElement() *Element[T] {
 	return l.root
 }
 
-func (l *List[T]) Last() *Element[T] {
+func (l *List[T]) FirstElement() *Element[T] {
+	return l.root.Next
+}
+
+func (l *List[T]) LastElement() *Element[T] {
 	return l.root.Prev
 }
 
-func (l *List[T]) First() *Element[T] {
-	return l.root.Next
+func (l *List[T]) First() T {
+	return l.FirstElement().Value
+}
+
+func (l *List[T]) Last() T {
+	return l.LastElement().Value
 }
 
 func (l *List[T]) PushElement(e *Element[T]) {

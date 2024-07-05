@@ -94,10 +94,10 @@ func New(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], g
 	}
 
 	for i := 0; i < grainPoolSize; i++ {
-		g := &grain{}
-		g.source = sf.New(config)
-		g.envelope = ef.New(config)
-		gl.freeGrains.Push(g)
+		gl.freeGrains.Push(&grain{
+			source:   sf.New(config),
+			envelope: ef.New(config),
+		})
 	}
 
 	if paramGen.Type() == Onset {
@@ -118,9 +118,9 @@ func (gl *Granulator) ReceiveMessage(msg any) []*muse.Message {
 	return gl.paramGen.ReceiveMessage(msg)
 }
 
-func (gl *Granulator) synthesizeList(l *list.List[*grain], out [][]float64, bufSize int) {
-	for it := l.Iterator(true); !it.Finished(); {
-		g, _ := it.Value()
+func (gl *Granulator) synthesizeActiveGrains(out [][]float64, bufSize int) {
+	gl.activeGrains.ForEachElement(func(e *list.Element[*grain], index int) {
+		g := e.Value
 
 		n := g.synthesize(gl.sourceBufs, bufSize)
 
@@ -131,11 +131,9 @@ func (gl *Granulator) synthesizeList(l *list.List[*grain], out [][]float64, bufS
 		}
 
 		if g.sampsToGo == 0 {
-			gl.freeGrains.PushElement(it.Remove())
-		} else {
-			it.Forward()
+			gl.freeGrains.PushElement(e.Unlink())
 		}
-	}
+	})
 }
 
 func (gl *Granulator) onsetSynthesize() {
@@ -251,7 +249,7 @@ func (gl *Granulator) Synthesize() bool {
 	}
 
 	// First run all currently active grains for full buffer size
-	gl.synthesizeList(gl.activeGrains, gl.outBufs, gl.Config.BufferSize)
+	gl.synthesizeActiveGrains(gl.outBufs, gl.Config.BufferSize)
 
 	// Synthesize based on parameter generator type
 	switch gl.paramGen.Type() {

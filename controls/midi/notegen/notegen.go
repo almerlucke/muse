@@ -86,23 +86,18 @@ func (ng *NoteGen) ReceiveControlValue(value any, index int) {
 func (ng *NoteGen) Tick(timestamp int64, _ *muse.Configuration) {
 	ng.lastTimestamp = timestamp
 
-	it := ng.activeNotes.Iterator(true)
-	for {
-		if v, ok := it.Value(); ok {
-			if v.offTimestamp <= timestamp {
-				_ = ng.send(midi.NoteOff(ng.channel, v.key))
-				it.Remove()
-			}
-			it.Next()
-		} else {
-			break
+	ng.activeNotes.ForEachElement(func(e *list.Element[*noteInfo], index int) {
+		if e.Value.offTimestamp <= timestamp {
+			_ = ng.send(midi.NoteOff(ng.channel, e.Value.key))
+			e.Unlink()
 		}
-	}
+	})
 }
 
 func (ng *NoteGen) NotesOff() {
-	for it := ng.activeNotes.Iterator(true); !it.Finished(); {
-		v, _ := it.Next()
-		_ = ng.send(midi.NoteOff(ng.channel, v.key))
-	}
+	ng.activeNotes.ForEach(func(info *noteInfo, index int) {
+		_ = ng.send(midi.NoteOff(ng.channel, info.key))
+	})
+
+	ng.activeNotes.Clear()
 }

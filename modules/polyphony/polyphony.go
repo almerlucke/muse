@@ -147,12 +147,11 @@ func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 func (p *Polyphony) getOldestActiveVoiceInfo() *voiceInfo {
 	var oldest *voiceInfo
 
-	for it := p.activePool.Iterator(true); !it.Finished(); {
-		v, _ := it.Next()
+	p.activePool.ForEach(func(v *voiceInfo, _ int) {
 		if !v.isStolen && (oldest == nil || v.age > oldest.age) {
 			oldest = v
 		}
-	}
+	})
 
 	return oldest
 }
@@ -180,13 +179,9 @@ func (p *Polyphony) CallVoices(f func(Voice)) {
 }
 
 func (p *Polyphony) CallActiveVoiceInfo(f func(*voiceInfo) bool) {
-	for it := p.activePool.Iterator(true); !it.Finished(); {
-		v, _ := it.Next()
-		ok := f(v)
-		if !ok {
-			break
-		}
-	}
+	p.activePool.Until(func(v *voiceInfo, _ int) bool {
+		return f(v)
+	})
 }
 
 func (p *Polyphony) CallActiveVoices(f func(Voice) bool) {
@@ -196,13 +191,9 @@ func (p *Polyphony) CallActiveVoices(f func(Voice) bool) {
 }
 
 func (p *Polyphony) CallInactiveVoices(f func(Voice) bool) {
-	for it := p.freePool.Iterator(true); !it.Finished(); {
-		v, _ := it.Next()
-		ok := f(v.voice)
-		if !ok {
-			break
-		}
-	}
+	p.freePool.Until(func(v *voiceInfo, _ int) bool {
+		return f(v.voice)
+	})
 }
 
 func (p *Polyphony) Synthesize() bool {
@@ -222,11 +213,9 @@ func (p *Polyphony) Synthesize() bool {
 	})
 
 	// Run active voices
-	for it := p.activePool.Iterator(true); !it.Finished(); {
-		e := it.Element()
-		v, _ := it.Next()
-		info := v
-		voice := v.voice
+	p.activePool.ForEachElement(func(e *list.Element[*voiceInfo], index int) {
+		info := e.Value
+		voice := info.voice
 
 		if voice.IsActive() {
 			// Add voice output to buffer
@@ -253,10 +242,9 @@ func (p *Polyphony) Synthesize() bool {
 		} else if info.isStolen {
 			p.activateStolenVoiceInfo(info)
 		} else {
-			e.Unlink()
-			p.freePool.PushElement(e)
+			p.freePool.PushElement(e.Unlink())
 		}
-	}
+	})
 
 	return true
 }

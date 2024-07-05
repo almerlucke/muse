@@ -12,6 +12,10 @@ func main() {
 	l.PushBack(2)
 	l.PushBack(3)
 
+	log.Printf("%d", l.Reduce(0, func(accum int, cur int) int {
+		return accum + cur
+	}))
+
 	for it := l.Iterator(true); !it.Finished(); {
 		v, _ := it.Next()
 		log.Printf("elem: %d", v)
