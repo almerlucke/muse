@@ -2,6 +2,7 @@ package muse
 
 import (
 	"bufio"
+	"github.com/almerlucke/muse/midi/clock"
 	"github.com/almerlucke/sndfile/writer"
 	"gitlab.com/gomidi/midi/v2"
 	"log"
@@ -22,14 +23,11 @@ func init() {
 
 type Muse struct {
 	*BasePatch
-	stream            *portaudio.Stream
-	outputFile        *writer.Writer
-	isRecording       bool
-	recordingBuffers  []buffer.Buffer
-	sendMidiClock     bool
-	midiSend          func(msg midi.Message) error
-	sampsPerClockTick float64
-	clockAccum        float64
+	stream           *portaudio.Stream
+	outputFile       *writer.Writer
+	isRecording      bool
+	recordingBuffers []buffer.Buffer
+	midiClock        *clock.Clock
 }
 
 func New(numOutputs int) *Muse {
@@ -47,21 +45,23 @@ func NewWithInputs(numInputs, numOutputs int) *Muse {
 }
 
 func (m *Muse) AddMidiClock(bpm int, send func(msg midi.Message) error) {
-	m.midiSend = send
-	m.sendMidiClock = send != nil
-	m.sampsPerClockTick = m.Config.SecToSampsf(60.0 / (float64(bpm) * 24.0))
+	m.midiClock = clock.New(bpm, send)
 }
 
-func (m *Muse) MidiStart() {
-	if m.sendMidiClock {
-		_ = m.midiSend(midi.Start())
+func (m *Muse) MidiStart() error {
+	if m.midiClock != nil {
+		return m.midiClock.Start()
 	}
+
+	return nil
 }
 
-func (m *Muse) MidiStop() {
-	if m.sendMidiClock {
-		_ = m.midiSend(midi.Stop())
+func (m *Muse) MidiStop() error {
+	if m.midiClock != nil {
+		return m.midiClock.Stop()
 	}
+
+	return nil
 }
 
 func (m *Muse) Synthesize() bool {
@@ -177,16 +177,6 @@ func (m *Muse) audioCallback(in, out [][]float32) {
 			out[j][i] = float32(m.OutputAtIndex(j).Buffer[i])
 		}
 	}
-
-	// Send midi clock if needed
-	if m.sendMidiClock {
-		t := float64(m.timestamp)
-
-		for t >= m.clockAccum {
-			_ = m.midiSend(midi.TimingClock())
-			m.clockAccum += m.sampsPerClockTick
-		}
-	}
 }
 
 func (m *Muse) InitializeAudio() error {
@@ -196,7 +186,7 @@ func (m *Muse) InitializeAudio() error {
 	}
 
 	stream, err := portaudio.OpenDefaultStream(
-		1,
+		m.NumInputs(),
 		m.NumOutputs(),
 		m.Config.SampleRate,
 		m.Config.BufferSize,
@@ -214,11 +204,22 @@ func (m *Muse) InitializeAudio() error {
 }
 
 func (m *Muse) StartAudio() error {
-	return m.stream.Start()
+	err := m.stream.Start()
+	if err != nil {
+		return err
+	}
+
+	return m.MidiStart()
 }
 
 func (m *Muse) StopAudio() error {
-	return m.stream.Stop()
+	err := m.stream.Stop()
+	if err != nil {
+		_ = m.MidiStop()
+		return err
+	}
+
+	return m.MidiStop()
 }
 
 func (m *Muse) TerminateAudio() {

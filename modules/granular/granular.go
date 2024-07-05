@@ -3,7 +3,7 @@ package granular
 import (
 	"github.com/almerlucke/muse"
 	"github.com/almerlucke/muse/utils"
-	"github.com/almerlucke/muse/utils/pool"
+	"github.com/almerlucke/muse/utils/containers/list"
 )
 
 type ParameterGeneratorType int
@@ -66,8 +66,8 @@ func (g *grain) synthesize(sourceBufs [][]float64, bufSize int) int {
 
 type Granulator struct {
 	*muse.BaseModule
-	freeGrains    *pool.Pool[*grain]
-	activeGrains  *pool.Pool[*grain]
+	freeGrains    *list.List[*grain]
+	activeGrains  *list.List[*grain]
 	paramGen      ParameterGenerator
 	nextParameter Parameter
 	interOnset    int64
@@ -81,8 +81,8 @@ func New(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], g
 
 	gl := &Granulator{
 		BaseModule:   muse.NewBaseModule(0, numOutputs),
-		freeGrains:   pool.New[*grain](),
-		activeGrains: pool.New[*grain](),
+		freeGrains:   list.New[*grain](),
+		activeGrains: list.New[*grain](),
 		paramGen:     paramGen,
 		sourceBufs:   make([][]float64, numOutputs), // synthesize buffer for grain source
 		outBufs:      make([][]float64, numOutputs), // output buffers
@@ -97,8 +97,7 @@ func New(numOutputs int, sf utils.Factory[Source], ef utils.Factory[Envelope], g
 		g := &grain{}
 		g.source = sf.New(config)
 		g.envelope = ef.New(config)
-		e := &pool.Element[*grain]{Value: g}
-		gl.freeGrains.Push(e)
+		gl.freeGrains.Push(g)
 	}
 
 	if paramGen.Type() == Onset {
@@ -119,12 +118,9 @@ func (gl *Granulator) ReceiveMessage(msg any) []*muse.Message {
 	return gl.paramGen.ReceiveMessage(msg)
 }
 
-func (gl *Granulator) synthesizePool(p *pool.Pool[*grain], out [][]float64, bufSize int) {
-	e := p.First()
-	end := p.End()
-
-	for e != end {
-		g := e.Value
+func (gl *Granulator) synthesizeList(l *list.List[*grain], out [][]float64, bufSize int) {
+	for it := l.Iterator(true); !it.Finished(); {
+		g, _ := it.Value()
 
 		n := g.synthesize(gl.sourceBufs, bufSize)
 
@@ -134,12 +130,10 @@ func (gl *Granulator) synthesizePool(p *pool.Pool[*grain], out [][]float64, bufS
 			}
 		}
 
-		prev := e
-		e = e.Next
-
 		if g.sampsToGo == 0 {
-			prev.Unlink()
-			gl.freeGrains.Push(prev)
+			gl.freeGrains.PushElement(it.Remove())
+		} else {
+			it.Forward()
 		}
 	}
 }
@@ -169,7 +163,7 @@ func (gl *Granulator) onsetSynthesize() {
 
 		// While interOnset == 0 generate new grains and synthesize for remaining samples in this frame
 		for gl.interOnset == 0 {
-			e := gl.freeGrains.Pop()
+			e := gl.freeGrains.PopElement()
 			if e != nil {
 				e.Value.activate(gl.nextParameter, gl.Config)
 
@@ -184,9 +178,9 @@ func (gl *Granulator) onsetSynthesize() {
 
 				// If grain is done, put it back in free list, otherwise keep it for next frame in active grains
 				if e.Value.sampsToGo == 0 {
-					gl.freeGrains.Push(e)
+					gl.freeGrains.PushElement(e)
 				} else {
-					gl.activeGrains.Push(e)
+					gl.activeGrains.PushElement(e)
 				}
 			}
 
@@ -210,7 +204,7 @@ func (gl *Granulator) perFrameSynthesize() {
 
 	// For each parameter activate a grain and run it for the remaining samples in this frame
 	for _, param := range params {
-		e := gl.freeGrains.Pop()
+		e := gl.freeGrains.PopElement()
 		if e == nil {
 			continue
 		}
@@ -234,9 +228,9 @@ func (gl *Granulator) perFrameSynthesize() {
 
 		// If grain is done, put it back in free list, otherwise keep it for next frame in active grains
 		if e.Value.sampsToGo == 0 {
-			gl.freeGrains.Push(e)
+			gl.freeGrains.PushElement(e)
 		} else {
-			gl.activeGrains.Push(e)
+			gl.activeGrains.PushElement(e)
 		}
 	}
 
@@ -257,7 +251,7 @@ func (gl *Granulator) Synthesize() bool {
 	}
 
 	// First run all currently active grains for full buffer size
-	gl.synthesizePool(gl.activeGrains, gl.outBufs, gl.Config.BufferSize)
+	gl.synthesizeList(gl.activeGrains, gl.outBufs, gl.Config.BufferSize)
 
 	// Synthesize based on parameter generator type
 	switch gl.paramGen.Type() {

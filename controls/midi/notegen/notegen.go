@@ -3,8 +3,8 @@ package notegen
 import (
 	"github.com/almerlucke/genny"
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/utils/containers/list"
 	"github.com/almerlucke/muse/utils/notes"
-	"github.com/almerlucke/muse/utils/pool"
 	"github.com/almerlucke/muse/utils/timing"
 	"gitlab.com/gomidi/midi/v2"
 )
@@ -16,7 +16,7 @@ type noteInfo struct {
 
 type NoteGen struct {
 	*muse.BaseControl
-	activeNotes   *pool.Pool[*noteInfo]
+	activeNotes   *list.List[*noteInfo]
 	send          func(msg midi.Message) error
 	lastTimestamp int64
 	sampleRate    float64
@@ -29,7 +29,7 @@ type NoteGen struct {
 func New(channel uint8, noteGen genny.Generator[notes.Note], velocityGen genny.Generator[float64], durationGen genny.Generator[float64], send func(msg midi.Message) error) *NoteGen {
 	ng := &NoteGen{
 		BaseControl: muse.NewBaseControl(),
-		activeNotes: pool.New[*noteInfo](),
+		activeNotes: list.New[*noteInfo](),
 		send:        send,
 		sampleRate:  muse.CurrentConfiguration().SampleRate,
 		noteGen:     noteGen,
@@ -44,12 +44,14 @@ func New(channel uint8, noteGen genny.Generator[notes.Note], velocityGen genny.G
 }
 
 func (ng *NoteGen) hasActiveNote(key uint8) bool {
-	it := ng.activeNotes.Iterator()
-	for v, ok := it.Next(); ok; v, ok = it.Next() {
+	for it := ng.activeNotes.Iterator(true); !it.Finished(); {
+		v, _ := it.Next()
+
 		if v.key == key {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -72,7 +74,7 @@ func (ng *NoteGen) ReceiveControlValue(value any, index int) {
 		velocity := uint8(ng.velocityGen.Generate() * 127.0)
 
 		if !ng.hasActiveNote(key) {
-			ng.activeNotes.PushValue(&noteInfo{
+			ng.activeNotes.Push(&noteInfo{
 				key:          key,
 				offTimestamp: ng.lastTimestamp + timing.MilliToSamps(durationMs, ng.sampleRate),
 			})
@@ -84,7 +86,7 @@ func (ng *NoteGen) ReceiveControlValue(value any, index int) {
 func (ng *NoteGen) Tick(timestamp int64, _ *muse.Configuration) {
 	ng.lastTimestamp = timestamp
 
-	it := ng.activeNotes.Iterator()
+	it := ng.activeNotes.Iterator(true)
 	for {
 		if v, ok := it.Value(); ok {
 			if v.offTimestamp <= timestamp {
@@ -99,8 +101,8 @@ func (ng *NoteGen) Tick(timestamp int64, _ *muse.Configuration) {
 }
 
 func (ng *NoteGen) NotesOff() {
-	it := ng.activeNotes.Iterator()
-	for v, ok := it.Next(); ok; v, ok = it.Next() {
+	for it := ng.activeNotes.Iterator(true); !it.Finished(); {
+		v, _ := it.Next()
 		_ = ng.send(midi.NoteOff(ng.channel, v.key))
 	}
 }

@@ -2,7 +2,7 @@ package polyphony
 
 import (
 	"github.com/almerlucke/muse"
-	"github.com/almerlucke/muse/utils/pool"
+	"github.com/almerlucke/muse/utils/containers/list"
 )
 
 /*
@@ -28,8 +28,8 @@ type voiceInfo struct {
 
 type Polyphony struct {
 	*muse.BaseModule
-	freePool   *pool.Pool[*voiceInfo]
-	activePool *pool.Pool[*voiceInfo]
+	freePool   *list.List[*voiceInfo]
+	activePool *list.List[*voiceInfo]
 }
 
 func New(numChannels int, voices []Voice) *Polyphony {
@@ -37,13 +37,13 @@ func New(numChannels int, voices []Voice) *Polyphony {
 		BaseModule: muse.NewBaseModule(1, numChannels),
 	}
 
-	poly.freePool = pool.New[*voiceInfo]()
-	poly.activePool = pool.New[*voiceInfo]()
+	poly.freePool = list.New[*voiceInfo]()
+	poly.activePool = list.New[*voiceInfo]()
 
 	for _, voice := range voices {
-		poly.freePool.Push(&pool.Element[*voiceInfo]{Value: &voiceInfo{
+		poly.freePool.Push(&voiceInfo{
 			voice: voice,
-		}})
+		})
 	}
 
 	poly.SetSelf(poly)
@@ -145,27 +145,24 @@ func (p *Polyphony) ReceiveMessage(msg any) []*muse.Message {
 }
 
 func (p *Polyphony) getOldestActiveVoiceInfo() *voiceInfo {
-	elem := p.activePool.First()
-	end := p.activePool.End()
-
 	var oldest *voiceInfo
 
-	for elem != end {
-		if !elem.Value.isStolen && (oldest == nil || elem.Value.age > oldest.age) {
-			oldest = elem.Value
+	for it := p.activePool.Iterator(true); !it.Finished(); {
+		v, _ := it.Next()
+		if !v.isStolen && (oldest == nil || v.age > oldest.age) {
+			oldest = v
 		}
-		elem = elem.Next
 	}
 
 	return oldest
 }
 
 func (p *Polyphony) getFreeVoice() Voice {
-	elem := p.freePool.Pop()
-	if elem != nil {
-		p.activePool.Push(elem)
-		elem.Value.age = 0
-		return elem.Value.voice
+	e := p.freePool.PopElement()
+	if e != nil {
+		p.activePool.PushElement(e)
+		e.Value.age = 0
+		return e.Value.voice
 	}
 
 	return nil
@@ -183,14 +180,12 @@ func (p *Polyphony) CallVoices(f func(Voice)) {
 }
 
 func (p *Polyphony) CallActiveVoiceInfo(f func(*voiceInfo) bool) {
-	elem := p.activePool.First()
-	end := p.activePool.End()
-	for elem != end {
-		ok := f(elem.Value)
+	for it := p.activePool.Iterator(true); !it.Finished(); {
+		v, _ := it.Next()
+		ok := f(v)
 		if !ok {
 			break
 		}
-		elem = elem.Next
 	}
 }
 
@@ -201,14 +196,12 @@ func (p *Polyphony) CallActiveVoices(f func(Voice) bool) {
 }
 
 func (p *Polyphony) CallInactiveVoices(f func(Voice) bool) {
-	elem := p.freePool.First()
-	end := p.freePool.End()
-	for elem != end {
-		ok := f(elem.Value.voice)
+	for it := p.freePool.Iterator(true); !it.Finished(); {
+		v, _ := it.Next()
+		ok := f(v.voice)
 		if !ok {
 			break
 		}
-		elem = elem.Next
 	}
 }
 
@@ -229,13 +222,11 @@ func (p *Polyphony) Synthesize() bool {
 	})
 
 	// Run active voices
-	end := p.activePool.End()
-	elem := p.activePool.First()
-	for elem != end {
-		prev := elem
-		elem = elem.Next
-		info := prev.Value
-		voice := prev.Value.voice
+	for it := p.activePool.Iterator(true); !it.Finished(); {
+		e := it.Element()
+		v, _ := it.Next()
+		info := v
+		voice := v.voice
 
 		if voice.IsActive() {
 			// Add voice output to buffer
@@ -262,8 +253,8 @@ func (p *Polyphony) Synthesize() bool {
 		} else if info.isStolen {
 			p.activateStolenVoiceInfo(info)
 		} else {
-			prev.Unlink()
-			p.freePool.Push(prev)
+			e.Unlink()
+			p.freePool.PushElement(e)
 		}
 	}
 

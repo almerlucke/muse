@@ -1,25 +1,29 @@
 package main
 
 import (
+	"fmt"
 	"github.com/almerlucke/genny"
+	"github.com/almerlucke/genny/and"
 	"github.com/almerlucke/genny/bucket"
 	"github.com/almerlucke/genny/constant"
 	"github.com/almerlucke/genny/function"
 	"github.com/almerlucke/genny/template"
 	"github.com/almerlucke/muse"
+	"github.com/almerlucke/muse/controls/midi/notegen"
 	"github.com/almerlucke/muse/messengers/banger"
 	"github.com/almerlucke/muse/messengers/lfo"
 	"github.com/almerlucke/muse/messengers/scheduler"
 	"github.com/almerlucke/muse/messengers/triggers/stepper"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing"
 	"github.com/almerlucke/muse/messengers/triggers/stepper/swing/euclidean"
+	"github.com/almerlucke/muse/messengers/triggers/timer"
 	"github.com/almerlucke/muse/modules/effects/flanger"
 	"github.com/almerlucke/muse/modules/effects/freeverb"
 	"github.com/almerlucke/muse/modules/effects/pingpong"
 	"github.com/almerlucke/muse/synths/drums"
+	"github.com/almerlucke/muse/utils/notes"
 	"github.com/almerlucke/muse/utils/timing"
 	"github.com/almerlucke/sndfile"
-	"github.com/almerlucke/sndfile/writer"
 	"github.com/google/uuid"
 	"gitlab.com/gomidi/midi/v2"
 	_ "gitlab.com/gomidi/midi/v2/drivers/rtmididrv"
@@ -48,7 +52,7 @@ func main() {
 
 	muse.PushConfiguration(&muse.Configuration{
 		SampleRate: 44100.0,
-		BufferSize: 256,
+		BufferSize: 512,
 	})
 
 	root := muse.New(2)
@@ -166,46 +170,41 @@ func main() {
 	//// MIDI ////
 	//////////////
 
-	//fmt.Println(midi.GetInPorts())
-	//
-	//var out, _ = midi.OutPort(1)
-	//// takes the first out port, for real, consider
-	//// var out = OutByName("my synth")
-	//
-	//send, _ := midi.SendTo(out)
-	//
-	//root.AddMidiClock(bpm, send)
-	//
-	//ng := notegen.New(0,
-	//	and.NewLoop[notes.Note](
-	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A3)...),
-	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
-	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A5)...),
-	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
-	//	),
-	//	function.NewRandom(0.7, 1.0),
-	//	function.NewRandom(250.0, 3000.0),
-	//	send).CtrlAddTo(root).CtrlIn(timer.NewControl(timing.BPMToMilli(bpm), nil).CtrlAddTo(root)).(*notegen.NoteGen)
-	//
-	//ng2 := notegen.New(1,
-	//	and.NewLoop[notes.Note](
-	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A2)...),
-	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A3)...),
-	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A2)...),
-	//		bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
-	//	),
-	//	function.NewRandom(0.7, 1.0),
-	//	function.NewRandom(250.0, 3000.0),
-	//	send).CtrlAddTo(root).CtrlIn(timer.NewControl(timing.BPMToMilli(int(float64(bpm)*0.5)), nil).CtrlAddTo(root)).(*notegen.NoteGen)
-	//
-	//defer func() {
-	//	ng.NotesOff()
-	//	ng2.NotesOff()
-	//	root.MidiStop()
-	//}()
-	//
-	//root.MidiStart()
+	fmt.Println(midi.GetInPorts())
 
-	//_ = root.RenderAudio()
-	_ = root.RenderToSoundFile("/home/almer/Music/JoyInTheLordDrumsSlow", writer.AIFC, 300, 44100.0, true)
+	var out, _ = midi.OutPort(1)
+	// takes the first out port, for real, consider
+	// var out = OutByName("my synth")
+
+	send, _ := midi.SendTo(out)
+
+	root.AddMidiClock(bpm, send)
+
+	ng := notegen.New(0,
+		and.NewLoop[notes.Note](
+			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A3)...),
+			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
+			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A5)...),
+			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
+		),
+		function.NewRandom(0.7, 1.0),
+		function.NewRandom(250.0, 3000.0),
+		send).CtrlAddTo(root).CtrlIn(timer.NewControl(timing.BPMToMilli(bpm), nil).CtrlAddTo(root)).(*notegen.NoteGen)
+
+	ng2 := notegen.New(1,
+		and.NewLoop[notes.Note](
+			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A2)...),
+			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A3)...),
+			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A2)...),
+			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
+		),
+		function.NewRandom(0.7, 1.0),
+		function.NewRandom(250.0, 3000.0),
+		send).CtrlAddTo(root).CtrlIn(timer.NewControl(timing.BPMToMilli(int(float64(bpm)*0.5)), nil).CtrlAddTo(root)).(*notegen.NoteGen)
+
+	_ = root.RenderAudio()
+
+	ng.NotesOff()
+	ng2.NotesOff()
+	//_ = root.RenderToSoundFile("/home/almer/Music/JoyInTheLordDrumsSlow", writer.AIFC, 300, 44100.0, true)
 }
