@@ -3,10 +3,13 @@ package notegen
 import (
 	"github.com/almerlucke/genny"
 	"github.com/almerlucke/muse"
+	museMidi "github.com/almerlucke/muse/midi"
 	"github.com/almerlucke/muse/utils/containers/list"
 	"github.com/almerlucke/muse/utils/notes"
 	"github.com/almerlucke/muse/utils/timing"
 	"gitlab.com/gomidi/midi/v2"
+	"gitlab.com/gomidi/midi/v2/drivers"
+	"log"
 )
 
 type noteInfo struct {
@@ -18,6 +21,7 @@ type NoteGen struct {
 	*muse.BaseControl
 	activeNotes   *list.List[*noteInfo]
 	send          func(msg midi.Message) error
+	port          drivers.Out
 	lastTimestamp int64
 	sampleRate    float64
 	noteGen       genny.Generator[notes.Note]
@@ -26,11 +30,17 @@ type NoteGen struct {
 	channel       uint8
 }
 
-func New(channel uint8, noteGen genny.Generator[notes.Note], velocityGen genny.Generator[float64], durationGen genny.Generator[float64], send func(msg midi.Message) error) *NoteGen {
+func MustNew(port int, channel uint8, noteGen genny.Generator[notes.Note], velocityGen genny.Generator[float64], durationGen genny.Generator[float64]) *NoteGen {
+	out, send, err := museMidi.OpenOutPort(port)
+	if err != nil {
+		log.Panicf("Failed to open Midi out port %d: %v", port, err)
+	}
+
 	ng := &NoteGen{
 		BaseControl: muse.NewBaseControl(),
 		activeNotes: list.New[*noteInfo](),
 		send:        send,
+		port:        out,
 		sampleRate:  muse.CurrentConfiguration().SampleRate,
 		noteGen:     noteGen,
 		velocityGen: velocityGen,
@@ -94,10 +104,11 @@ func (ng *NoteGen) Tick(timestamp int64, _ *muse.Configuration) {
 	})
 }
 
-func (ng *NoteGen) NotesOff() {
+func (ng *NoteGen) CleanUp() {
 	ng.activeNotes.ForEach(func(info *noteInfo, index int) {
 		_ = ng.send(midi.NoteOff(ng.channel, info.key))
 	})
 
 	ng.activeNotes.Clear()
+	_ = ng.port.Close()
 }

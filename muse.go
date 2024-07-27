@@ -1,20 +1,21 @@
 package muse
 
 import (
-	"bufio"
-	"github.com/almerlucke/muse/midi/clock"
+	museMidi "github.com/almerlucke/muse/midi"
+	"github.com/almerlucke/muse/utils"
 	"github.com/almerlucke/sndfile/writer"
 	"gitlab.com/gomidi/midi/v2"
+	"gitlab.com/gomidi/midi/v2/drivers"
 	"log"
 	"math"
-	"os"
+	"syscall"
 
 	"github.com/almerlucke/muse/buffer"
 	"github.com/dh1tw/gosamplerate"
 	"github.com/gordonklaus/portaudio"
 )
 
-var DefaultSamplerate = 44100.0
+var DefaultSampleRate = 44100.0
 var DefaultBufferSize = 1024
 
 func init() {
@@ -23,11 +24,14 @@ func init() {
 
 type Muse struct {
 	*BasePatch
-	stream           *portaudio.Stream
-	outputFile       *writer.Writer
-	isRecording      bool
-	recordingBuffers []buffer.Buffer
-	midiClock        *clock.Clock
+	stream                *portaudio.Stream
+	outputFile            *writer.Writer
+	isRecording           bool
+	recordingBuffers      []buffer.Buffer
+	midiSend              func(msg midi.Message) error
+	midiPort              drivers.Out
+	sampsPerMidiClockTick float64
+	midiClockTickAccum    float64
 }
 
 func New(numOutputs int) *Muse {
@@ -44,22 +48,24 @@ func NewWithInputs(numInputs, numOutputs int) *Muse {
 	return e
 }
 
-func (m *Muse) AddMidiClock(bpm int, send func(msg midi.Message) error) {
-	m.midiClock = clock.New(bpm, send)
+func (m *Muse) CloseMidiPort() {
+	if m.midiPort != nil && m.midiPort.IsOpen() {
+		_ = m.midiPort.Close()
+	}
 }
 
-func (m *Muse) MidiStart() error {
-	if m.midiClock != nil {
-		return m.midiClock.Start()
+func (m *Muse) OpenMidiPort(port int, bpm int) error {
+	m.CloseMidiPort()
+
+	out, send, err := museMidi.OpenOutPort(port)
+	if err != nil {
+		return err
 	}
 
-	return nil
-}
-
-func (m *Muse) MidiStop() error {
-	if m.midiClock != nil {
-		return m.midiClock.Stop()
-	}
+	m.midiPort = out
+	m.midiSend = send
+	m.sampsPerMidiClockTick = m.Config.SampleRate * (60.0 / (float64(bpm) * 24.0))
+	m.midiClockTickAccum = 0.0
 
 	return nil
 }
@@ -177,6 +183,17 @@ func (m *Muse) audioCallback(in, out [][]float32) {
 			out[j][i] = float32(m.OutputAtIndex(j).Buffer[i])
 		}
 	}
+
+	// Handle midi clock
+	if m.midiPort != nil && m.midiPort.IsOpen() {
+		for i := 0; i < m.Config.BufferSize; i++ {
+			m.midiClockTickAccum += 1
+			if m.midiClockTickAccum >= m.sampsPerMidiClockTick {
+				m.midiClockTickAccum -= m.sampsPerMidiClockTick
+				_ = m.midiSend(midi.TimingClock())
+			}
+		}
+	}
 }
 
 func (m *Muse) InitializeAudio() error {
@@ -204,22 +221,19 @@ func (m *Muse) InitializeAudio() error {
 }
 
 func (m *Muse) StartAudio() error {
-	err := m.stream.Start()
-	if err != nil {
-		return err
+	if m.midiPort != nil && m.midiPort.IsOpen() {
+		_ = m.midiSend(midi.Start())
 	}
 
-	return m.MidiStart()
+	return m.stream.Start()
 }
 
 func (m *Muse) StopAudio() error {
-	err := m.stream.Stop()
-	if err != nil {
-		_ = m.MidiStop()
-		return err
+	if m.midiPort != nil && m.midiPort.IsOpen() {
+		_ = m.midiSend(midi.Stop())
 	}
 
-	return m.MidiStop()
+	return m.stream.Stop()
 }
 
 func (m *Muse) TerminateAudio() {
@@ -236,6 +250,14 @@ func (m *Muse) TerminateAudio() {
 }
 
 func (m *Muse) RenderAudio() error {
+	return m.RenderAudioCb(func() {
+		log.Printf("Start audio...")
+	}, func() {
+		log.Printf("Stopped audio")
+	})
+}
+
+func (m *Muse) RenderAudioCb(start func(), stop func()) error {
 	err := m.InitializeAudio()
 	if err != nil {
 		return err
@@ -243,16 +265,20 @@ func (m *Muse) RenderAudio() error {
 
 	defer m.TerminateAudio()
 
+	if start != nil {
+		start()
+	}
+
 	err = m.StartAudio()
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Press enter to quit...")
+	utils.WaitForSignal(syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	reader := bufio.NewReader(os.Stdin)
-
-	_, _ = reader.ReadString('\n')
+	if stop != nil {
+		stop()
+	}
 
 	return m.StopAudio()
 }

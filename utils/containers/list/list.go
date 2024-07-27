@@ -181,6 +181,14 @@ func (l *List[T]) Reduce(initValue T, f func(T, T) T) T {
 	return accum
 }
 
+func (l *List[T]) Filter(t T, filter func(T, T) bool) {
+	l.ForEachElement(func(e *Element[T], i int) {
+		if filter(e.Value, t) {
+			e.Unlink()
+		}
+	})
+}
+
 func (l *List[T]) EndElement() *Element[T] {
 	return l.root
 }

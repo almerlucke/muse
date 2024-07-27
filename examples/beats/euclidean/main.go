@@ -52,7 +52,7 @@ func main() {
 
 	muse.PushConfiguration(&muse.Configuration{
 		SampleRate: 44100.0,
-		BufferSize: 512,
+		BufferSize: 1024,
 	})
 
 	root := muse.New(2)
@@ -172,15 +172,7 @@ func main() {
 
 	fmt.Println(midi.GetInPorts())
 
-	var out, _ = midi.OutPort(1)
-	// takes the first out port, for real, consider
-	// var out = OutByName("my synth")
-
-	send, _ := midi.SendTo(out)
-
-	root.AddMidiClock(bpm, send)
-
-	ng := notegen.New(0,
+	ng := notegen.MustNew(1, 0,
 		and.NewLoop[notes.Note](
 			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A3)...),
 			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
@@ -188,10 +180,11 @@ func main() {
 			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
 		),
 		function.NewRandom(0.7, 1.0),
-		function.NewRandom(250.0, 3000.0),
-		send).CtrlAddTo(root).CtrlIn(timer.NewControl(timing.BPMToMilli(bpm), nil).CtrlAddTo(root)).(*notegen.NoteGen)
+		function.NewRandom(250.0, 3000.0)).CtrlAddTo(root).CtrlIn(timer.NewControl(timing.BPMToMilli(bpm), nil).CtrlAddTo(root)).(*notegen.NoteGen)
 
-	ng2 := notegen.New(1,
+	defer ng.CleanUp()
+
+	ng2 := notegen.MustNew(1, 1,
 		and.NewLoop[notes.Note](
 			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A2)...),
 			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A3)...),
@@ -199,12 +192,18 @@ func main() {
 			bucket.NewLoop(bucket.Indexed, notes.Major.Root(notes.A4)...),
 		),
 		function.NewRandom(0.7, 1.0),
-		function.NewRandom(250.0, 3000.0),
-		send).CtrlAddTo(root).CtrlIn(timer.NewControl(timing.BPMToMilli(int(float64(bpm)*0.5)), nil).CtrlAddTo(root)).(*notegen.NoteGen)
+		function.NewRandom(250.0, 3000.0)).CtrlAddTo(root).CtrlIn(timer.NewControl(timing.BPMToMilli(int(float64(bpm)*0.5)), nil).CtrlAddTo(root)).(*notegen.NoteGen)
+
+	defer ng2.CleanUp()
+
+	err := root.OpenMidiPort(1, 82)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer root.CloseMidiPort()
 
 	_ = root.RenderAudio()
 
-	ng.NotesOff()
-	ng2.NotesOff()
 	//_ = root.RenderToSoundFile("/home/almer/Music/JoyInTheLordDrumsSlow", writer.AIFC, 300, 44100.0, true)
 }

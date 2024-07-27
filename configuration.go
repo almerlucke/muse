@@ -10,7 +10,7 @@ var configList *list.List
 func configurationInit() {
 	configList = list.New()
 	configList.PushFront(&Configuration{
-		SampleRate: DefaultSamplerate,
+		SampleRate: DefaultSampleRate,
 		BufferSize: DefaultBufferSize,
 	})
 }

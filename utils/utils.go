@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"os"
+	"os/signal"
 )
 
 func ToAnySlice[T any](s []T) []any {
@@ -52,4 +53,10 @@ func ReadJSONNull[T any](file string) T {
 	}
 
 	return object
+}
+
+func WaitForSignal(sig ...os.Signal) os.Signal {
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, sig...)
+	return <-sigc
 }

@@ -115,7 +115,7 @@ func hihatRhythm() genny.Generator[*swing.Step] {
 func main() {
 	muse.PushConfiguration(&muse.Configuration{
 		SampleRate: 44100.0,
-		BufferSize: 256,
+		BufferSize: 512,
 	})
 
 	root := muse.New(2)

@@ -28,3 +28,7 @@ _testmain.go
 
 # local configuration file
 *.code-workspace
+
+# work
+go.work
+go.work.sum

@@ -68,9 +68,12 @@ func (p *Polyphony) noteOff(identifier string) {
 }
 
 func (p *Polyphony) AllNotesOff() {
-	p.CallActiveVoices(func(v Voice) bool {
-		v.NoteOff()
-		v.SetIdentifier("")
+	p.CallActiveVoiceInfo(func(info *voiceInfo) bool {
+		info.voice.NoteOff()
+		info.voice.SetIdentifier("")
+		info.isStolen = false
+		info.nextMsg = nil
+		info.nextIdentifier = ""
 		return true
 	})
 }
