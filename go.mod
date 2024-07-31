@@ -1,18 +1,18 @@
 module github.com/almerlucke/muse
 
-go 1.22.1
+go 1.22.2
 
 require github.com/mkb218/gosndfile v0.0.0-20171006180803-e0c9ef895ee2 // indirect
 
 require (
 	fyne.io/fyne/v2 v2.4.4
-	github.com/almerlucke/genny v0.0.0-20240322105121-0d71988138e2
+	github.com/almerlucke/genny v0.0.0-20240617080403-1351c8c8676a
 	github.com/almerlucke/sndfile v0.0.0-20240322094746-7b1e8d9b93ac
 	github.com/dh1tw/gosamplerate v0.1.2
 	github.com/fogleman/gg v1.3.0
+	github.com/google/uuid v1.1.2
 	github.com/gordonklaus/portaudio v0.0.0-20230709114228-aafa478834f5
-	gitlab.com/gomidi/midi v1.23.7
-	gitlab.com/gomidi/rtmididrv v0.15.0
+	gitlab.com/gomidi/midi/v2 v2.1.7
 	gonum.org/v1/plot v0.14.0
 )
 
@@ -44,7 +44,6 @@ require (
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/tevino/abool v1.2.0 // indirect
 	github.com/yuin/goldmark v1.5.5 // indirect
-	gitlab.com/gomidi/midi/v2 v2.1.7 // indirect
 	golang.org/x/image v0.15.0 // indirect
 	golang.org/x/mobile v0.0.0-20230531173138-3c911d8e3eda // indirect
 	golang.org/x/net v0.17.0 // indirect

@@ -37,6 +37,19 @@ func New(filterType rbjc.FilterType, fc float64, q float64) *Filter {
 	return rbj
 }
 
+func NewFull(filterType rbjc.FilterType, fc float64, q float64, dbGain float64, qIsBandwidth bool) *Filter {
+	rbj := &Filter{
+		BaseModule: muse.NewBaseModule(3, 1),
+		filter:     rbjc.NewFilter(filterType, fc, q, dbGain, qIsBandwidth, muse.SampleRate()),
+		fc:         fc,
+		q:          q,
+	}
+
+	rbj.SetSelf(rbj)
+
+	return rbj
+}
+
 func (r *Filter) Resonance() float64 {
 	return r.q
 }
